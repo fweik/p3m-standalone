@@ -1,28 +1,28 @@
-void p3m_assign_charge(double q,
-		       double real_pos[3],
+void p3m_assign_charge(FLOAT_TYPE q,
+		       FLOAT_TYPE real_pos[3],
 		       int cp_cnt)
 {
-  extern double p3m_caf(int i, double xc,int cao_value);
+  extern FLOAT_TYPE p3m_caf(int i, FLOAT_TYPE xc,int cao_value);
   extern void p3m_realloc_ca_fields(int size);
 
   extern int    *ca_fmp;
-  extern double *ca_frac;
-  extern double *int_caf[7];
-  extern double *p3m_rs_mesh;
+  extern FLOAT_TYPE *ca_frac;
+  extern FLOAT_TYPE *int_caf[7];
+  extern FLOAT_TYPE *p3m_rs_mesh;
 
   int d, i0, i1, i2;
-  double tmp0, tmp1;
+  FLOAT_TYPE tmp0, tmp1;
   /* position of a particle in local mesh units */
-  double pos;
+  FLOAT_TYPE pos;
   /* 1d-index of nearest mesh point */
   int nmp;
   /* distance to nearest mesh point */
-  double dist[3];
+  FLOAT_TYPE dist[3];
   /* index for caf interpolation grid */
   int arg[3];
   /* index, index jumps for rs_mesh array */
   int q_ind = 0;
-  double cur_ca_frac_val, *cur_ca_frac;
+  FLOAT_TYPE cur_ca_frac_val, *cur_ca_frac;
 
   // make sure we have enough space
   if (cp_cnt >= ca_num) p3m_realloc_ca_fields(cp_cnt + 1);

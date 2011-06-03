@@ -24,48 +24,48 @@
 
 // #define FORCE_DEBUG
 
-double *Fx_exa, *Fy_exa, *Fz_exa;
-double *Fx, *Fy, *Fz;
-double *Fx_R, *Fy_R, *Fz_R;
-double *Fx_D, *Fy_D, *Fz_D;
+FLOAT_TYPE *Fx_exa, *Fy_exa, *Fz_exa;
+FLOAT_TYPE *Fx, *Fy, *Fz;
+FLOAT_TYPE *Fx_R, *Fy_R, *Fz_R;
+FLOAT_TYPE *Fx_D, *Fy_D, *Fz_D;
 int Teilchenzahl;
 int kmax;
-double Temp, Bjerrum;
-double alpha;
-double rcut;
-double beta;
+FLOAT_TYPE Temp, Bjerrum;
+FLOAT_TYPE alpha;
+FLOAT_TYPE rcut;
+FLOAT_TYPE beta;
 
 void identity(void) {
   return;
 }
 
-void (*Influence_function_berechnen)(double);
-void (*P3M)(double,int);
+void (*Influence_function_berechnen)(FLOAT_TYPE);
+void (*P3M)(FLOAT_TYPE,int);
 void (*Init)(int);
 
 
-void Realteil(double alpha)
+void Realteil(FLOAT_TYPE alpha)
 {
   /* Zwei Teilchennummern: */
   int t1,t2;
   /* Minimum-Image-Abstand: */
-  double dx,dy,dz,r;
+  FLOAT_TYPE dx,dy,dz,r;
   /* Staerke der elegktrostatischen Kraefte */
-  double fak;
+  FLOAT_TYPE fak;
   /* Zur Approximation der Fehlerfunktion */
-  double t,ar,erfc_teil;
+  FLOAT_TYPE t,ar,erfc_teil;
 
-  const double wupi = 1.77245385090551602729816748334;
+  const FLOAT_TYPE wupi = 1.77245385090551602729816748334;
 
   /* Zur Approximation der komplementaeren Fehlerfunktion benoetigte
      Konstanten. Die Approximation stammt aus Abramowitz/Stegun:
      Handbook of Mathematical Functions, Dover (9. ed.), Kapitel 7. */
-  const double a1 =  0.254829592;
-  const double a2 = -0.284496736;
-  const double a3 =  1.421413741;
-  const double a4 = -1.453152027;
-  const double a5 =  1.061405429;
-  const double  p =  0.3275911;
+  const FLOAT_TYPE a1 =  0.254829592;
+  const FLOAT_TYPE a2 = -0.284496736;
+  const FLOAT_TYPE a3 =  1.421413741;
+  const FLOAT_TYPE a4 = -1.453152027;
+  const FLOAT_TYPE a5 =  1.061405429;
+  const FLOAT_TYPE  p =  0.3275911;
 
 #pragma omp paralell for privat(dx,dy,dz, r, ar, erfc_teil, fak)
   for (t1=0; t1<Teilchenzahl-1; t1++)   /* Quick and Dirty N^2 */
@@ -95,11 +95,11 @@ void Realteil(double alpha)
 }
 
 
-void Dipol(double alpha)
+void Dipol(FLOAT_TYPE alpha)
 {
-  double SummeX,SummeY,SummeZ;
-  double VorFak;
-  double d;
+  FLOAT_TYPE SummeX,SummeY,SummeZ;
+  FLOAT_TYPE VorFak;
+  FLOAT_TYPE d;
   int i;
 
   SummeX=SummeY=SummeZ=0.0;
@@ -129,7 +129,7 @@ void Dipol(double alpha)
       }
 }
 
-void Elstat_berechnen(double alpha)
+void Elstat_berechnen(FLOAT_TYPE alpha)
 {
   /* 
      Zuerst werden die Kraefte und Energien auf Null 
@@ -177,16 +177,16 @@ void Differenzenoperator_berechnen(void)
   */
   
   int    i;
-  double dMesh=(double)Mesh;
-  double dn;
+  FLOAT_TYPE dMesh=(FLOAT_TYPE)Mesh;
+  FLOAT_TYPE dn;
 
-  Dn = (double *) realloc(Dn, Mesh*sizeof(double));  
+  Dn = (FLOAT_TYPE *) realloc(Dn, Mesh*sizeof(FLOAT_TYPE));  
 
   fprintf(stderr,"Fouriertransformierten DIFFERENTIAL-Operator vorberechnen...");
   
   for (i=0; i<Mesh; i++)
     {
-      dn    = (double)i; 
+      dn    = (FLOAT_TYPE)i; 
       dn   -= round(dn/dMesh)*dMesh;
       Dn[i] = dn;
     }
@@ -201,11 +201,11 @@ void nshift_ausrechnen(void)
   /* Verschiebt die Meshpunkte um Mesh/2 */
   
   int    i;
-  double dMesh=(double)Mesh;
+  FLOAT_TYPE dMesh=(FLOAT_TYPE)Mesh;
 
   fprintf(stderr,"Mesh-Verschiebung vorberechnen...");
 
-  nshift = (double *) realloc(nshift, Mesh*sizeof(double));  
+  nshift = (FLOAT_TYPE *) realloc(nshift, Mesh*sizeof(FLOAT_TYPE));  
 
   for (i=0; i<Mesh; i++) nshift[i] = i - round(i/dMesh)*dMesh; 
   
@@ -220,7 +220,7 @@ void Exakte_Werte_einlesen(char *filename)
   
   FILE *fp;
   int i;
-  double E_Coulomb;
+  FLOAT_TYPE E_Coulomb;
   
   fp=fopen(filename, "r");
   
@@ -228,9 +228,9 @@ void Exakte_Werte_einlesen(char *filename)
     fprintf(stderr, "Could not open '%s' for reading.\n", filename);
   }
 
-  Fx_exa = (double *) realloc(Fx_exa, Teilchenzahl*sizeof(double));
-  Fy_exa = (double *) realloc(Fy_exa, Teilchenzahl*sizeof(double));
-  Fz_exa = (double *) realloc(Fz_exa, Teilchenzahl*sizeof(double));
+  Fx_exa = (FLOAT_TYPE *) realloc(Fx_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fy_exa = (FLOAT_TYPE *) realloc(Fy_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fz_exa = (FLOAT_TYPE *) realloc(Fz_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
 
   for (i=0; i<Teilchenzahl; ++i)
     fscanf(fp,"%lf\t%lf\t%lf\t%lf\n",
@@ -281,26 +281,26 @@ void Daten_einlesen(char *filename)
   fprintf(stderr,"# Temp:         %lf\n",Temp);
   fprintf(stderr,"# Bjerrum:      %lf\n",Bjerrum);
 
-  xS = (double *) realloc(xS, Teilchenzahl*sizeof(double));
-  yS = (double *) realloc(yS, Teilchenzahl*sizeof(double));
-  zS = (double *) realloc(zS, Teilchenzahl*sizeof(double));
-   Q = (double *) realloc( Q, Teilchenzahl*sizeof(double));
+  xS = (FLOAT_TYPE *) realloc(xS, Teilchenzahl*sizeof(FLOAT_TYPE));
+  yS = (FLOAT_TYPE *) realloc(yS, Teilchenzahl*sizeof(FLOAT_TYPE));
+  zS = (FLOAT_TYPE *) realloc(zS, Teilchenzahl*sizeof(FLOAT_TYPE));
+   Q = (FLOAT_TYPE *) realloc( Q, Teilchenzahl*sizeof(FLOAT_TYPE));
 
-  Fx = (double *) realloc(Fx, Teilchenzahl*sizeof(double));
-  Fy = (double *) realloc(Fy, Teilchenzahl*sizeof(double));
-  Fz = (double *) realloc(Fz, Teilchenzahl*sizeof(double));
+  Fx = (FLOAT_TYPE *) realloc(Fx, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fy = (FLOAT_TYPE *) realloc(Fy, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fz = (FLOAT_TYPE *) realloc(Fz, Teilchenzahl*sizeof(FLOAT_TYPE));
 
-  Fx_R = (double *) realloc(Fx_R, Teilchenzahl*sizeof(double));
-  Fy_R = (double *) realloc(Fy_R, Teilchenzahl*sizeof(double));
-  Fz_R = (double *) realloc(Fz_R, Teilchenzahl*sizeof(double));
+  Fx_R = (FLOAT_TYPE *) realloc(Fx_R, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fy_R = (FLOAT_TYPE *) realloc(Fy_R, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fz_R = (FLOAT_TYPE *) realloc(Fz_R, Teilchenzahl*sizeof(FLOAT_TYPE));
 
-  Fx_K = (double *) realloc(Fx_K, Teilchenzahl*sizeof(double));
-  Fy_K = (double *) realloc(Fy_K, Teilchenzahl*sizeof(double));
-  Fz_K = (double *) realloc(Fz_K, Teilchenzahl*sizeof(double));
+  Fx_K = (FLOAT_TYPE *) realloc(Fx_K, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fy_K = (FLOAT_TYPE *) realloc(Fy_K, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fz_K = (FLOAT_TYPE *) realloc(Fz_K, Teilchenzahl*sizeof(FLOAT_TYPE));
 
-  Fx_D = (double *) realloc(Fx_D, Teilchenzahl*sizeof(double));
-  Fy_D = (double *) realloc(Fy_D, Teilchenzahl*sizeof(double));
-  Fz_D = (double *) realloc(Fz_D, Teilchenzahl*sizeof(double));
+  Fx_D = (FLOAT_TYPE *) realloc(Fx_D, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fy_D = (FLOAT_TYPE *) realloc(Fy_D, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fz_D = (FLOAT_TYPE *) realloc(Fz_D, Teilchenzahl*sizeof(FLOAT_TYPE));
 
   Leni = 1.0 / Len;
   Q2 = 0.0;
@@ -320,11 +320,11 @@ int main(int argc, char **argv)
 {
   int    i;
   long   m;
-  double d;
-  double sx,sy,sz;
-  double EC2,DeltaEC2,FC2,DeltaFC2;
-  double DeltaE_rel,DeltaE_abs,DeltaF_rel,DeltaF_abs;
-  double alphamin,alphamax,alphastep;
+  FLOAT_TYPE d;
+  FLOAT_TYPE sx,sy,sz;
+  FLOAT_TYPE EC2,DeltaEC2,FC2,DeltaFC2;
+  FLOAT_TYPE DeltaE_rel,DeltaE_abs,DeltaF_rel,DeltaF_abs;
+  FLOAT_TYPE alphamin,alphamax,alphastep;
   int method;
   char *method_name;  
 
@@ -437,7 +437,7 @@ int main(int argc, char **argv)
 	  DeltaFC2 += SQR(Fx[i]-Fx_exa[i])+SQR(Fy[i]-Fy_exa[i])+SQR(Fz[i]-Fz_exa[i]);
 	}
       
-      DeltaF_abs = sqrt(DeltaFC2/(double)Teilchenzahl);
+      DeltaF_abs = sqrt(DeltaFC2/(FLOAT_TYPE)Teilchenzahl);
       DeltaF_rel = DeltaF_abs/sqrt(FC2);
       
       /* AUSGABE:

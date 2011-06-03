@@ -15,8 +15,8 @@
 fftw_plan forward_plan;
 fftw_plan backward_plan[3];
 
-double *Fmesh[3];
-double *F_K[3];
+FLOAT_TYPE *Fmesh[3];
+FLOAT_TYPE *F_K[3];
 
 static void forward_fft(void);
 static void backward_fft(void);
@@ -31,29 +31,35 @@ void backward_fft(void) {
     fftw_execute(backward_plan[i]);
 }
 
-
-
-static double sinc(double d)
+static FLOAT_TYPE sinc(FLOAT_TYPE d)
 {
-  /* 
-     Berechnet die sinc-Funktion als sin(PI*x)/(PI*x).
-     (Konvention fuer sinc wie in Hockney/Eastwood!)
-  */
+#define epsi 0.1
 
-  static double epsi = 1e-8;
-  double PId = PI*d;
-  
-  return (fabs(d)<=epsi) ? 1.0 : sin(PId)/PId;
+#define c2 -0.1666666666667e-0
+#define c4  0.8333333333333e-2
+#define c6 -0.1984126984127e-3
+#define c8  0.2755731922399e-5
+
+  double PId = PI*d, PId2;
+
+  if (fabs(d)>epsi)
+    return sin(PId)/PId;
+  else {
+    PId2 = SQR(PId);
+    return 1.0 + PId2*(c2+PId2*(c4+PId2*(c6+PId2*c8)));
+  }
+  return 1.0;
 }
+
 
 void Init_ik(int Teilchenzahl) {
   int l;
-  Qmesh = (double *) realloc(Qmesh, 2*Mesh*Mesh*Mesh*sizeof(double));
+  Qmesh = (FLOAT_TYPE *) realloc(Qmesh, 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
   Gx = (int *)realloc(Gx, Teilchenzahl*sizeof(int));
   Gy = (int *)realloc(Gy, Teilchenzahl*sizeof(int));
   Gz = (int *)realloc(Gz, Teilchenzahl*sizeof(int));
 
-  G_hat = (double *) realloc(G_hat, Mesh*Mesh*Mesh*sizeof(G_hat));  
+  G_hat = (FLOAT_TYPE *) realloc(G_hat, Mesh*Mesh*Mesh*sizeof(G_hat));  
 
   F_K[0] = Fx_K;
   F_K[1] = Fy_K;
@@ -61,33 +67,24 @@ void Init_ik(int Teilchenzahl) {
 
   forward_plan = fftw_plan_dft_3d(Mesh, Mesh, Mesh, (fftw_complex *)Qmesh, (fftw_complex *)Qmesh, FFTW_FORWARD, FFTW_ESTIMATE);
   for(l=0;l<3;l++){
-    Fmesh[l] = (double *)realloc(Fmesh[l], 2*Mesh*Mesh*Mesh*sizeof(double));  
+    Fmesh[l] = (FLOAT_TYPE *)realloc(Fmesh[l], 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));  
     backward_plan[l] = fftw_plan_dft_3d(Mesh, Mesh, Mesh, (fftw_complex *)Fmesh[l], (fftw_complex *)Fmesh[l], FFTW_BACKWARD, FFTW_ESTIMATE);
   }
   
 }
 
-void Aliasing_sums_ik(int NX, int NY, int NZ, double alpha,
-				  double *Zaehler, double *Nenner)
+void Aliasing_sums_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
+				  FLOAT_TYPE *Zaehler, FLOAT_TYPE *Nenner)
 {
-  /*
-    Berechnet die beiden Aliasing-Summen im Zaehler und Nenner des Ausdrucks fuer die
-    optimale influence-function (siehe: Hockney/Eastwood: Formel 8-22 Seite 275 oben).
-    
-    NX,NY,NZ : Komponenten des n-Vektors, fuer den die Aliasing-Summen ausgefuehrt werden sollen.
-    *ZaehlerX,*ZaehlerY,*ZaehlerZ : x- ,y- und z-Komponente der Aliasing-Summe im Zaehler.
-    *Nenner : Aliasing-Summe im Nenner.
-  */
+  static int aliasmax = 1; /* Genauigkeit der Aliasing-Summe (2 ist wohl genug) */
   
-  static int aliasmax = 0; /* Genauigkeit der Aliasing-Summe (2 ist wohl genug) */
-  
-  double S1,S2,S3,U2;
-  double fak1,fak2,zwi;
+  FLOAT_TYPE S1,S2,S3,U2;
+  FLOAT_TYPE fak1,fak2,zwi;
   int    MX,MY,MZ;
-  double NMX,NMY,NMZ;
-  double NM2;
+  FLOAT_TYPE NMX,NMY,NMZ;
+  FLOAT_TYPE NM2;
 
-  fak1 = 1.0/(double)Mesh;
+  fak1 = 1.0/(FLOAT_TYPE)Mesh;
   fak2 = SQR(PI/(alpha*Len));
 
   Zaehler[0] = Zaehler[1] = Zaehler[2] = *Nenner = 0.0;
@@ -116,7 +113,7 @@ void Aliasing_sums_ik(int NX, int NY, int NZ, double alpha,
 }
 
  
-void Influence_function_berechnen_ik(double alpha)
+void Influence_function_berechnen_ik(FLOAT_TYPE alpha)
 {
   /*
     Berechnet die influence-function, d.h. sowas wie das Produkt aus
@@ -127,12 +124,11 @@ void Influence_function_berechnen_ik(double alpha)
   */
 
   int    NX,NY,NZ;
-  double Dnx,Dny,Dnz;
-  double fak1,dMesh,dMeshi;
-  double Zaehler[3]={0.0,0.0,0.0},Nenner=0.0;
-  double zwi;
-  FILE *fghat = fopen("ghat_seq.dat", "w");
-  dMesh = (double)Mesh;
+  FLOAT_TYPE Dnx,Dny,Dnz;
+  FLOAT_TYPE fak1,dMesh,dMeshi;
+  FLOAT_TYPE Zaehler[3]={0.0,0.0,0.0},Nenner=0.0;
+  FLOAT_TYPE zwi;
+  dMesh = (FLOAT_TYPE)Mesh;
   dMeshi= 1.0/dMesh;
   
   /* bei Zahlen >= Mesh/2 wird noch Mesh abgezogen! */
@@ -142,6 +138,7 @@ void Influence_function_berechnen_ik(double alpha)
 	{
 	  for (NZ=0; NZ<Mesh; NZ++)
 	    {
+              double ghc;
 	      if ((NX==0) && (NY==0) && (NZ==0))
 		G_hat[r_ind(NX,NY,NZ)]=0.0;
               else if ((NX%(Mesh/2) == 0) && (NY%(Mesh/2) == 0) && (NZ%(Mesh/2) == 0))
@@ -157,17 +154,18 @@ void Influence_function_berechnen_ik(double alpha)
 		  zwi  = Dnx*Zaehler[0] + Dny*Zaehler[1] + Dnz*Zaehler[2];
 		  zwi /= ( (SQR(Dnx) + SQR(Dny) + SQR(Dnz)) * SQR(Nenner) );
 
-		  G_hat[r_ind(NX,NY,NZ)] = 2.0*Mesh*Mesh*Mesh * SQR(Leni) * zwi;
+		  ghc = G_hat[r_ind(NX,NY,NZ)] = 2.0*Mesh*Mesh*Mesh * SQR(Leni) * zwi;
 		}
-              fprintf(fghat, "%lf\n", G_hat[r_ind(NX,NY,NZ)]);
+              if(ghc > 1000.0)              
+                fprintf(stderr, "n (%d %d %d), Dn (%lf %lf %lf) Z(%.15f %.15f %.15f) N(%.15f) => %lf\n", 
+                        NX, NY, NZ, Dnx, Dny, Dnz, Zaehler[0], Zaehler[1], Zaehler[2], Nenner, ghc);
 	    }
 	}
     }
-  fclose(fghat);
 }
 
 
-void P3M_ik(const double alpha, const int Teilchenzahl)
+void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
 {
   /*
     Berechnet den k-Raum Anteil der Ewald-Routine auf dem Gitter.
@@ -185,10 +183,10 @@ void P3M_ik(const double alpha, const int Teilchenzahl)
   /* Schnelles Modulo: */
   int MESHMASKE;
   /* Hilfsvariablen */
-  double dx,dy,dz,d2,H,Hi,dMesh,MI2,modadd2,modadd3;
+  FLOAT_TYPE dx,dy,dz,d2,H,Hi,dMesh,MI2,modadd2,modadd3;
   int modadd1;
   /* charge-assignment beschleunigen */
-  double T1,T2,T3,T4,T5;
+  FLOAT_TYPE T1,T2,T3,T4,T5;
   /* schnellerer Zugriff auf die Arrays Gx[i] etc.: */
   int Gxi,Gyi,Gzi;
   /* Argumente fuer das Array LadInt */
@@ -198,11 +196,11 @@ void P3M_ik(const double alpha, const int Teilchenzahl)
   /* Soweit links vom Referenzpunkt gehts beim Ladungsver-
      teilen los (implementiert ist noch ein Summand Mesh!): */
   int mshift;
-  double dTeilchenzahli;
+  FLOAT_TYPE dTeilchenzahli;
   
   //Pour le graphique des selfforces:
   int point,nb_points;
-  double posx=0,posy=0,posz=0;
+  FLOAT_TYPE posx=0,posy=0,posz=0;
 
   FILE *frho;
 
@@ -210,12 +208,12 @@ void P3M_ik(const double alpha, const int Teilchenzahl)
   Lda = Ldb = Mesh; 
   sx = sy = sz = 1; 
   MESHMASKE = Mesh-1;
-  dMesh = (double)Mesh;
+  dMesh = (FLOAT_TYPE)Mesh;
   H = Len/dMesh;
   Hi = 1.0/H;
-  MI2 = 2.0*(double)MaxInterpol;
+  MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
   mshift = Mesh-ip/2;
-  dTeilchenzahli = 1.0/(double)Teilchenzahl;
+  dTeilchenzahli = 1.0/(FLOAT_TYPE)Teilchenzahl;
 
     /* Vorbereitung der Fallunterscheidung nach geradem/ungeradem ip: */
   switch (ip)
@@ -247,7 +245,7 @@ void P3M_ik(const double alpha, const int Teilchenzahl)
   /* chargeassignment */
   for (i=0; i<Teilchenzahl; i++)
     {
-      double q_frac[2];
+      FLOAT_TYPE q_frac[2];
         q_frac[0] = q_frac[1] = 0.0;        
 
 	//        printf("particle i at (%lf, %lf, %lf).\n", i, xS[i], yS[i], zS[i]);
@@ -337,7 +335,7 @@ void P3M_ik(const double alpha, const int Teilchenzahl)
   /* chargeassignment */
   for (i=0; i<Teilchenzahl; i++)
     {
-      double f_frac;
+      FLOAT_TYPE f_frac;
 
 	int direction;
         dx = Hi*xS[i];
@@ -370,7 +368,7 @@ void P3M_ik(const double alpha, const int Teilchenzahl)
 		    T2   = T1   * T4;
 		    for (l=0; l<=ip; l++)
 		    {
-                      double B;
+                      FLOAT_TYPE B;
 		      zpos = (Gzi+l)&MESHMASKE;
 		      T5   = LadInt[l][zarg];
 		      T3   = T2   * T5;

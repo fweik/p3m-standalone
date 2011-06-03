@@ -7,9 +7,9 @@ int main(int argc, char **argv) {
   FILE *b, *p, *f;
   char buf[MAXL];
   int id;
-  double fx, fy, fz;
-  double x,y,z;
-  double Q;
+  FLOAT_TYPE fx, fy, fz;
+  FLOAT_TYPE x,y,z;
+  FLOAT_TYPE Q;
 
   if(argc != 4) {
     fprintf(stderr, "usage: %s <blockfile> <positionsfile> <forcesfile>\n", argv[0]);

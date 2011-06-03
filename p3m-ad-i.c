@@ -19,20 +19,19 @@
 fftw_plan forward_plan;
 fftw_plan backward_plan;
 
-double gleirad(double x);
-double Potenz(double x, int ip);
-double round(double x);
-double sinc(double d);
+FLOAT_TYPE gleirad(FLOAT_TYPE x);
+FLOAT_TYPE Potenz(FLOAT_TYPE x, int ip);
+FLOAT_TYPE sinc(FLOAT_TYPE d);
 
-double *Q_re, *Q_im;
+FLOAT_TYPE *Q_re, *Q_im;
 
 //VB: calcul des self-forces
 #ifdef SUBSTRACT_SF
-double *SelfForce_x,*SelfForce_y,*SelfForce_z;
+FLOAT_TYPE *SelfForce_x,*SelfForce_y,*SelfForce_z;
 #endif
 
 //VB: for interlacing:
-double *F2x_K, *F2y_K, *F2z_K;
+FLOAT_TYPE *F2x_K, *F2y_K, *F2z_K;
 
 #define c_idx(A,B,C) (2*Mesh*Mesh*(A) + 2*Mesh * (B) + 2*(C))
 #define r_ind(A,B,C) ((A)*Mesh*Mesh + (B)*Mesh + (C))
@@ -80,8 +79,8 @@ void backward_fft(void) {
 
 //VB
 
-void Aliasing_sums_AD_interlacing(int NX, int NY, int NZ, double alpha,
-		   double *Zaehler, double *Nenner1, double *Nenner2, double *Nenner3, double *Nenner4)
+void Aliasing_sums_AD_interlacing(int NX, int NY, int NZ, FLOAT_TYPE alpha,
+		   FLOAT_TYPE *Zaehler, FLOAT_TYPE *Nenner1, FLOAT_TYPE *Nenner2, FLOAT_TYPE *Nenner3, FLOAT_TYPE *Nenner4)
 {
   /*
     Berechnet die beiden Aliasing-Summen im Zaehler und Nenner des Ausdrucks fuer die
@@ -94,13 +93,13 @@ void Aliasing_sums_AD_interlacing(int NX, int NY, int NZ, double alpha,
   
   static int aliasmax = 2; /* Genauigkeit der Aliasing-Summe (2 ist wohl genug) */
   
-  double S,S1,S2,S3;
-  double fak1,fak2,zwi;
+  FLOAT_TYPE S,S1,S2,S3;
+  FLOAT_TYPE fak1,fak2,zwi;
   int    MX,MY,MZ;
-  double NMX,NMY,NMZ;
-  double NM2;
+  FLOAT_TYPE NMX,NMY,NMZ;
+  FLOAT_TYPE NM2;
 
-  fak1 = 1.0/(double)Mesh;
+  fak1 = 1.0/(FLOAT_TYPE)Mesh;
   fak2 = SQR(PI/(alpha*Len));
 
   *Zaehler = *Nenner1 = *Nenner2 = *Nenner3 = *Nenner4 = 0.0;
@@ -145,7 +144,7 @@ void Aliasing_sums_AD_interlacing(int NX, int NY, int NZ, double alpha,
 
 /*------------------------------------------------------------*/
 
-void Influence_function_ad_interlaced(double alpha)
+void Influence_function_ad_interlaced(FLOAT_TYPE alpha)
 {
   /*
     Berechnet die influence-function, d.h. sowas wie das Produkt aus
@@ -156,14 +155,14 @@ void Influence_function_ad_interlaced(double alpha)
   */
 
   int    NX,NY,NZ;
-  double Dnx,Dny,Dnz;
-  double fak1,fak2,dMesh,dMeshi;
-  double Zaehler,Nenner1,Nenner2,Nenner3,Nenner4;
-  double zwi;
+  FLOAT_TYPE Dnx,Dny,Dnz;
+  FLOAT_TYPE fak1,fak2,dMesh,dMeshi;
+  FLOAT_TYPE Zaehler,Nenner1,Nenner2,Nenner3,Nenner4;
+  FLOAT_TYPE zwi;
   
-  double qua,qua_;
+  FLOAT_TYPE qua,qua_;
   
-  dMesh = (double)Mesh;
+  dMesh = (FLOAT_TYPE)Mesh;
   dMeshi= 1.0/dMesh;
   
   fak1 = 2.0/(SQR(Len) * 2.0*PI);
@@ -198,7 +197,7 @@ void Influence_function_ad_interlaced(double alpha)
 }
 
 
-void P3M_ad_interlaced(double alpha, int Teilchenzahl)
+void P3M_ad_interlaced(FLOAT_TYPE alpha, int Teilchenzahl)
 {
   /*
     Berechnet den k-Raum Anteil der Ewald-Routine auf dem Gitter.
@@ -212,18 +211,18 @@ void P3M_ad_interlaced(double alpha, int Teilchenzahl)
   /* wahre n-Werte im Impulsraum: */
   int nx,ny,nz;
   /* Fouriertransformierte Differenzenoperatoren */
-  double Dnx,Dny,Dnz;
+  FLOAT_TYPE Dnx,Dny,Dnz;
   /* Variablen fuer FFT: */
   int sx, sy, sz, status;   
   /* Schnelles Modulo: */
   int MESHMASKE;
   /* Hilfsvariablen */
-  double d1,d2,H,Hi,dMesh,MI2,modadd1,modadd2,modadd3;
+  FLOAT_TYPE d1,d2,H,Hi,dMesh,MI2,modadd1,modadd2,modadd3;
   /* charge-assignment beschleunigen */
-  double T1,T2,T3,T4,T5;
-  double T1_x,T2_x,T3_x;
-  double T1_y,T2_y,T3_y;
-  double T1_z,T2_z,T3_z;
+  FLOAT_TYPE T1,T2,T3,T4,T5;
+  FLOAT_TYPE T1_x,T2_x,T3_x;
+  FLOAT_TYPE T1_y,T2_y,T3_y;
+  FLOAT_TYPE T1_z,T2_z,T3_z;
   /* schnellerer Zugriff auf die Arrays Gx[i] etc.: */
   int Gxi,Gyi,Gzi;
   /* Argumente fuer das Array LadInt */
@@ -233,24 +232,24 @@ void P3M_ad_interlaced(double alpha, int Teilchenzahl)
   /* Soweit links vom Referenzpunkt gehts beim Ladungsver-
      teilen los (implementiert ist noch ein Summand Mesh!): */
   int mshift;
-  double Energiefaktor,Kraftfaktor,dTeilchenzahli;
+  FLOAT_TYPE Energiefaktor,Kraftfaktor,dTeilchenzahli;
   
   //VB: Variables pour les self-forces
   int ii;
   
   //Pour le graphique des selfforces:
   int point,nb_points;
-  double posx=0,posy=0,posz=0;
+  FLOAT_TYPE posx=0,posy=0,posz=0;
   FILE* fout;
 
   sx = sy = sz = 1; 
   MESHMASKE = Mesh-1;
-  dMesh = (double)Mesh;
+  dMesh = (FLOAT_TYPE)Mesh;
   H = Len/dMesh;
   Hi = 1.0/H;
-  MI2 = 2.0*(double)MaxInterpol;
+  MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
   mshift = Mesh-ip/2;
-  dTeilchenzahli = 1.0/(double)Teilchenzahl;
+  dTeilchenzahli = 1.0/(FLOAT_TYPE)Teilchenzahl;
   Energiefaktor  = 0.5*Len/(dMesh*dMesh*dMesh);
   
     /* Vorbereitung der Fallunterscheidung nach geradem/ungeradem ip: */
@@ -803,55 +802,49 @@ printf("Substract SF\n");
 
 /*------------------------------------------------------------*/
 
-double Potenz(double x, int ip)
+FLOAT_TYPE Potenz(FLOAT_TYPE x, int ip)
 {
   /* Liefert x^(ip+1) zurueck */
   
   return pow(x, ip+1.0);
 }
 
-/*------------------------------------------------------------*/
-
-double round(double x) { return floor(x+0.5); }
-
-/*------------------------------------------------------------*/
-
-double sinc(double d)
+FLOAT_TYPE sinc(FLOAT_TYPE d)
 {
   /* 
      Berechnet die sinc-Funktion als sin(PI*x)/(PI*x).
      (Konvention fuer sinc wie in Hockney/Eastwood!)
   */
 
-  static double epsi = 1e-8;
-  double PId = PI*d;
+  static FLOAT_TYPE epsi = 1e-8;
+  FLOAT_TYPE PId = PI*d;
   
   return (fabs(d)<=epsi) ? 1.0 : sin(PId)/PId;
 }
 
 void Init_ad_interlaced(int Teilchenzahl) {
   int l = (ip+1)*(ip+1)*(ip+1);
-  Qmesh = (double *) realloc(Qmesh, 2*Mesh*Mesh*Mesh*sizeof(double));
-  Q_re = (double *) realloc(Q_re, Mesh*Mesh*Mesh*sizeof(double));
-  Q_im = (double *) realloc(Q_im, Mesh*Mesh*Mesh*sizeof(double));
+  Qmesh = (FLOAT_TYPE *) realloc(Qmesh, 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
+  Q_re = (FLOAT_TYPE *) realloc(Q_re, Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
+  Q_im = (FLOAT_TYPE *) realloc(Q_im, Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
   Gx = (int *)realloc(Gx, Teilchenzahl*sizeof(int));
   Gy = (int *)realloc(Gy, Teilchenzahl*sizeof(int));
   Gz = (int *)realloc(Gz, Teilchenzahl*sizeof(int));
 
-  dQdx = (double *)realloc(dQdx, l*Teilchenzahl*sizeof(double));
-  dQdy = (double *)realloc(dQdy, l*Teilchenzahl*sizeof(double));
-  dQdz = (double *)realloc(dQdz, l*Teilchenzahl*sizeof(double));
+  dQdx = (FLOAT_TYPE *)realloc(dQdx, l*Teilchenzahl*sizeof(FLOAT_TYPE));
+  dQdy = (FLOAT_TYPE *)realloc(dQdy, l*Teilchenzahl*sizeof(FLOAT_TYPE));
+  dQdz = (FLOAT_TYPE *)realloc(dQdz, l*Teilchenzahl*sizeof(FLOAT_TYPE));
 
-  F2x_K = (double *) realloc(F2x_K, Teilchenzahl*sizeof(double));
-  F2y_K = (double *) realloc(F2y_K, Teilchenzahl*sizeof(double));
-  F2z_K = (double *) realloc(F2z_K, Teilchenzahl*sizeof(double));
+  F2x_K = (FLOAT_TYPE *) realloc(F2x_K, Teilchenzahl*sizeof(FLOAT_TYPE));
+  F2y_K = (FLOAT_TYPE *) realloc(F2y_K, Teilchenzahl*sizeof(FLOAT_TYPE));
+  F2z_K = (FLOAT_TYPE *) realloc(F2z_K, Teilchenzahl*sizeof(FLOAT_TYPE));
 
-  G_hat = (double *) realloc(G_hat, Mesh*Mesh*Mesh*sizeof(G_hat));  
+  G_hat = (FLOAT_TYPE *) realloc(G_hat, Mesh*Mesh*Mesh*sizeof(G_hat));  
 
 #ifdef SUBSTRACT_SF
-  SelfForce_x = (double *) realloc(SelfForce_x, Teilchenzahl*sizeof(double));
-  SelfForce_y = (double *) realloc(SelfForce_y, Teilchenzahl*sizeof(double));
- SelfForce_z = (double *) realloc(SelfForce_z, Teilchenzahl*sizeof(double));
+  SelfForce_x = (FLOAT_TYPE *) realloc(SelfForce_x, Teilchenzahl*sizeof(FLOAT_TYPE));
+  SelfForce_y = (FLOAT_TYPE *) realloc(SelfForce_y, Teilchenzahl*sizeof(FLOAT_TYPE));
+ SelfForce_z = (FLOAT_TYPE *) realloc(SelfForce_z, Teilchenzahl*sizeof(FLOAT_TYPE));
 #endif
 
   forward_plan = fftw_plan_dft_3d(Mesh, Mesh, Mesh, (fftw_complex *)Qmesh, (fftw_complex *)Qmesh, FFTW_FORWARD, FFTW_ESTIMATE);

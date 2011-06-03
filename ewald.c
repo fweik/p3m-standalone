@@ -38,7 +38,7 @@
 /* Some global variables, internal to ewald.c. */
 
 static int     kmax2; /* reciprocal space cutoff and its square */
-static double Ghat[kmax+1][kmax+1][kmax+1];
+static FLOAT_TYPE Ghat[kmax+1][kmax+1][kmax+1];
 
 /*----------------------------------------------------------------------*/
 /* HELPER FUNCTIONS */
@@ -54,11 +54,11 @@ static double Ghat[kmax+1][kmax+1][kmax+1];
 
    For symmetry reasons only one octant is actually needed. 
 */
-void Ewald_compute_influence_function(double alpha)
+void Ewald_compute_influence_function(FLOAT_TYPE alpha)
 {
   
   int    nx,ny,nz;
-  double n_sqr,fak1,fak2;
+  FLOAT_TYPE n_sqr,fak1,fak2;
 
   fak1 = 2.0/SQR(Len);
   fak2 = SQR(PI/(alpha*Len));
@@ -80,13 +80,13 @@ void Ewald_init(int particlenumber)
   kmax2     = SQR(kmax);
 }
 
-void Ewald_k_space(double alpha, int NP)
+void Ewald_k_space(FLOAT_TYPE alpha, int NP)
 {
   int    i;
   int    nx, ny, nz;
-  double kr;
-  double rhohat_re, rhohat_im, ghat;
-  double force_factor;
+  FLOAT_TYPE kr;
+  FLOAT_TYPE rhohat_re, rhohat_im, ghat;
+  FLOAT_TYPE force_factor;
 
   for (nx=-kmax; nx<=kmax; nx++)
     for (ny=-kmax; ny<=kmax; ny++)
@@ -122,18 +122,18 @@ void Ewald_k_space(double alpha, int NP)
   return;
 }
 
-double compute_error_estimate_r(double alpha, double rmax) {
-  double res;
-  double rmax2 = rmax*rmax;
+FLOAT_TYPE compute_error_estimate_r(FLOAT_TYPE alpha, FLOAT_TYPE rmax) {
+  FLOAT_TYPE res;
+  FLOAT_TYPE rmax2 = rmax*rmax;
   /* Kolafa-Perram, eq. 16 */
   res = Q2*sqrt(rmax/(2.0*Len*Len*Len)) * exp(-SQR(alpha)*rmax2) / (SQR(alpha)*rmax2);
   
   return res;
 }
 
-double compute_error_estimate_k(double alpha, int NP) {
+FLOAT_TYPE compute_error_estimate_k(FLOAT_TYPE alpha, int NP) {
   /* compute the k space part of the error estimate */
-  double res;
+  FLOAT_TYPE res;
 
   /* Kolafa Perram, eq. 31 */
 /*   res = Q2 * alpha * pow(PI, -2.0) * pow(kmax, -1.5)  */
@@ -146,15 +146,15 @@ double compute_error_estimate_k(double alpha, int NP) {
   return res;
 }
 
-double Ewald_estimate_error(double alpha, double rmax, int NP) {
+FLOAT_TYPE Ewald_estimate_error(FLOAT_TYPE alpha, FLOAT_TYPE rmax, int NP) {
   return sqrt(SQR(compute_error_estimate_r(alpha, rmax)) + SQR(compute_error_estimate_k(alpha, NP)));
 }
 
-double Ewald_compute_optimal_alpha(double rcut, int NP) {
+FLOAT_TYPE Ewald_compute_optimal_alpha(FLOAT_TYPE rcut, int NP) {
   /* use bisectional method to get optimal alpha value */
-  double alpha_low, f_low;
-  double alpha_high, f_high;
-  double alpha_guess, f_guess;
+  FLOAT_TYPE alpha_low, f_low;
+  FLOAT_TYPE alpha_high, f_high;
+  FLOAT_TYPE alpha_guess, f_guess;
 
   alpha_low = 0.01;
   alpha_high = 10.0;

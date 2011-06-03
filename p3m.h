@@ -4,46 +4,64 @@
 #define MaxInterpol (2*100096)
 #define Maxip 6
 
+// #define SINGLE_PREC
+ #define DOUBLE_PREC
+
+#ifdef SINGLE_PREC
+  #define FLOAT_FORMAT "%.8f"
+  #define FLOAT_TYPE float
+#endif
+
+#ifdef DOUBLE_PREC 
+  #define FLOAT_FORMAT "%.15f"
+  #define FLOAT_TYPE double
+#endif
+
+#ifdef QUAD_PREC
+  #define FLOAT_TYPE __float128
+  #define FLOAT_FORMAT "%.35q"
+#endif
+
 /* Pi, weil man's so oft braucht: */
 #define PI 3.14159265358979323846264
 
 #define SQR(A) ((A)*(A))
 
 //Pointer to Force Arrays for kspace
-double *Fx_K, *Fy_K, *Fz_K;
+FLOAT_TYPE *Fx_K, *Fy_K, *Fz_K;
 //Pointer to particle charges
-double *Q;
+FLOAT_TYPE *Q;
 //Pointer to particle possitions;
-double *xS, *yS, *zS;
+FLOAT_TYPE *xS, *yS, *zS;
 //Pointer to influence function
-double *G_hat;
+FLOAT_TYPE *G_hat;
 // Mesh size
 int Mesh;
 // Box length
-double Len, Leni;
+FLOAT_TYPE Len, Leni;
 // charge assignment order - 1
 int ip;
 // Pointer to mesh charge density
-double *Qmesh;
+FLOAT_TYPE *Qmesh;
 // differentials
-double *dQdx, *dQdy, *dQdz;
+FLOAT_TYPE *dQdx, *dQdy, *dQdz;
 // Pointer to differential operator
-double *Dn;
+FLOAT_TYPE *Dn;
 //
 /* Speichert die Interpolation des Ladungszuordnungspolynoms: */
-double LadInt[Maxip+1][2*MaxInterpol+1];
+FLOAT_TYPE LadInt[Maxip+1][2*MaxInterpol+1];
 /* Speichert die Interpolation der Ableitung des Ladungszuordnungspolynoms: */
-double LadInt_[Maxip+1][2*MaxInterpol+1];
+FLOAT_TYPE LadInt_[Maxip+1][2*MaxInterpol+1];
 
-double Q2;
+FLOAT_TYPE Q2;
 
-double E_Coulomb_Dipol;
-double E_Coulomb_Self;
-double E_Coulomb_Impuls_Summe;
-double E_Coulomb_Real_Summe;
+FLOAT_TYPE E_Coulomb_Dipol;
+FLOAT_TYPE E_Coulomb_Self;
+FLOAT_TYPE E_Coulomb_Impuls_Summe;
+FLOAT_TYPE E_Coulomb_Real_Summe;
 
 // Internal variables
 int *Gx, *Gy, *Gz;
-double *nshift;
+FLOAT_TYPE *nshift;
 
 #endif
