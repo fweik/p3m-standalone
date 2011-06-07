@@ -242,6 +242,33 @@ void Exakte_Werte_einlesen(char *filename)
   fclose(fp);
 }
 
+void init_arrays(int Teilchenzahl) {
+
+  xS = (FLOAT_TYPE *) realloc(xS, Teilchenzahl*sizeof(FLOAT_TYPE));
+  yS = (FLOAT_TYPE *) realloc(yS, Teilchenzahl*sizeof(FLOAT_TYPE));
+  zS = (FLOAT_TYPE *) realloc(zS, Teilchenzahl*sizeof(FLOAT_TYPE));
+   Q = (FLOAT_TYPE *) realloc( Q, Teilchenzahl*sizeof(FLOAT_TYPE));
+
+  Fx = (FLOAT_TYPE *) realloc(Fx, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fy = (FLOAT_TYPE *) realloc(Fy, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fz = (FLOAT_TYPE *) realloc(Fz, Teilchenzahl*sizeof(FLOAT_TYPE));
+
+  Fx_R = (FLOAT_TYPE *) realloc(Fx_R, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fy_R = (FLOAT_TYPE *) realloc(Fy_R, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fz_R = (FLOAT_TYPE *) realloc(Fz_R, Teilchenzahl*sizeof(FLOAT_TYPE));
+
+  Fx_K = (FLOAT_TYPE *) realloc(Fx_K, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fy_K = (FLOAT_TYPE *) realloc(Fy_K, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fz_K = (FLOAT_TYPE *) realloc(Fz_K, Teilchenzahl*sizeof(FLOAT_TYPE));
+
+  Fx_D = (FLOAT_TYPE *) realloc(Fx_D, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fy_D = (FLOAT_TYPE *) realloc(Fy_D, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fz_D = (FLOAT_TYPE *) realloc(Fz_D, Teilchenzahl*sizeof(FLOAT_TYPE));
+
+  ca_ind = (int *) realloc(ca_ind, Teilchenzahl*sizeof(int));
+  cf = (FLOAT_TYPE *) realloc(cf, Teilchenzahl * (ip+1) * (ip + 1) * (ip + 1) *sizeof(FLOAT_TYPE)); 
+}
+
 void Daten_einlesen(char *filename)
 {
   /* Oeffnet die Datei "PMETest.dat" zum LESEN. Dort muessen
@@ -281,26 +308,7 @@ void Daten_einlesen(char *filename)
   fprintf(stderr,"# Temp:         %lf\n",Temp);
   fprintf(stderr,"# Bjerrum:      %lf\n",Bjerrum);
 
-  xS = (FLOAT_TYPE *) realloc(xS, Teilchenzahl*sizeof(FLOAT_TYPE));
-  yS = (FLOAT_TYPE *) realloc(yS, Teilchenzahl*sizeof(FLOAT_TYPE));
-  zS = (FLOAT_TYPE *) realloc(zS, Teilchenzahl*sizeof(FLOAT_TYPE));
-   Q = (FLOAT_TYPE *) realloc( Q, Teilchenzahl*sizeof(FLOAT_TYPE));
-
-  Fx = (FLOAT_TYPE *) realloc(Fx, Teilchenzahl*sizeof(FLOAT_TYPE));
-  Fy = (FLOAT_TYPE *) realloc(Fy, Teilchenzahl*sizeof(FLOAT_TYPE));
-  Fz = (FLOAT_TYPE *) realloc(Fz, Teilchenzahl*sizeof(FLOAT_TYPE));
-
-  Fx_R = (FLOAT_TYPE *) realloc(Fx_R, Teilchenzahl*sizeof(FLOAT_TYPE));
-  Fy_R = (FLOAT_TYPE *) realloc(Fy_R, Teilchenzahl*sizeof(FLOAT_TYPE));
-  Fz_R = (FLOAT_TYPE *) realloc(Fz_R, Teilchenzahl*sizeof(FLOAT_TYPE));
-
-  Fx_K = (FLOAT_TYPE *) realloc(Fx_K, Teilchenzahl*sizeof(FLOAT_TYPE));
-  Fy_K = (FLOAT_TYPE *) realloc(Fy_K, Teilchenzahl*sizeof(FLOAT_TYPE));
-  Fz_K = (FLOAT_TYPE *) realloc(Fz_K, Teilchenzahl*sizeof(FLOAT_TYPE));
-
-  Fx_D = (FLOAT_TYPE *) realloc(Fx_D, Teilchenzahl*sizeof(FLOAT_TYPE));
-  Fy_D = (FLOAT_TYPE *) realloc(Fy_D, Teilchenzahl*sizeof(FLOAT_TYPE));
-  Fz_D = (FLOAT_TYPE *) realloc(Fz_D, Teilchenzahl*sizeof(FLOAT_TYPE));
+  init_arrays(Teilchenzahl);
 
   Leni = 1.0 / Len;
   Q2 = 0.0;

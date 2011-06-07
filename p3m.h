@@ -64,4 +64,9 @@ FLOAT_TYPE E_Coulomb_Real_Summe;
 int *Gx, *Gy, *Gz;
 FLOAT_TYPE *nshift;
 
+// Charge assignment
+
+int *ca_ind;
+FLOAT_TYPE *cf;
+
 #endif

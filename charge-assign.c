@@ -1,14 +1,10 @@
-void p3m_assign_charge(FLOAT_TYPE q,
-		       FLOAT_TYPE real_pos[3],
-		       int cp_cnt)
-{
-  extern FLOAT_TYPE p3m_caf(int i, FLOAT_TYPE xc,int cao_value);
-  extern void p3m_realloc_ca_fields(int size);
+#include "charge-assign.h"
 
-  extern int    *ca_fmp;
-  extern FLOAT_TYPE *ca_frac;
-  extern FLOAT_TYPE *int_caf[7];
-  extern FLOAT_TYPE *p3m_rs_mesh;
+void assign_charge(int id, FLOAT_TYPE q,
+		       FLOAT_TYPE real_pos[3],
+		       FLOAT_TYPE *p3m_rs_mesh)
+{
+  int cao = ip+1;
 
   int d, i0, i1, i2;
   FLOAT_TYPE tmp0, tmp1;
@@ -23,65 +19,71 @@ void p3m_assign_charge(FLOAT_TYPE q,
   /* index, index jumps for rs_mesh array */
   int q_ind = 0;
   FLOAT_TYPE cur_ca_frac_val, *cur_ca_frac;
+  int cf_cnt = 0;
 
-  // make sure we have enough space
-  if (cp_cnt >= ca_num) p3m_realloc_ca_fields(cp_cnt + 1);
-  // do it here, since p3m_realloc_ca_fields may change the address of ca_frac
-  cur_ca_frac = ca_frac + p3m.cao3*cp_cnt;
+  FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;   
 
-  if (p3m.inter == 0) {
-    for(d=0;d<3;d++) {
-      /* particle position in mesh coordinates */
-      pos    = ((real_pos[d]-p3m_lm.ld_pos[d])*p3m.ai[d]);
-      /* nearest mesh point */
-      nmp  = (int)pos;
-      /* distance to nearest mesh point */
-      dist[d] = (pos-nmp)-0.5;
-      /* 3d-array index of nearest mesh point */
-      q_ind = (d == 0) ? nmp : nmp + p3m_lm.dim[d]*q_ind;
-    }
-    if (cp_cnt >= 0) ca_fmp[cp_cnt] = q_ind;
-    
-    for(i0=0; i0<p3m.cao; i0++) {
-      tmp0 = p3m_caf(i0, dist[0],p3m.cao);
-      for(i1=0; i1<p3m.cao; i1++) {
-	tmp1 = tmp0 * p3m_caf(i1, dist[1],p3m.cao);
-	for(i2=0; i2<p3m.cao; i2++) {
-	  cur_ca_frac_val = q * tmp1 * p3m_caf(i2, dist[2], p3m.cao);
-	  if (cp_cnt >= 0) *(cur_ca_frac++) = cur_ca_frac_val;
-	  p3m_rs_mesh[q_ind] += cur_ca_frac_val;
-	  q_ind++;
-	}
-	q_ind += p3m_lm.q_2_off;
-      }
-      q_ind += p3m_lm.q_21_off;
-    }
-  }
-  else {
+  FLOAT_TYPE Hi = (double)Mesh/(double)Len;
+
+  int q_m_off = (Mesh - cao);
+  int q_s_off = Mesh * q_m_off;
+
     /* particle position in mesh coordinates */
     for(d=0;d<3;d++) {
-      pos    = ((real_pos[d]-p3m_lm.ld_pos[d])*p3m.ai[d]);
+      pos    = real_pos[d]*Hi;
       nmp    = (int) pos;
-      arg[d] = (int) ((pos - nmp)*p3m.inter2);
+      arg[d] = (int) ((pos - nmp)*MI2);
       /* for the first dimension, q_ind is always zero, so this shifts correctly */
-      q_ind = nmp + p3m_lm.dim[d]*q_ind;
+      q_ind = nmp + Mesh*q_ind;
     }
-    if (cp_cnt >= 0) ca_fmp[cp_cnt] = q_ind;
+    ca_ind[id] = q_ind;
 
-    for(i0=0; i0<p3m.cao; i0++) {
-      tmp0 = int_caf[i0][arg[0]];
-      for(i1=0; i1<p3m.cao; i1++) {
-	tmp1 = tmp0 * int_caf[i1][arg[1]];
-	for(i2=0; i2<p3m.cao; i2++) {
-	  cur_ca_frac_val = q * tmp1 * int_caf[i2][arg[2]];
-	  if (cp_cnt >= 0) *(cur_ca_frac++) = cur_ca_frac_val;
-	  p3m_rs_mesh[q_ind] += cur_ca_frac_val;
+    for(i0=0; i0<cao; i0++) {
+      tmp0 = LadInt[i0][arg[0]];
+      for(i1=0; i1<cao; i1++) {
+	tmp1 = tmp0 * LadInt[i1][arg[1]];
+	for(i2=0; i2<cao; i2++) {
+	  cur_ca_frac_val = q * tmp1 * LadInt[i2][arg[2]];
+          cf[cf_cnt++] = cur_ca_frac_val;
+	  p3m_rs_mesh[2*q_ind] += cur_ca_frac_val;
 	  q_ind++;
 	}
-	q_ind += p3m_lm.q_2_off;
+	q_ind += q_m_off;
       }
-      q_ind += p3m_lm.q_21_off;
+      q_ind += q_s_off;
     }
-  }
+  
 }
+
+// assign the forces obtained from k-space 
+void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_TYPE *p3m_rs_mesh) 
+{
+  int i,c,i0,i1,i2;
+  int cao = ip  + 1;
+  int cp_cnt=0, cf_cnt=0;
+
+  int q_ind;
+  int q_m_off = (Mesh - cao);
+  int q_s_off = Mesh * q_m_off;
+
+  double A,B,C;
+ 
+  cf_cnt=0;
+    for(i=0; i<Teilchenzahl; i++) { 
+      q_ind = ca_ind[i];
+      for(i0=0; i0<cao; i0++) {
+        for(i1=0; i1<cao; i1++) {
+          for(i2=0; i2<cao; i2++) {
+            A = cf[cf_cnt];
+            B = p3m_rs_mesh[2*q_ind++];
+            F[i] -= force_prefac*A*B; 
+	    cf_cnt++;
+	  }
+	  q_ind += q_m_off;
+	}
+	q_ind += q_s_off;
+      }
+    }
+}
+
 

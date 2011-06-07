@@ -5,12 +5,15 @@
 #include <fftw3.h>
 
 #include "p3m.h"
+#include "charge-assign.h"
 
 /* Pi, weil man's so oft braucht: */
 #define PI 3.14159265358979323846264
 
 #define r_ind(A,B,C) ((A)*Mesh*Mesh + (B)*Mesh + (C))
 #define c_ind(A,B,C) (2*Mesh*Mesh*(A)+2*Mesh*(B)+2*(C))
+
+double alt_mesh[4096];
 
 fftw_plan forward_plan;
 fftw_plan backward_plan[3];
@@ -138,7 +141,6 @@ void Influence_function_berechnen_ik(FLOAT_TYPE alpha)
 	{
 	  for (NZ=0; NZ<Mesh; NZ++)
 	    {
-              double ghc;
 	      if ((NX==0) && (NY==0) && (NZ==0))
 		G_hat[r_ind(NX,NY,NZ)]=0.0;
               else if ((NX%(Mesh/2) == 0) && (NY%(Mesh/2) == 0) && (NZ%(Mesh/2) == 0))
@@ -154,11 +156,8 @@ void Influence_function_berechnen_ik(FLOAT_TYPE alpha)
 		  zwi  = Dnx*Zaehler[0] + Dny*Zaehler[1] + Dnz*Zaehler[2];
 		  zwi /= ( (SQR(Dnx) + SQR(Dny) + SQR(Dnz)) * SQR(Nenner) );
 
-		  ghc = G_hat[r_ind(NX,NY,NZ)] = 2.0*Mesh*Mesh*Mesh * SQR(Leni) * zwi;
+		  G_hat[r_ind(NX,NY,NZ)] = 2.0*Mesh*Mesh*Mesh * SQR(Leni) * zwi;
 		}
-              if(ghc > 1000.0)              
-                fprintf(stderr, "n (%d %d %d), Dn (%lf %lf %lf) Z(%.15f %.15f %.15f) N(%.15f) => %lf\n", 
-                        NX, NY, NZ, Dnx, Dny, Dnz, Zaehler[0], Zaehler[1], Zaehler[2], Nenner, ghc);
 	    }
 	}
     }
@@ -204,6 +203,8 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
 
   FILE *frho;
 
+  int direction;
+
   Nx = Ny = Nz = Mesh;
   Lda = Ldb = Mesh; 
   sx = sy = sz = 1; 
@@ -245,53 +246,8 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
   /* chargeassignment */
   for (i=0; i<Teilchenzahl; i++)
     {
-      FLOAT_TYPE q_frac[2];
-        q_frac[0] = q_frac[1] = 0.0;        
-
-	//        printf("particle i at (%lf, %lf, %lf).\n", i, xS[i], yS[i], zS[i]);
-        //printf("H: %lf, Hi: %lf, ip %d\n", H, Hi, ip);
-        dx = Hi*xS[i];
-        dy = Hi*yS[i];
-        dz = Hi*zS[i];
-
-	Gxi = (int)(dx+modadd2) - modadd1;
-	Gyi = (int)(dy+modadd2) - modadd1;
-	Gzi = (int)(dz+modadd2) - modadd1;
-
-        //printf("Next meshpoint (%d %d %d).\n", (int)(dx+modadd2),   (int)(dy+modadd2), (int)(dz+modadd2));
-
-        dx = H*(Gxi + modadd1) - (xS[i]);
-        dy = H*(Gyi + modadd1) - (yS[i]);
-        dz = H*(Gzi + modadd1) - (zS[i]);
-
-        //printf("d[3] (%lf %lf %lf)\n", dx, dy, dz);
-
-        xarg = (int)((dx - round(dx) + modadd3 )*MI2);
-        yarg = (int)((dy - round(dy) + modadd3 )*MI2);
-        zarg = (int)((dz - round(dz) + modadd3 )*MI2);
-        
-
-	//printf("Lower left point (%d %d %d)\n", Gxi, Gyi, Gzi);
-        //printf("Distance (%lf, %lf, %lf)\n", xarg, yarg, zarg);
-
-	  for (j=0; j<=ip; j++)
-	    {
-	      xpos = (Gxi+j)&MESHMASKE;
-	      T1   = Q[i]*LadInt[j][xarg];
-	      for (k=0; k<=ip; k++)
-		{
-		  ypos = (Gyi+k)&MESHMASKE;
-		  T4   = LadInt[k][yarg];
-		  T2   = T1   * T4;
-		  for (l=0; l<=ip; l++)
-		    {
-		      zpos = (Gzi+l)&MESHMASKE;
-		      T5   = LadInt[l][zarg];
-		      T3   = T2   * T5;
-		      Qmesh[c_ind(xpos,ypos,zpos)] += T3;
-		    }
-		}
-	    }
+      FLOAT_TYPE Ri[3] = {xS[i], yS[i], zS[i]};
+      assign_charge(i, Q[i], Ri, Qmesh);
     }
 
   /* Durchfuehren der Fourier-Hin-Transformationen: */
@@ -308,20 +264,8 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
 	  Qmesh[c_index+1] *= T1;
 
           for(l=0;l<3;l++) {
-            int k_dir;
-            switch(l) {
- 	      case 0:
-                k_dir = i;
-                break;
-              case 1:
-                k_dir = j;
-                break;
-	      case 2:
-                 k_dir = k;
-                break;
-	    }
-	    Fmesh[l][c_index]   = -Dn[k_dir]*Qmesh[c_index+1];
-	    Fmesh[l][c_index+1] = Dn[k_dir]*Qmesh[c_index];
+	    Fmesh[l][c_index]   = -Dn[l]*Qmesh[c_index+1];
+	    Fmesh[l][c_index+1] = Dn[l]*Qmesh[c_index];
           }
 
 	}
@@ -333,55 +277,9 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
   /* Kraftkomponenten: */
 
   /* chargeassignment */
-  for (i=0; i<Teilchenzahl; i++)
-    {
-      FLOAT_TYPE f_frac;
-
-	int direction;
-        dx = Hi*xS[i];
-        dy = Hi*yS[i];
-        dz = Hi*zS[i];
-
-	Gxi = (int)(dx+modadd2) - modadd1;
-	Gyi = (int)(dy+modadd2) - modadd1;
-	Gzi = (int)(dz+modadd2) - modadd1;
-
-        dx = H*(Gxi + modadd1) - (xS[i]);
-        dy = H*(Gyi + modadd1) - (yS[i]);
-        dz = H*(Gzi + modadd1) - (zS[i]);
-
-        xarg = (int)((dx - round(dx) + modadd3 )*MI2);
-        yarg = (int)((dy - round(dy) + modadd3 )*MI2);
-        zarg = (int)((dz - round(dz) + modadd3 )*MI2);
-        
-
-	for(direction=0;direction<3;direction++) {       
-            f_frac = 0.0;
-	    for (j=0; j<=ip; j++)
-	      {
-	        xpos = (Gxi+j)&MESHMASKE;
-                T1 = LadInt[j][xarg];
-	        for (k=0; k<=ip; k++)
-		  {
-		    ypos = (Gyi+k)&MESHMASKE;
-		    T4   = LadInt[k][yarg];
-		    T2   = T1   * T4;
-		    for (l=0; l<=ip; l++)
-		    {
-                      FLOAT_TYPE B;
-		      zpos = (Gzi+l)&MESHMASKE;
-		      T5   = LadInt[l][zarg];
-		      T3   = T2   * T5;
-                      B = Fmesh[direction][c_ind(xpos,ypos,zpos)] * T3/(Len*Len*Len);
- 		      F_K[direction][i] -= B;
-                      f_frac -= B;
-
-		    }
-		}
-	    }
-	  }
-	
-      }
+  for(direction=0;direction<3;direction++) {       
+    assign_forces(1.0, F_K[direction], Teilchenzahl, Fmesh[direction]);
+    }
 
     
 //  for (i=0; i<Teilchenzahl; i++) {
