@@ -22,7 +22,9 @@
 
 // #define WRITE_FORCES
 
-// #define FORCE_DEBUG
+#define FORCE_DEBUG
+
+// #define CA_DEBUG
 
 FLOAT_TYPE *Fx_exa, *Fy_exa, *Fz_exa;
 FLOAT_TYPE *Fx, *Fy, *Fz;
@@ -37,6 +39,14 @@ FLOAT_TYPE beta;
 
 void identity(void) {
   return;
+}
+
+void print_ghat() {
+  int i;
+  if(G_hat == NULL)
+    return;
+  for(i=0;i<(Mesh*Mesh*Mesh);i++)
+    printf("G_hat %e\n", G_hat[i]);
 }
 
 void (*Influence_function_berechnen)(FLOAT_TYPE);
@@ -265,7 +275,7 @@ void init_arrays(int Teilchenzahl) {
   Fy_D = (FLOAT_TYPE *) realloc(Fy_D, Teilchenzahl*sizeof(FLOAT_TYPE));
   Fz_D = (FLOAT_TYPE *) realloc(Fz_D, Teilchenzahl*sizeof(FLOAT_TYPE));
 
-  ca_ind = (int *) realloc(ca_ind, Teilchenzahl*sizeof(int));
+  ca_ind = (int *) realloc(ca_ind, 3*Teilchenzahl*sizeof(int));
   cf = (FLOAT_TYPE *) realloc(cf, Teilchenzahl * (ip+1) * (ip + 1) * (ip + 1) *sizeof(FLOAT_TYPE)); 
 }
 
@@ -307,6 +317,9 @@ void Daten_einlesen(char *filename)
   fprintf(stderr,"# rcut:         %lf\n",rcut);
   fprintf(stderr,"# Temp:         %lf\n",Temp);
   fprintf(stderr,"# Bjerrum:      %lf\n",Bjerrum);
+
+  cao = ip + 1;
+  cao3 = cao*cao*cao;
 
   init_arrays(Teilchenzahl);
 
@@ -422,11 +435,12 @@ int main(int argc, char **argv)
 
   Init(Teilchenzahl);
 
+
   printf("# alpha\tDeltaF_abs\tDeltaF_rel\n");
   for (alpha=alphamin; alpha<=alphamax; alpha+=alphastep)
     { 
       Influence_function_berechnen(alpha);  /* Hockney/Eastwood */
-      
+
       Elstat_berechnen(alpha); /* Hockney/Eastwood */
       
       /* ACHTUNG: 

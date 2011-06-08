@@ -7,6 +7,8 @@
 #include "p3m.h"
 #include "charge-assign.h"
 
+// #define CA_DEBUG
+
 /* Pi, weil man's so oft braucht: */
 #define PI 3.14159265358979323846264
 
@@ -156,7 +158,7 @@ void Influence_function_berechnen_ik(FLOAT_TYPE alpha)
 		  zwi  = Dnx*Zaehler[0] + Dny*Zaehler[1] + Dnz*Zaehler[2];
 		  zwi /= ( (SQR(Dnx) + SQR(Dny) + SQR(Dnz)) * SQR(Nenner) );
 
-		  G_hat[r_ind(NX,NY,NZ)] = 2.0*Mesh*Mesh*Mesh * SQR(Leni) * zwi;
+		  G_hat[r_ind(NX,NY,NZ)] = 2.0 * Len * zwi;
 		}
 	    }
 	}
@@ -202,7 +204,6 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
   FLOAT_TYPE posx=0,posy=0,posz=0;
 
   FILE *frho;
-
   int direction;
 
   Nx = Ny = Nz = Mesh;
@@ -216,29 +217,6 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
   mshift = Mesh-ip/2;
   dTeilchenzahli = 1.0/(FLOAT_TYPE)Teilchenzahl;
 
-    /* Vorbereitung der Fallunterscheidung nach geradem/ungeradem ip: */
-  switch (ip)
-    {
-    case 0 : case 2 : case 4 : case 6 :
-      { modadd1=ip/2;  
-        modadd2=0.5;
-        modadd3=0.0;
-        break;
-      }
-    case 1 :case 3 : case 5 :
-      { modadd1=(ip+1)/2 - 1; 
-        modadd2=0.0;
-        modadd3=0.5;
-        break;
-      }
-    default : 
-      {
-	fprintf(stderr,"Wert von ip (ip=%d) ist nicht erlaubt!",ip);
-	fprintf(stderr,"Programm abgebrochen!");
-	exit(1);
-      } break;
-    }
-    
   /* Initialisieren von Q_re und Q_im */
   for(i=0;i<(2*Mesh*Mesh*Mesh); i++)
     Qmesh[i] = 0.0;
@@ -249,9 +227,12 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
       FLOAT_TYPE Ri[3] = {xS[i], yS[i], zS[i]};
       assign_charge(i, Q[i], Ri, Qmesh);
     }
-
+#ifdef CA_DEBUG
+  for(i=0;i<Mesh;i++)
+    for(j=0;j<Mesh;j++)
+      printf("CA_DEBUG: %lf %lf %lf\n", (Len/Mesh)*i, (Len/Mesh)*j, Qmesh[c_ind(i,j,0)]);
   /* Durchfuehren der Fourier-Hin-Transformationen: */
-
+#endif
   forward_fft();
 
   for (i=0; i<Mesh; i++)
@@ -259,6 +240,7 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
       for (k=0; k<Mesh; k++)
 	{
           int c_index = c_ind(i,j,k);
+
 	  T1 = G_hat[r_ind(i,j,k)];
 	  Qmesh[c_index] *= T1;
 	  Qmesh[c_index+1] *= T1;
@@ -269,7 +251,6 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
           }
 
 	}
-  
   /* Durchfuehren der Fourier-Rueck-Transformation: */
 
   backward_fft();
@@ -278,7 +259,7 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
 
   /* chargeassignment */
   for(direction=0;direction<3;direction++) {       
-    assign_forces(1.0, F_K[direction], Teilchenzahl, Fmesh[direction]);
+    assign_forces(1.0/(4*PI*Len*Len), F_K[direction], Teilchenzahl, Fmesh[direction]);
     }
 
     

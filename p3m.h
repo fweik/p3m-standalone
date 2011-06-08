@@ -41,6 +41,8 @@ int Mesh;
 FLOAT_TYPE Len, Leni;
 // charge assignment order - 1
 int ip;
+// charge assignment order
+int cao, cao3;
 // Pointer to mesh charge density
 FLOAT_TYPE *Qmesh;
 // differentials
