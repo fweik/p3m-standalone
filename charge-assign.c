@@ -48,7 +48,7 @@ void assign_charge(int id, FLOAT_TYPE q,
           k = (base[2] + i2)&MESHMASKE;
 	  cur_ca_frac_val = q * tmp1 * LadInt[i2][arg[2]];
           cf[cf_cnt++] = cur_ca_frac_val;
-	  //          printf("Adding %lf to (%d %d %d) for particle %d with charge %lf and dist (%d %d %d)\n", cur_ca_frac_val, i,j,k, id, q, arg[0], arg[1], arg[2]);
+
 	  p3m_rs_mesh[c_ind(i,j,k)] += cur_ca_frac_val;
           charge += cur_ca_frac_val;
 	}

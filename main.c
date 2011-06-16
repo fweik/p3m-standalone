@@ -22,7 +22,7 @@
 
 // #define WRITE_FORCES
 
-#define FORCE_DEBUG
+ #define FORCE_DEBUG
 
 // #define CA_DEBUG
 
@@ -435,6 +435,14 @@ int main(int argc, char **argv)
 
   Init(Teilchenzahl);
 
+  {
+    int i;
+    FILE *frho = fopen("qmesh.dat", "w");
+    Influence_function_berechnen(0.64);
+    for(i=0;i<Mesh*Mesh*Mesh;i++)
+      fprintf(frho, "%e\n", G_hat[i]);
+    fclose(frho);
+  }
 
   printf("# alpha\tDeltaF_abs\tDeltaF_rel\n");
   for (alpha=alphamin; alpha<=alphamax; alpha+=alphastep)
