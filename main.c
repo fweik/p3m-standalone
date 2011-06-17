@@ -443,22 +443,11 @@ int main(int argc, char **argv)
       fprintf(frho, "%e\n", G_hat[i]);
     fclose(frho);
   }
-  {
-    FILE *fgforce = fopen("gforce_espresso_master_alpha2.5.dat", "r");
-    int ind = 0;
-    G_hat = (double *) malloc(Mesh*Mesh*Mesh*sizeof(double));
-    while(!feof(fgforce)) {
-      fscanf(fgforce, "%f", &G_hat[ind++]);
-    }    
-    printf("read %d entries for G_hat @ %p\n", ind, G_hat);
-    if(ind != Mesh*Mesh*Mesh)
-      puts("Warning: not enough data!");
-  }
   
   printf("# alpha\tDeltaF_abs\tDeltaF_rel\n");
   for (alpha=alphamin; alpha<=alphamax; alpha+=alphastep)
     { 
-      //      Influence_function_berechnen(alpha);  /* Hockney/Eastwood */
+      Influence_function_berechnen(alpha);  /* Hockney/Eastwood */
 
       Elstat_berechnen(alpha); /* Hockney/Eastwood */
       
