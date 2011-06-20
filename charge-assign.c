@@ -7,7 +7,7 @@
 
 void assign_charge(int id, FLOAT_TYPE q,
 		       FLOAT_TYPE real_pos[3],
-		       FLOAT_TYPE *p3m_rs_mesh)
+		   FLOAT_TYPE *p3m_rs_mesh, int ii)
 {
   int d, i0, i1, i2;
   FLOAT_TYPE tmp0, tmp1;
@@ -19,7 +19,7 @@ void assign_charge(int id, FLOAT_TYPE q,
   int arg[3];
   /* index, index jumps for rs_mesh array */
   FLOAT_TYPE cur_ca_frac_val, *cur_ca_frac;
-  int cf_cnt = id*cao3 - 1;
+  int cf_cnt = id*cao3;
 
   int base[3];
   int i,j,k;
@@ -33,9 +33,9 @@ void assign_charge(int id, FLOAT_TYPE q,
     for(d=0;d<3;d++) {
       pos    = real_pos[d]*Hi;
       nmp = (int) pos;
-      base[d]  = (nmp - ip/2 - (ip%2))%MESHMASKE;
+      base[d]  = (nmp)%MESHMASKE;
       arg[d] = (int) ((pos - nmp)*MI2);
-      ca_ind[3*id + d] = base[d];
+      ca_ind[ii][3*id + d] = base[d];
     }
 
     for(i0=0; i0<cao; i0++) {
@@ -47,9 +47,9 @@ void assign_charge(int id, FLOAT_TYPE q,
 	for(i2=0; i2<cao; i2++) {
           k = (base[2] + i2)&MESHMASKE;
 	  cur_ca_frac_val = q * tmp1 * LadInt[i2][arg[2]];
-          cf[cf_cnt++] = cur_ca_frac_val;
+          cf[ii][cf_cnt++] = cur_ca_frac_val;
 
-	  p3m_rs_mesh[c_ind(i,j,k)] += cur_ca_frac_val;
+	  p3m_rs_mesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
           charge += cur_ca_frac_val;
 	}
       }
@@ -58,7 +58,7 @@ void assign_charge(int id, FLOAT_TYPE q,
 }
 
 // assign the forces obtained from k-space 
-void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_TYPE *p3m_rs_mesh) 
+void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_TYPE *p3m_rs_mesh,int ii) 
 {
   int i,c,i0,i1,i2;
   int cp_cnt=0, cf_cnt=0;
@@ -69,16 +69,18 @@ void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_T
 
   cf_cnt=0;
     for(i=0; i<Teilchenzahl; i++) { 
-      base = ca_ind + 3*i;
+      base = ca_ind[ii] + 3*i;
       for(i0=0; i0<cao; i0++) {
         j = (base[0] + i0)&MESHMASKE;
         for(i1=0; i1<cao; i1++) {
           k = (base[1] + i1)&MESHMASKE;
           for(i2=0; i2<cao; i2++) {
             l = (base[2] + i2)&MESHMASKE;
-            A = cf[cf_cnt];
-            B = p3m_rs_mesh[c_ind(j,k,l)];
+            A = cf[ii][cf_cnt];
+            B = p3m_rs_mesh[c_ind(j,k,l)+ii];
             F[i] -= force_prefac*A*B; 
+            if(ii==1)
+              F[i] *= 0.5;
 	    cf_cnt++;
 	  }
 	}

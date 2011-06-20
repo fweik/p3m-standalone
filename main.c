@@ -22,8 +22,7 @@
 
 // #define WRITE_FORCES
 
- #define FORCE_DEBUG
-
+#define FORCE_DEBUG
 // #define CA_DEBUG
 
 FLOAT_TYPE *Fx_exa, *Fy_exa, *Fz_exa;
@@ -275,8 +274,7 @@ void init_arrays(int Teilchenzahl) {
   Fy_D = (FLOAT_TYPE *) realloc(Fy_D, Teilchenzahl*sizeof(FLOAT_TYPE));
   Fz_D = (FLOAT_TYPE *) realloc(Fz_D, Teilchenzahl*sizeof(FLOAT_TYPE));
 
-  ca_ind = (int *) realloc(ca_ind, 3*Teilchenzahl*sizeof(int));
-  cf = (FLOAT_TYPE *) realloc(cf, Teilchenzahl * (ip+1) * (ip + 1) * (ip + 1) *sizeof(FLOAT_TYPE)); 
+
 }
 
 void Daten_einlesen(char *filename)
@@ -435,15 +433,6 @@ int main(int argc, char **argv)
 
   Init(Teilchenzahl);
 
-  {
-    int i;
-    FILE *frho = fopen("qmesh.dat", "w");
-    Influence_function_berechnen(2.5);
-    for(i=0;i<Mesh*Mesh*Mesh;i++)
-      fprintf(frho, "%e\n", G_hat[i]);
-    fclose(frho);
-  }
-  
   printf("# alpha\tDeltaF_abs\tDeltaF_rel\n");
   for (alpha=alphamin; alpha<=alphamax; alpha+=alphastep)
     { 

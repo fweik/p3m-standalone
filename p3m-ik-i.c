@@ -5,6 +5,7 @@
 #include <fftw3.h>
 
 #include "p3m.h"
+#include "charge-assign.h"
 
 /* Pi, weil man's so oft braucht: */
 #define PI 3.14159265358979323846264
@@ -49,11 +50,13 @@ static FLOAT_TYPE sinc(FLOAT_TYPE d)
 void Init_interlaced_ik(int Teilchenzahl) {
   int l;
   Qmesh = (FLOAT_TYPE *) realloc(Qmesh, 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
-  Gx = (int *)realloc(Gx, Teilchenzahl*sizeof(int));
-  Gy = (int *)realloc(Gy, Teilchenzahl*sizeof(int));
-  Gz = (int *)realloc(Gz, Teilchenzahl*sizeof(int));
 
   G_hat = (FLOAT_TYPE *) realloc(G_hat, Mesh*Mesh*Mesh*sizeof(G_hat));  
+
+  for(l=0;l<2;l++) {
+      ca_ind[l] = (int *) realloc(ca_ind[l], 3*Teilchenzahl*sizeof(int));
+      cf[l] = (FLOAT_TYPE *) realloc(cf[l], Teilchenzahl * (ip+1) * (ip + 1) * (ip + 1) *sizeof(FLOAT_TYPE)); 
+  }
 
   F_K[0] = Fx_K;
   F_K[1] = Fy_K;
@@ -79,7 +82,7 @@ void Aliasing_sums_interlaced_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
     *Nenner : Aliasing-Summe im Nenner.
   */
   
-  static int aliasmax = 0; /* Genauigkeit der Aliasing-Summe (2 ist wohl genug) */
+  static int aliasmax = 1; /* Genauigkeit der Aliasing-Summe (2 ist wohl genug) */
   
   FLOAT_TYPE S,S1,S2,S3;
   FLOAT_TYPE fak1,fak2,zwi;
@@ -114,13 +117,13 @@ void Aliasing_sums_interlaced_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
 	      zwi  = S3 * exp(-fak2*NM2)/NM2;
 	      Zaehler[0] += NMX*zwi;
               Zaehler[1] += NMY*zwi;
-              Zaehler[3] += NMZ*zwi;
+              Zaehler[2] += NMZ*zwi;
 	      
-	      if (((MX+MY+MZ)%2)==0) {					//even term
+	      //	      if (((MX+MY+MZ)%2)==0) {					//even term
 	        *Nenner2 += S3;
-	      } else {						//odd term: minus sign!
-	        *Nenner2 -= S3;
-	      }
+		//	      } else {						//odd term: minus sign!
+	        //*Nenner2 -= S3;
+		//}
 	    }
 	}
     }
@@ -139,17 +142,12 @@ void Influence_function_berechnen_ik_interlaced(FLOAT_TYPE alpha)
 
   int    NX,NY,NZ;
   FLOAT_TYPE Dnx,Dny,Dnz;
-  FLOAT_TYPE fak1,fak2,dMesh,dMeshi;
+  FLOAT_TYPE dMesh,dMeshi;
   FLOAT_TYPE Zaehler[3],Nenner1, Nenner2;
   FLOAT_TYPE zwi;
   
-  FLOAT_TYPE qua,qua_;
-
   dMesh = (FLOAT_TYPE)Mesh;
   dMeshi= 1.0/dMesh;
-  
-  fak1 = 1.0 ;
-  fak2 = SQR(PI/alpha);
   
   /* bei Zahlen >= Mesh/2 wird noch Mesh abgezogen! */
   for (NX=0; NX<Mesh; NX++)
@@ -160,6 +158,8 @@ void Influence_function_berechnen_ik_interlaced(FLOAT_TYPE alpha)
 	    {
 	      if ((NX==0) && (NY==0) && (NZ==0))
 		G_hat[r_ind(NX,NY,NZ)]=0.0;
+              else if ((NX%(Mesh/2) == 0) && (NY%(Mesh/2) == 0) && (NZ%(Mesh/2) == 0))
+                G_hat[r_ind(NX,NY,NZ)]=0.0;
 	      else
 		{
 		  Aliasing_sums_interlaced_ik(NX,NY,NZ,alpha,Zaehler,&Nenner1, &Nenner2);
@@ -172,7 +172,7 @@ void Influence_function_berechnen_ik_interlaced(FLOAT_TYPE alpha)
 		  zwi /= ( SQR(Dnx) + SQR(Dny) + SQR(Dnz) );
                   zwi /= 0.5*(SQR(Nenner1) + SQR(Nenner2));		  
 
-		  G_hat[r_ind(NX,NY,NZ)] = zwi*fak1;
+		  G_hat[r_ind(NX,NY,NZ)] = 2.0 * Len * Len * zwi / PI;
 		}
 	    }
 	}
@@ -230,34 +230,6 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
   mshift = Mesh-ip/2;
   dTeilchenzahli = 1.0/(FLOAT_TYPE)Teilchenzahl;
 
-    /* Vorbereitung der Fallunterscheidung nach geradem/ungeradem ip: */
-  switch (ip)
-    {
-    case 0 : case 2 : case 4 : case 6 :
-      { modadd1=ip/2 - 1;  
-        modadd2=0.5;
-        break;
-      }
-    case 1 :case 3 : case 5 :
-      { modadd1=ip/2; 
-        modadd2=0.0;
-        break;
-      }
-      /* Beachte: modadd1+modadd3=modadd2! */
-    default : 
-      {
-	fprintf(stderr,"Wert von ip (ip=%d) ist nicht erlaubt!",ip);
-	fprintf(stderr,"Programm abgebrochen!");
-	exit(1);
-      } break;
-    }
-    
-//============================================
-//
-//      Premier calcul des forces
-//
-//============================================
-  
   /* Initialisieren von Q_re und Q_im */
   for(i=0;i<(2*Mesh*Mesh*Mesh); i++)
     Qmesh[i] = 0.0;
@@ -265,48 +237,10 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
   /* chargeassignment */
   for (i=0; i<Teilchenzahl; i++)
     {
-      FLOAT_TYPE q_frac[2];
       for(ii=0;ii<2;ii++) {
-
-        q_frac[0] = q_frac[1] = 0.0;        
-
-        dx = Hi*xS[i] + 0.5*ii;
-        dy = Hi*yS[i] + 0.5*ii;
-        dz = Hi*zS[i] + 0.5*ii;
-
-	Gxi = (int)(dx+0.5) - modadd1;
-	Gyi = (int)(dy+0.5) - modadd1;
-	Gzi = (int)(dz+0.5) - modadd1;
-
-        dx = H*(Gxi + modadd1) - (xS[i] + 0.5*ii*H);
-        dy = H*(Gyi + modadd1) - (yS[i] + 0.5*ii*H);
-        dz = H*(Gzi + modadd1) - (zS[i] + 0.5*ii*H);
-
-        xarg = (int)((dx - round(dx) + modadd2 )*MI2);
-        yarg = (int)((dy - round(dy) + modadd2 )*MI2);
-        zarg = (int)((dz - round(dz) + modadd2 )*MI2);
-        
-	  for (j=0; j<=ip; j++)
-	    {
-	      xpos = (Gxi+j)&MESHMASKE;
-	      T1   = Q[i]*LadInt[j][xarg];
-	      for (k=0; k<=ip; k++)
-		{
-		  ypos = (Gyi+k)&MESHMASKE;
-		  T4   = LadInt[k][yarg];
-		  T2   = T1   * T4;
-		  for (l=0; l<=ip; l++)
-		    {
-		      zpos = (Gzi+l)&MESHMASKE;
-		      T5   = LadInt[l][zarg];
-		      T3   = T2   * T5;
-		      Qmesh[c_ind(xpos,ypos,zpos)+ii] += T3;
-                      q_frac[ii] += T3;
-		    }
-		}
-	    }
-          fprintf(stderr, "Particle %d Submesh %d Charge %lf\n", i, ii, q_frac[ii]);
-	}
+        FLOAT_TYPE rpos[3] = {xS[i] + 0.5*ii*H, yS[i] + 0.5*ii*H, zS[i] + 0.5*ii*H};
+	assign_charge(i, Q[i], rpos, Qmesh, ii);
+      }
     }
 
   /* Durchfuehren der Fourier-Hin-Transformationen: */
@@ -318,88 +252,41 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
       for (k=0; k<Mesh; k++)
 	{
           int c_index = c_ind(i,j,k);
+          FLOAT_TYPE dop;
 	  T1 = G_hat[r_ind(i,j,k)];
+
+          printf("ghat %lf\n", T1);
+
 	  Qmesh[c_index] *= T1;
 	  Qmesh[c_index+1] *= T1;
 
           for(l=0;l<3;l++) {
-            int k_dir;
             switch(l) {
  	      case 0:
-                k_dir = i;
+                dop = Dn[i];
                 break;
               case 1:
-                k_dir = j;
+                dop = Dn[j];
                 break;
 	      case 2:
-                 k_dir = k;
+                dop = Dn[k];
                 break;
 	    }
-	    Fmesh[l][c_index]   = -2.0*PI*Dn[k_dir]*Qmesh[c_index+1]/Len;
-	    Fmesh[l][c_index+1] =  2.0*PI*Dn[k_dir]*Qmesh[c_index]/Len;
+	    Fmesh[l][c_index]   = -2.0*PI*dop*Qmesh[c_index+1]*Leni;
+	    Fmesh[l][c_index+1] =  2.0*PI*dop*Qmesh[c_index]*Leni;
           }
 
 	}
   
-  /* Durchfuehren der Fourier-Rueck-Transformation: */
 
+  
+  /* Durchfuehren der Fourier-Rueck-Transformation: */
   backward_fft();
    
   /* Kraftkomponenten: */
-
-  /* chargeassignment */
-  for (i=0; i<Teilchenzahl; i++)
-    {
-      FLOAT_TYPE f_frac;
-
-      for(ii=0;ii<2;ii++) {
-	int direction;
-        dx = Hi*xS[i] + 0.5*ii;
-        dy = Hi*yS[i] + 0.5*ii;
-        dz = Hi*zS[i] + 0.5*ii;
-
-	Gxi = (int)(dx+0.5) - modadd1;
-	Gyi = (int)(dy+0.5) - modadd1;
-	Gzi = (int)(dz+0.5) - modadd1;
-
-        dx = H*(Gxi + modadd1) - (xS[i] + 0.5*ii*H);
-        dy = H*(Gyi + modadd1) - (yS[i] + 0.5*ii*H);
-        dz = H*(Gzi + modadd1) - (zS[i] + 0.5*ii*H);
-
-        xarg = (int)((dx - round(dx) + modadd2 )*MI2);
-        yarg = (int)((dy - round(dy) + modadd2 )*MI2);
-        zarg = (int)((dz - round(dz) + modadd2 )*MI2);
-        
-
-	for(direction=0;direction<3;direction++) {       
-            f_frac = 0.0;
-	    for (j=0; j<=ip; j++)
-	      {
-	        xpos = (Gxi+j)&MESHMASKE;
-                T1 = LadInt[j][xarg];
-	        for (k=0; k<=ip; k++)
-		  {
-		    ypos = (Gyi+k)&MESHMASKE;
-		    T4   = LadInt[k][yarg];
-		    T2   = T1   * T4;
-		    for (l=0; l<=ip; l++)
-		    {
-                      FLOAT_TYPE B;
-		      zpos = (Gzi+l)&MESHMASKE;
-		      T5   = LadInt[l][zarg];
-		      T3   = T2   * T5;
-                      B = Fmesh[direction][c_ind(xpos,ypos,zpos)+ii] * 0.5*T3/(2*Len*Len*Len);
- 		      F_K[direction][i] += B;
-                      f_frac += B;
-
-		    }
-		}
-	    }
-	    fprintf(stderr, "Particle %d Interlace %d Direction %d Force %g\n", i, ii, direction, f_frac);
-	  }
-	}
-      }
-
-    
+  for(i=0;i<3;i++) { 
+    assign_forces( 1.0/(2.0*Len*Len*Len), F_K[i], Teilchenzahl, Fmesh[i], 0);
+    assign_forces( 1.0/(2.0*Len*Len*Len), F_K[i], Teilchenzahl, Fmesh[i], 1);
+  }
   return;
 }

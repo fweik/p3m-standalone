@@ -65,7 +65,11 @@ void Init_ik(int Teilchenzahl) {
   F_K[1] = Fy_K;
   F_K[2] = Fz_K;
 
+  ca_ind[0] = (int *) realloc(ca_ind[0], 3*Teilchenzahl*sizeof(int));
+  cf[0] = (FLOAT_TYPE *) realloc(cf[0], Teilchenzahl * (ip+1) * (ip + 1) * (ip + 1) *sizeof(FLOAT_TYPE)); 
+
   forward_plan = fftw_plan_dft_3d(Mesh, Mesh, Mesh, (fftw_complex *)Qmesh, (fftw_complex *)Qmesh, FFTW_FORWARD, FFTW_ESTIMATE);
+
   for(l=0;l<3;l++){
     Fmesh[l] = (FLOAT_TYPE *)realloc(Fmesh[l], 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));  
     backward_plan[l] = fftw_plan_dft_3d(Mesh, Mesh, Mesh, (fftw_complex *)Fmesh[l], (fftw_complex *)Fmesh[l], FFTW_BACKWARD, FFTW_ESTIMATE);
@@ -139,7 +143,7 @@ void Influence_function_berechnen_ik(FLOAT_TYPE alpha)
 	  for (NZ=0; NZ<Mesh; NZ++)
 	    {
               ind = r_ind(NX,NY,NZ);
-              printf("( %d %d %d ) => nshift ( %lf %lf %lf ) dop ( %lf %lf %lf ), ind %d\n", NX, NY, NZ, nshift[NX], nshift[NY], nshift[NZ], Dn[NX], Dn[NY], Dn[NZ], ind);
+
 	      if ((NX==0) && (NY==0) && (NZ==0))
 		G_hat[ind]=0.0;
               else if ((NX%(Mesh/2) == 0) && (NY%(Mesh/2) == 0) && (NZ%(Mesh/2) == 0))
@@ -215,7 +219,7 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
   for (i=0; i<Teilchenzahl; i++)
     {
       FLOAT_TYPE Ri[3] = {xS[i], yS[i], zS[i]};
-      assign_charge(i, Q[i], Ri, Qmesh);
+      assign_charge(i, Q[i], Ri, Qmesh, 0);
     }
 
     {
@@ -225,15 +229,6 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
       fprintf(fq, "%lf\n", Qmesh[2*i]);
     fclose(fq);
     }
-
-    {
-    FILE *fq = fopen("qmesh_seq_cao7_2d.dat", "w");
-    int i,j;
-    for(i=0;i<Mesh;i++)
-      for(j=0;j<Mesh; j++)
-        fprintf(fq, "%d %d %lf\n", i,j, Qmesh[c_ind(8,i,j)]);
-    fclose(fq);
-    }    
 
 #ifdef CA_DEBUG
   for(i=0;i<Mesh;i++)
@@ -267,21 +262,16 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
                 break;
 	    }
 	    Fmesh[l][c_index]   = -2.0*PI*dop*Leni*Qmesh[c_index+1];
-	    Fmesh[l][c_index+1] = 2.0*PI*dop*Leni*dop*Qmesh[c_index];
+	    Fmesh[l][c_index+1] =  2.0*PI*dop*Leni*Qmesh[c_index];
           }
 	}
 
   /* Durchfuehren der Fourier-Rueck-Transformation: */
 
   backward_fft();
-  for(i=0;i<Mesh*Mesh*Mesh;i++) {
-    F_re += fabs(Fmesh[0][2*i]);
-    F_im += fabs(Fmesh[0][2*i+1]);
-  }
-  printf("FORCE_SUM: %e + %e * i\n", F_re, F_im);
   /* Force assignment */
   for(direction=0;direction<3;direction++) {       
-    assign_forces(1.0/(2.0*Len*Len*Len), F_K[direction], Teilchenzahl, Fmesh[direction]);
+    assign_forces(1.0/(2.0*Len*Len*Len), F_K[direction], Teilchenzahl, Fmesh[direction],0);
     }
 
   return;

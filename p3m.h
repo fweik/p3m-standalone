@@ -68,7 +68,7 @@ FLOAT_TYPE *nshift;
 
 // Charge assignment
 
-int *ca_ind;
-FLOAT_TYPE *cf;
+int *ca_ind[2];
+FLOAT_TYPE *cf[2];
 
 #endif
