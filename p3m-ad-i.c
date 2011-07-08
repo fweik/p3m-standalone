@@ -7,6 +7,7 @@
 
 #include "p3m.h"
 #include "p3m-ad-i.h"
+#include "charge-assign.h"
 
 //VB: define flag INTERLACED to activate interlacing:
 //VB: define flag SUBSTRACT_SF to substract self-forces:

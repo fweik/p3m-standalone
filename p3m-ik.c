@@ -59,7 +59,7 @@ void Init_ik(int Teilchenzahl) {
   int l;
   Qmesh = (FLOAT_TYPE *) realloc(Qmesh, 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
 
-  G_hat = (FLOAT_TYPE *) realloc(G_hat, Mesh*Mesh*Mesh*sizeof(G_hat));  
+  G_hat = (FLOAT_TYPE *) realloc(G_hat, Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));  
 
   F_K[0] = Fx_K;
   F_K[1] = Fy_K;
