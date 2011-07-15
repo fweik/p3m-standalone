@@ -19,7 +19,6 @@
 fftw_plan forward_plan;
 fftw_plan backward_plan;
 
-FLOAT_TYPE gleirad(FLOAT_TYPE x);
 FLOAT_TYPE Potenz(FLOAT_TYPE x, int ip);
 FLOAT_TYPE sinc(FLOAT_TYPE d);
 

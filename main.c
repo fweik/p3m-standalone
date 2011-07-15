@@ -22,7 +22,7 @@
 
 // #define WRITE_FORCES
 
-#define FORCE_DEBUG
+ #define FORCE_DEBUG
 // #define CA_DEBUG
 
 FLOAT_TYPE *Fx_exa, *Fy_exa, *Fz_exa;
@@ -170,7 +170,7 @@ void Elstat_berechnen(FLOAT_TYPE alpha)
       Fx[i] += (Fx_R[i]+Fx_K[i]);
       Fy[i] += (Fy_R[i]+Fy_K[i]);
       Fz[i] += (Fz_R[i]+Fz_K[i]);
-#ifdef FORCE_DEBUG
+#ifdef __FORCE_DEBUG
       printf("Particle %d Total Force (%g %g %g) [R(%g %g %g) K(%g %g %g)]\n", i, Fx[i], Fy[i], Fz[i], Fx_R[i], Fy_R[i], Fz_R[i], Fx_K[i], Fy_K[i], Fz_K[i]);
 #endif
     }
@@ -304,6 +304,10 @@ void Daten_einlesen(char *filename)
   fscanf(fp,"# Temp: %lf\n",&Temp);
   fscanf(fp,"# Bjerrum: %lf\n",&Bjerrum);
 
+  if((Mesh & (Mesh - 1)) != 0) {
+    fprintf(stderr, "Meshsize must be power of 2!.");
+    exit(128);
+  }
 
   fprintf(stderr,"# Teilchenzahl: %d\n", Teilchenzahl);
   fprintf(stderr,"# Len:          %lf\n",Len);
@@ -450,7 +454,7 @@ int main(int argc, char **argv)
       for (i=0; i<Teilchenzahl; i++)
 	{
 #ifdef FORCE_DEBUG
-	  printf("%d (%e %e %e), (%e %e %e)\n", i, Fx_exa[i], Fy_exa[i], Fz_exa[i], Fx[i], Fy[i], Fz[i]); 
+          printf("Particle %d Total Force (%g %g %g) [R(%g %g %g) K(%g %g %g)] reference (%g %g %g)\n", i, Fx[i], Fy[i], Fz[i], Fx_R[i], Fy_R[i], Fz_R[i], Fx_K[i], Fy_K[i], Fz_K[i], Fx_exa[i], Fy_exa[i], Fz_exa[i]);
 #endif
 	  FC2 += SQR(Fx_exa[i]) + SQR(Fy_exa[i]) + SQR(Fz_exa[i]);
 	  DeltaFC2 += SQR(Fx[i]-Fx_exa[i])+SQR(Fy[i]-Fy_exa[i])+SQR(Fz[i]-Fz_exa[i]);

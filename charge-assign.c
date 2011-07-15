@@ -68,24 +68,24 @@ void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_T
   FLOAT_TYPE A,B;
 
   cf_cnt=0;
-    for(i=0; i<Teilchenzahl; i++) { 
-      base = ca_ind[ii] + 3*i;
-      for(i0=0; i0<cao; i0++) {
-        j = (base[0] + i0)&MESHMASKE;
-        for(i1=0; i1<cao; i1++) {
-          k = (base[1] + i1)&MESHMASKE;
-          for(i2=0; i2<cao; i2++) {
-            l = (base[2] + i2)&MESHMASKE;
-            A = cf[ii][cf_cnt];
-            B = p3m_rs_mesh[c_ind(j,k,l)+ii];
-            F[i] -= force_prefac*A*B; 
-            if(ii==1)
-              F[i] *= 0.5;
-	    cf_cnt++;
-	  }
+  for(i=0; i<Teilchenzahl; i++) { 
+    base = ca_ind[ii] + 3*i;
+    for(i0=0; i0<cao; i0++) {
+      j = (base[0] + i0)&MESHMASKE;
+      for(i1=0; i1<cao; i1++) {
+	k = (base[1] + i1)&MESHMASKE;
+	for(i2=0; i2<cao; i2++) {
+	  l = (base[2] + i2)&MESHMASKE;
+	  A = cf[ii][cf_cnt];
+	  B = p3m_rs_mesh[c_ind(j,k,l)+ii];
+	  F[i] -= force_prefac*A*B; 
+	  if(ii==1)
+	    F[i] *= 0.5;
+	  cf_cnt++;
 	}
       }
     }
+  }
 }
 
 

@@ -119,11 +119,11 @@ void Aliasing_sums_interlaced_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
               Zaehler[1] += NMY*zwi;
               Zaehler[2] += NMZ*zwi;
 	      
-	      //	      if (((MX+MY+MZ)%2)==0) {					//even term
+	       if (((MX+MY+MZ)%2)==0) {					//even term
 	        *Nenner2 += S3;
-		//	      } else {						//odd term: minus sign!
-	        //*Nenner2 -= S3;
-		//}
+	       } else {						//odd term: minus sign!
+	         *Nenner2 -= S3;
+	       }
 	    }
 	}
     }
@@ -172,7 +172,7 @@ void Influence_function_berechnen_ik_interlaced(FLOAT_TYPE alpha)
 		  zwi /= ( SQR(Dnx) + SQR(Dny) + SQR(Dnz) );
                   zwi /= 0.5*(SQR(Nenner1) + SQR(Nenner2));		  
 
-		  G_hat[r_ind(NX,NY,NZ)] = 2.0 * Len * Len * zwi / PI;
+		  G_hat[r_ind(NX,NY,NZ)] = Mesh*Mesh*Mesh*2.0 * zwi * Leni * Leni;
 		}
 	    }
 	}
@@ -242,7 +242,7 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
 	assign_charge(i, Q[i], rpos, Qmesh, ii);
       }
     }
-
+  
   /* Durchfuehren der Fourier-Hin-Transformationen: */
 
   forward_fft();
@@ -255,10 +255,10 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
           FLOAT_TYPE dop;
 	  T1 = G_hat[r_ind(i,j,k)];
 
-          printf("ghat %lf\n", T1);
-
 	  Qmesh[c_index] *= T1;
 	  Qmesh[c_index+1] *= T1;
+
+          
 
           for(l=0;l<3;l++) {
             switch(l) {
@@ -272,13 +272,14 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
                 dop = Dn[k];
                 break;
 	    }
-	    Fmesh[l][c_index]   = -2.0*PI*dop*Qmesh[c_index+1]*Leni;
-	    Fmesh[l][c_index+1] =  2.0*PI*dop*Qmesh[c_index]*Leni;
+	    Fmesh[l][c_index]   = -dop*Qmesh[c_index+1];
+	    Fmesh[l][c_index+1] =  dop*Qmesh[c_index];
           }
 
 	}
   
-
+  for(i=0;i<Mesh*Mesh*Mesh;i++)
+    printf("qmesh %e %e %e\n", Qmesh[2*i], Qmesh[2*i+1], G_hat[i]);
   
   /* Durchfuehren der Fourier-Rueck-Transformation: */
   backward_fft();

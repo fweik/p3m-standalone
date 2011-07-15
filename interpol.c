@@ -15,7 +15,7 @@ void Interpolationspolynom_berechnen(int ip)
   FLOAT_TYPE dInterpol=(FLOAT_TYPE)MaxInterpol;
   FLOAT_TYPE x;
   long   i;
-  
+
   fprintf(stderr,"Interpolationspolynom (Hockney/Eastwood, Ordnung %d) vorberechnen...",ip);
   
   /* charge assignment function: */
