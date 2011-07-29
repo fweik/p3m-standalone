@@ -1,6 +1,9 @@
 #include "charge-assign.h"
 
 #include <stdio.h>
+#include <math.h>
+
+// #define CA_DEBUG
 
 #define r_ind(A,B,C) ((A)*Mesh*Mesh + (B)*Mesh + (C))
 #define c_ind(A,B,C) (2*Mesh*Mesh*(A)+2*Mesh*(B)+2*(C))
@@ -29,13 +32,19 @@ void assign_charge(int id, FLOAT_TYPE q,
 
   int MESHMASKE = Mesh - 1;
   double charge = 0.0;
+  double pos_shift;
+
+  pos_shift = (double)((cao-1)/2);
     /* particle position in mesh coordinates */
     for(d=0;d<3;d++) {
-      pos    = real_pos[d]*Hi;
-      nmp = (int) pos;
-      base[d]  = (nmp)%MESHMASKE;
-      arg[d] = (int) ((pos - nmp)*MI2);
+      pos    = real_pos[d]*Hi - pos_shift;
+      nmp = (int) floor(pos + 0.5);
+      base[d]  = (nmp > 0) ? nmp%MESHMASKE : (nmp + Mesh)%MESHMASKE;
+      arg[d] = (int) floor((pos - nmp + 0.5)*MI2);
       ca_ind[ii][3*id + d] = base[d];
+#ifdef CA_DEBUG
+      fprintf(stderr, "%d: pos_shift %lf base_pos %lf, nmp %d, base %d, arg[d]*M2 %lf\n", d, pos_shift, real_pos[d] - pos_shift, nmp, base[d], arg[d]/MI2);
+#endif
     }
 
     for(i0=0; i0<cao; i0++) {
@@ -47,8 +56,7 @@ void assign_charge(int id, FLOAT_TYPE q,
 	for(i2=0; i2<cao; i2++) {
           k = (base[2] + i2)&MESHMASKE;
 	  cur_ca_frac_val = q * tmp1 * LadInt[i2][arg[2]];
-          cf[ii][cf_cnt++] = cur_ca_frac_val;
-
+          cf[ii][cf_cnt++] = cur_ca_frac_val ;
 	  p3m_rs_mesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
           charge += cur_ca_frac_val;
 	}
@@ -61,7 +69,7 @@ void assign_charge(int id, FLOAT_TYPE q,
 void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_TYPE *p3m_rs_mesh,int ii) 
 {
   int i,c,i0,i1,i2;
-  int cp_cnt=0, cf_cnt=0;
+  int cf_cnt=0;
   int *base;
   int j,k,l;
   int MESHMASKE = Mesh - 1;
@@ -70,6 +78,7 @@ void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_T
   cf_cnt=0;
   for(i=0; i<Teilchenzahl; i++) { 
     base = ca_ind[ii] + 3*i;
+    printf("base %d %d %d\n", base[0], base[1], base[2]);
     for(i0=0; i0<cao; i0++) {
       j = (base[0] + i0)&MESHMASKE;
       for(i1=0; i1<cao; i1++) {
@@ -87,5 +96,3 @@ void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_T
     }
   }
 }
-
-
