@@ -87,11 +87,11 @@ void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_T
 	  A = cf[ii][cf_cnt];
 	  B = p3m_rs_mesh[c_ind(j,k,l)+ii];
 	  F[i] -= force_prefac*A*B; 
-	  if(ii==1)
-	    F[i] *= 0.5;
 	  cf_cnt++;
 	}
       }
     }
+    if(ii==1)
+      F[i] *= 0.5;
   }
 }

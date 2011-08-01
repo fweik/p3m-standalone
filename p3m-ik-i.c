@@ -143,7 +143,7 @@ void Influence_function_berechnen_ik_interlaced(FLOAT_TYPE alpha)
   int    NX,NY,NZ;
   FLOAT_TYPE Dnx,Dny,Dnz;
   FLOAT_TYPE dMesh,dMeshi;
-  FLOAT_TYPE Zaehler[3],Nenner1, Nenner2;
+  FLOAT_TYPE Zaehler[3]={0.0,0.0,0.0},Nenner1=0.0, Nenner2=0.0;
   FLOAT_TYPE zwi;
   
   dMesh = (FLOAT_TYPE)Mesh;
@@ -282,8 +282,8 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
    
   /* Kraftkomponenten: */
   for(i=0;i<3;i++) { 
-    assign_forces( 1.0/(Len*Len*Len), F_K[i], Teilchenzahl, Fmesh[i], 0);
-    assign_forces( 1.0/(Len*Len*Len), F_K[i], Teilchenzahl, Fmesh[i], 1);
+    assign_forces( 1.0/(Mesh*Mesh*Mesh), F_K[i], Teilchenzahl, Fmesh[i], 0);
+    assign_forces( 1.0/(Mesh*Mesh*Mesh), F_K[i], Teilchenzahl, Fmesh[i], 1);
   }
   return;
 }
