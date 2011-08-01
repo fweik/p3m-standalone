@@ -173,7 +173,7 @@ void Interpolationspolynom_berechnen(int ip)
        break;
     case 6 : 
       { 
-      printf("IP=6: calculation of derivative of charge assignment function\n");
+	fprintf(stderr, "IP=6: calculation of derivative of charge assignment function\n");
 	for (i=-MaxInterpol; i<=MaxInterpol; i++)
 	  {
 	    x=i/(2.0*dInterpol);

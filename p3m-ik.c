@@ -60,7 +60,7 @@ void Init_ik(int Teilchenzahl) {
   int l;
   Qmesh = (FLOAT_TYPE *) realloc(Qmesh, 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
 
-  G_hat = (FLOAT_TYPE *) realloc(G_hat, Mesh*Mesh*Mesh*sizeof(G_hat));  
+  G_hat = (FLOAT_TYPE *) realloc(G_hat, Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));  
 
   F_K[0] = Fx_K;
   F_K[1] = Fy_K;
@@ -162,7 +162,7 @@ void Influence_function_berechnen_ik(FLOAT_TYPE alpha)
 		  
 		  zwi  = Dnx*Zaehler[0] + Dny*Zaehler[1] + Dnz*Zaehler[2];
 		  zwi /= ( (SQR(Dnx) + SQR(Dny) + SQR(Dnz)) * SQR(Nenner) );
-		  G_hat[ind] = Mesh*Mesh*Mesh*2.0 * zwi * Leni * Leni * Leni;
+		  G_hat[ind] = Mesh * Mesh * Mesh * 2.0 * zwi * Leni * Leni;
 		}
 	    }
 	}
@@ -217,10 +217,23 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
     }
 
 #ifdef CA_DEBUG
-  for(i=0;i<Mesh;i++)
-    for(j=0;j<Mesh;j++)
-      for(k=0;k<Mesh;k++) 
-	printf("CA_DEBUG: %lf\n", Qmesh[c_ind(i,j,k)]);
+  {
+    FILE *fqmesh = fopen("seq-qmesh.dat", "w");
+    int ind = 0;
+    int margin = 4;
+    for(i=0;i<(Mesh + 2*margin );i++)
+      for(j=0;j<(Mesh + 2*margin);j++)
+	for(k=0;k<(Mesh + 2*margin);k++) {
+          if(   (i >= margin) && (i < (Mesh + margin))
+	     && (j >= margin) && (j < (Mesh + margin))
+	     && (k >= margin) && (k < (Mesh + margin)))
+	    fprintf(fqmesh, "%d %lf\n", ind,Qmesh[c_ind(i-margin, j-margin, k-margin)]);
+	  else
+	    fprintf(fqmesh, "%d %lf\n", ind, 0.0);
+	  ind++;
+	}
+    fclose(fqmesh);
+  }
 #endif
 
   /* Forward Fast Fourier Transform */
@@ -248,22 +261,14 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
                 dop = Dn[k];
                 break;
 	    }
-	    Fmesh[l][c_index]   = -dop*Qmesh[c_index+1];
-	    Fmesh[l][c_index+1] =  dop*Qmesh[c_index];
+	    Fmesh[l][c_index]   =  -dop*Qmesh[c_index+1];
+	    Fmesh[l][c_index+1] =   dop*Qmesh[c_index];
           }
 	}
 
   /* Durchfuehren der Fourier-Rueck-Transformation: */
 
   backward_fft();
-  for(l=0;l<3;l++)
-    for(i=0;i<Mesh;i++)
-      for(j=0;j<Mesh;j++)
-	for(k=0;k<Mesh;k++)
-          if(Fmesh[l][c_ind(i,j,k)+1] > 1e-5) {
-            printf("WARNING! UNREAL FORCE AT (%d %d %d %d): %lf", i,j,k,l,Fmesh[l][c_ind(i,j,k)+1]);
-            exit(128);
-	  }
 
   /* Force assignment */
   for(direction=0;direction<3;direction++) {       

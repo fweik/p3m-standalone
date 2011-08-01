@@ -22,7 +22,7 @@
 
 // #define WRITE_FORCES
 
- #define FORCE_DEBUG
+#define FORCE_DEBUG
 // #define CA_DEBUG
 
 FLOAT_TYPE *Fx_exa, *Fy_exa, *Fz_exa;
@@ -346,6 +346,7 @@ int main(int argc, char **argv)
   FLOAT_TYPE d;
   FLOAT_TYPE sx,sy,sz;
   FLOAT_TYPE EC2,DeltaEC2,FC2,DeltaFC2;
+  FLOAT_TYPE rms_x=0.0, rms_y=0.0, rms_z=0.0;
   FLOAT_TYPE DeltaE_rel,DeltaE_abs,DeltaF_rel,DeltaF_abs;
   FLOAT_TYPE alphamin,alphamax,alphastep;
   int method;
@@ -453,9 +454,12 @@ int main(int argc, char **argv)
       EC2 = FC2 = DeltaFC2 = 0.0;
       for (i=0; i<Teilchenzahl; i++)
 	{
-#ifdef FORCE_DEBUG
+	  //#ifdef FORCE_DEBUG
           printf("Particle %d Total Force (%g %g %g) [R(%g %g %g) K(%g %g %g)] reference (%g %g %g)\n", i, Fx[i], Fy[i], Fz[i], Fx_R[i], Fy_R[i], Fz_R[i], Fx_K[i], Fy_K[i], Fz_K[i], Fx_exa[i], Fy_exa[i], Fz_exa[i]);
-#endif
+	  //#endif
+          rms_x += SQR(Fx_exa[i]);
+          rms_y += SQR(Fy_exa[i]);
+          rms_z += SQR(Fz_exa[i]);
 	  FC2 += SQR(Fx_exa[i]) + SQR(Fy_exa[i]) + SQR(Fz_exa[i]);
 	  DeltaFC2 += SQR(Fx[i]-Fx_exa[i])+SQR(Fy[i]-Fy_exa[i])+SQR(Fz[i]-Fz_exa[i]);
 	}
@@ -472,6 +476,7 @@ int main(int argc, char **argv)
         printf("% lf\t% e\t% e\t (est: %e)\n", alpha,DeltaF_abs,DeltaF_rel, Ewald_estimate_error(alpha, rcut, Teilchenzahl));
       else
 	printf("% lf\t% e\t% e\n", alpha,DeltaF_abs,DeltaF_rel);
+      fprintf(stderr, "%lf rms %e %e %e\n", alpha, sqrt(rms_x), sqrt(rms_y), sqrt(rms_z));
       fflush(stdout);
       fprintf(fout,"% lf\t% e\t% e\n",alpha,DeltaF_abs, DeltaF_rel);
 

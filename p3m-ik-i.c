@@ -244,7 +244,6 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
     }
   
   /* Durchfuehren der Fourier-Hin-Transformationen: */
-
   forward_fft();
 
   for (i=0; i<Mesh; i++)
@@ -278,16 +277,13 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
 
 	}
   
-  for(i=0;i<Mesh*Mesh*Mesh;i++)
-    printf("qmesh %e %e %e\n", Qmesh[2*i], Qmesh[2*i+1], G_hat[i]);
-  
   /* Durchfuehren der Fourier-Rueck-Transformation: */
   backward_fft();
    
   /* Kraftkomponenten: */
   for(i=0;i<3;i++) { 
-    assign_forces( 1.0/(2.0*Len*Len*Len), F_K[i], Teilchenzahl, Fmesh[i], 0);
-    assign_forces( 1.0/(2.0*Len*Len*Len), F_K[i], Teilchenzahl, Fmesh[i], 1);
+    assign_forces( 1.0/(Len*Len*Len), F_K[i], Teilchenzahl, Fmesh[i], 0);
+    assign_forces( 1.0/(Len*Len*Len), F_K[i], Teilchenzahl, Fmesh[i], 1);
   }
   return;
 }

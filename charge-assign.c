@@ -78,7 +78,6 @@ void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_T
   cf_cnt=0;
   for(i=0; i<Teilchenzahl; i++) { 
     base = ca_ind[ii] + 3*i;
-    printf("base %d %d %d\n", base[0], base[1], base[2]);
     for(i0=0; i0<cao; i0++) {
       j = (base[0] + i0)&MESHMASKE;
       for(i1=0; i1<cao; i1++) {
