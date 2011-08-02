@@ -10,6 +10,7 @@
 
 #include "p3m-ik-i.h"
 #include "p3m-ik.h"
+#include "p3m-ad.h"
 #include "p3m-ad-i.h"
 #include "ewald.h"
 
@@ -415,15 +416,21 @@ int main(int argc, char **argv)
       Init = &Init_interlaced_ik;
       break;
     case 2:
-        method_name = "Ewald summation.";
-	P3M = &Ewald_k_space;
-	Influence_function_berechnen = &Ewald_compute_influence_function;
-	Init = &Ewald_init;
-        break;
+      method_name = "Ewald summation.";
+      P3M = &Ewald_k_space;
+      Influence_function_berechnen = &Ewald_compute_influence_function;
+      Init = &Ewald_init;
+      break;
     case 3:
+      method_name = "P3M with analytical diff, noninterlaced.";
+      P3M = &P3M_ad;
+      Influence_function_berechnen = &Influence_function_berechnen_ad;
+      Init = &Init_ad;
+      break;
+    case 4:
       method_name = "P3M with analytical diff, interlaced.";
       P3M = &P3M_ad_interlaced;
-      Influence_function_berechnen = &Influence_function_ad_interlaced;
+      Influence_function_berechnen = &Influence_function_berechnen_ad_interlaced;
       Init = &Init_ad_interlaced;
       break;
     default:
@@ -479,7 +486,7 @@ int main(int argc, char **argv)
       fprintf(stderr, "%lf rms %e %e %e\n", alpha, sqrt(rms_x), sqrt(rms_y), sqrt(rms_z));
       fflush(stdout);
       fprintf(fout,"% lf\t% e\t% e\n",alpha,DeltaF_abs, DeltaF_rel);
-
+      fflush(fout);
     }
     fclose(fout);
 

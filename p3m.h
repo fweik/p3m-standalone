@@ -45,8 +45,8 @@ int ip;
 int cao, cao3;
 // Pointer to mesh charge density
 FLOAT_TYPE *Qmesh;
-// differentials
-FLOAT_TYPE *dQdx, *dQdy, *dQdz;
+// charge differentials
+FLOAT_TYPE *dQdx[2], *dQdy[2], *dQdz[2];
 // Pointer to differential operator
 FLOAT_TYPE *Dn;
 //

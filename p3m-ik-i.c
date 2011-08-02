@@ -82,7 +82,7 @@ void Aliasing_sums_interlaced_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
     *Nenner : Aliasing-Summe im Nenner.
   */
   
-  static int aliasmax = 1; /* Genauigkeit der Aliasing-Summe (2 ist wohl genug) */
+  static int aliasmax = 2; /* Genauigkeit der Aliasing-Summe (2 ist wohl genug) */
   
   FLOAT_TYPE S,S1,S2,S3;
   FLOAT_TYPE fak1,fak2,zwi;
