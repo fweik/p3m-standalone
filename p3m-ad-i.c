@@ -235,7 +235,7 @@ void P3M_ad_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
   backward_fft();
 
   /* Force assignment */
-  assign_forces_ad(Len*Len*Len/(Mesh*Mesh*Mesh), F_K, Teilchenzahl, Qmesh, 0);
-  assign_forces_ad(Len*Len*Len/(Mesh*Mesh*Mesh), F_K, Teilchenzahl, Qmesh, 1);
+  assign_forces_ad(0.5*H*H*H, F_K, Teilchenzahl, Qmesh, 0);
+  assign_forces_ad(0.5*H*H*H, F_K, Teilchenzahl, Qmesh, 1);
   return;
 }
