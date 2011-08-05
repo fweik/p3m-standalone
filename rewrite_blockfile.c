@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define FLOAT_TYPE double
+
 #define MAXL 512
 
 int main(int argc, char **argv) {
@@ -29,8 +31,8 @@ int main(int argc, char **argv) {
     fgets(buf, MAXL, b);
     Tl = sscanf(buf, " { %d %lf %lf %lf %lf %lf %lf %lf } ", &id, &x, &y, &z, &Q, &fx, &fy, &fz);
     if(Tl == 8) {
-      fprintf(p, "%lf %lf %lf %lf\n", x,y,z,Q);
-      fprintf(f, "10.0 %lf %lf %lf\n", fx, fy, fz);
+      fprintf(p, "%.22f %.22f %.22f %.22f\n", x,y,z,Q);
+      fprintf(f, "10.0 %.22f %.22f %.22f\n", fx, fy, fz);
     }
   }
   fclose(b);
