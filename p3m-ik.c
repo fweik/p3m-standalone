@@ -92,7 +92,7 @@ void Aliasing_sums_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
   FLOAT_TYPE expo, TE;
 
   fak1 = 1.0/(FLOAT_TYPE)Mesh;
-  fak2 = SQR(PI/(alpha*Len));
+  fak2 = SQR(PI/(alpha));
 
   Zaehler[0] = Zaehler[1] = Zaehler[2] = *Nenner = 0.0;
 
@@ -106,15 +106,15 @@ void Aliasing_sums_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
 	NMZ = nshift[NZ] + Mesh*MZ;
 	S3   = S2*pow(sinc(fak1*NMZ), 2.0*(ip+1));
 
-	NM2 = SQR(NMX) + SQR(NMY) + SQR(NMZ);
+	NM2 = SQR(NMX*Leni) + SQR(NMY*Leni) + SQR(NMZ*Leni);
 	*Nenner += S3;
 	
 	expo = fak2*NM2;
 	TE = (expo < 30) ? exp(-expo) : 0.0;
 	zwi  = S3 * TE/NM2;
-	Zaehler[0] += NMX*zwi;
-	Zaehler[1] += NMY*zwi;
-	Zaehler[2] += NMZ*zwi;
+	Zaehler[0] += NMX*zwi*Leni;
+	Zaehler[1] += NMY*zwi*Leni;
+	Zaehler[2] += NMZ*zwi*Leni;
       }
     }
   }
@@ -160,9 +160,9 @@ void Influence_function_berechnen_ik(FLOAT_TYPE alpha)
 		  Dny = Dn[NY];  
 		  Dnz = Dn[NZ];
 		  
-		  zwi  = Dnx*Zaehler[0] + Dny*Zaehler[1] + Dnz*Zaehler[2];
-		  zwi /= ( (SQR(Dnx) + SQR(Dny) + SQR(Dnz)) * SQR(Nenner) );
-		  G_hat[ind] = Mesh * Mesh * Mesh * 2.0 * zwi * Leni * Leni;
+		  zwi  = Dnx*Zaehler[0]*Leni + Dny*Zaehler[1]*Leni + Dnz*Zaehler[2]*Leni;
+		  zwi /= ( (SQR(Dnx*Leni) + SQR(Dny*Leni) + SQR(Dnz*Leni)) * SQR(Nenner) );
+		  G_hat[ind] = 2.0 * zwi / PI;
 		}
 	    }
 	}
@@ -216,25 +216,15 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
       assign_charge(i, Q[i], Ri, Qmesh, 0);
     }
 
-#ifdef CA_DEBUG
-  {
-    FILE *fqmesh = fopen("seq-qmesh.dat", "w");
-    int ind = 0;
-    int margin = 4;
-    for(i=0;i<(Mesh + 2*margin );i++)
-      for(j=0;j<(Mesh + 2*margin);j++)
-	for(k=0;k<(Mesh + 2*margin);k++) {
-          if(   (i >= margin) && (i < (Mesh + margin))
-	     && (j >= margin) && (j < (Mesh + margin))
-	     && (k >= margin) && (k < (Mesh + margin)))
-	    fprintf(fqmesh, "%d %lf\n", ind,Qmesh[c_ind(i-margin, j-margin, k-margin)]);
-	  else
-	    fprintf(fqmesh, "%d %lf\n", ind, 0.0);
-	  ind++;
-	}
-    fclose(fqmesh);
-  }
-#endif
+      {
+	FILE *f = fopen("qmesh-r.dat","w");
+        int j,k;
+        for(i=0;i<Mesh;i++)
+	  for(j=0;j<Mesh;j++)
+	    for(k=0;k<Mesh;k++)
+	      fprintf(f, "%e %e\n", Qmesh[c_ind(k,i,j)], Qmesh[c_ind(k,i,j)+1]);
+	fclose(f);
+      }
 
   /* Forward Fast Fourier Transform */
   forward_fft();
@@ -261,8 +251,8 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
                 dop = Dn[k];
                 break;
 	    }
-	    Fmesh[l][c_index]   =  -dop*Qmesh[c_index+1];
-	    Fmesh[l][c_index+1] =   dop*Qmesh[c_index];
+	    Fmesh[l][c_index]   =  -2.0*PI*Leni*dop*Qmesh[c_index+1];
+	    Fmesh[l][c_index+1] =   2.0*PI*Leni*dop*Qmesh[c_index];
           }
 	}
 
@@ -272,7 +262,7 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
 
   /* Force assignment */
   for(direction=0;direction<3;direction++) {       
-    assign_forces(1.0/(Mesh*Mesh*Mesh), F_K[direction], Teilchenzahl, Fmesh[direction],0);
+    assign_forces(1.0/(2.0*Len*Len*Len), F_K[direction], Teilchenzahl, Fmesh[direction],0);
     }
 
   return;
