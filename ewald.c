@@ -176,3 +176,7 @@ FLOAT_TYPE Ewald_compute_optimal_alpha(FLOAT_TYPE rcut, int NP) {
 
   return 0.5 *(alpha_low + alpha_high);
 }
+
+double Ewald_error_wrapper(double a, int *b, int c, int NP, double e, double alpha_L, double r_cut_iL, double *box_l) {
+  return Ewald_estimate_error( alpha_L / box_l[0], r_cut_iL * box_l[0], NP);
+}
