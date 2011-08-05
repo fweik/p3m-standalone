@@ -62,6 +62,18 @@ FLOAT_TYPE E_Coulomb_Self;
 FLOAT_TYPE E_Coulomb_Impuls_Summe;
 FLOAT_TYPE E_Coulomb_Real_Summe;
 
+FLOAT_TYPE *Fx_exa, *Fy_exa, *Fz_exa;
+FLOAT_TYPE *Fx, *Fy, *Fz;
+FLOAT_TYPE *Fx_R, *Fy_R, *Fz_R;
+FLOAT_TYPE *Fx_D, *Fy_D, *Fz_D;
+
+int Teilchenzahl;
+int kmax;
+FLOAT_TYPE Temp, Bjerrum;
+FLOAT_TYPE alpha;
+FLOAT_TYPE rcut;
+FLOAT_TYPE beta;
+
 // Internal variables
 int *Gx, *Gy, *Gz;
 FLOAT_TYPE *nshift;
