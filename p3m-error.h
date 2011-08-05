@@ -4,7 +4,11 @@
 #define P3M_BRILLOUIN_TUNING 0
 #define PI 3.14159265358979323846264
 
-double p3m_error_ik(double, double, int, double, double, double *, int *, int);
-double p3m_error_add();
+#ifndef SQR
+  #define SQR(A) ((A) * (A))
+#endif
+
+double p3m_error_ik(double, int*, int, int, double, double, double, double *);
+double p3m_error_ad();
 
 #endif

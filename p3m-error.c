@@ -2,6 +2,26 @@
 
 #include "p3m-error.h"
 
+static double sinc(double d)
+{
+#define epsi 0.1
+
+#define c2 -0.1666666666667e-0
+#define c4  0.8333333333333e-2
+#define c6 -0.1984126984127e-3
+#define c8  0.2755731922399e-5
+
+  double PId = PI*d, PId2;
+
+  if (fabs(d)>epsi)
+    return sin(PId)/PId;
+  else {
+    PId2 = SQR(PId);
+    return 1.0 + PId2*(c2+PId2*(c4+PId2*(c6+PId2*c8)));
+  }
+  return 1.0;
+}
+
 static double analytic_cotangent_sum(int n, double mesh_i, int cao)
 {
   double c, res=0.0;
@@ -81,14 +101,14 @@ double p3m_k_space_error_ik(double prefac, int mesh[3], int cao, int n_c_part, d
   double ctan_x, ctan_y;
 
   for (nx=-mesh[0]/2; nx<mesh[0]/2; nx++) {
-    ctan_x = p3m_analytic_cotangent_sum(nx,mesh_i[0],cao);
+    ctan_x = analytic_cotangent_sum(nx,mesh_i[0],cao);
     for (ny=-mesh[1]/2; ny<mesh[1]/2; ny++) {
-      ctan_y = ctan_x * p3m_analytic_cotangent_sum(ny,mesh_i[1],cao);
+      ctan_y = ctan_x * analytic_cotangent_sum(ny,mesh_i[1],cao);
       for (nz=-mesh[2]/2; nz<mesh[2]/2; nz++) {
 	if((nx!=0) || (ny!=0) || (nz!=0)) {
 	  n2 = SQR(nx) + SQR(ny) + SQR(nz);
-	  cs = p3m_analytic_cotangent_sum(nz,mesh_i[2],cao)*ctan_y;
-	  p3m_tune_aliasing_sums(nx,ny,nz,mesh,mesh_i,cao,alpha_L_i,&alias1,&alias2);
+	  cs = analytic_cotangent_sum(nz,mesh_i[2],cao)*ctan_y;
+	  p3m_tune_aliasing_sums_ik(nx,ny,nz,mesh,mesh_i,cao,alpha_L_i,&alias1,&alias2);
 	  he_q += (alias1  -  SQR(alias2/cs) / n2);
 	}
       }
@@ -97,26 +117,60 @@ double p3m_k_space_error_ik(double prefac, int mesh[3], int cao, int n_c_part, d
   return 2.0*prefac*sum_q2*sqrt(he_q/(double)n_c_part) / (box_l[1]*box_l[2]);
 }
 
-double P3M_k_space_error_ad(double box_size, double prefac, int mesh, 
+void p3m_tune_aliasing_sums_ad(int nx, int ny, int nz, 
+			    int mesh, double mesh_i, int cao, double alpha_L_i, 
+			    double *alias1, double *alias2, double *alias3,double *alias4)
+{
+
+  int    mx,my,mz;
+  double nmx,nmy,nmz;
+  double fnmx,fnmy,fnmz;
+
+  double ex,ex2,nm2,U2,factor1;
+
+  factor1 = SQR(PI*alpha_L_i);
+
+  *alias1 = *alias2 = *alias3 = *alias4 = 0.0;
+  for (mx=-P3M_BRILLOUIN_TUNING; mx<=P3M_BRILLOUIN_TUNING; mx++) {
+    fnmx = mesh_i * (nmx = nx + mx*mesh);
+    for (my=-P3M_BRILLOUIN_TUNING; my<=P3M_BRILLOUIN_TUNING; my++) {
+      fnmy = mesh_i * (nmy = ny + my*mesh);
+      for (mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++) {
+	fnmz = mesh_i * (nmz = nz + mz*mesh);
+	
+	nm2 = SQR(nmx) + SQR(nmy) + SQR(nmz);
+	ex2 = SQR( ex = exp(-factor1*nm2) );
+	
+	U2 = pow(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*cao);
+	
+	*alias1 += ex2 / nm2;
+	*alias2 += U2 * ex;
+	*alias3 += U2 * nm2;
+	*alias4 += U2;
+      }
+    }
+  }
+}
+
+
+double P3M_k_space_error_AD(double box_size, double prefac, int mesh, 
 			 int cao, int n_c_part, double sum_q2, double alpha_L)
 {
   int  nx, ny, nz;
   double he_q = 0.0, mesh_i = 1./mesh, alpha_L_i = 1./alpha_L;
-  double alias1, alias2, alias3, n2, cs;
+  double alias1, alias2, alias3, alias4, n2, cs;
 
   for (nx=-mesh/2; nx<mesh/2; nx++)
     for (ny=-mesh/2; ny<mesh/2; ny++)
       for (nz=-mesh/2; nz<mesh/2; nz++)
 	if((nx!=0) || (ny!=0) || (nz!=0)) {
 	  n2 = SQR(nx) + SQR(ny) + SQR(nz);
-	  cs = analytic_cotangent_sum(nx,mesh_i,cao)*
- 	       analytic_cotangent_sum(ny,mesh_i,cao)*
-	       analytic_cotangent_sum(nz,mesh_i,cao);
-	  P3M_tune_aliasing_sums_AD(nx,ny,nz,mesh,mesh_i,cao,alpha_L_i,&alias1,&alias2,&alias3);
-	  he_q += (alias1  -  SQR(alias2) / (cs*alias3));
+	  p3m_tune_aliasing_sums_ad(nx,ny,nz,mesh,mesh_i,cao,alpha_L_i,&alias1,&alias2,&alias3,&alias4);	//alias4 = cs
+	  he_q += (alias1  -  SQR(alias2) / (alias3*alias4));
 	}
   return 2.0*prefac*sum_q2*sqrt(he_q/(double)n_c_part) / SQR(box_size);
 }
+
 
 double p3m_error_ik(double prefac, int mesh[3], int cao, int n_c_part, double sum_q2, double alpha_L, double r_cut_iL, double *box_l) {
   return sqrt(SQR(p3m_real_space_error(prefac, r_cut_iL,  n_c_part, sum_q2, alpha_L,  box_l)) \
