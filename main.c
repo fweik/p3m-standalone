@@ -337,7 +337,7 @@ int main(int argc, char **argv)
 
   Exakte_Werte_einlesen(argv[2], Teilchenzahl, &Fx_exa, &Fy_exa, &Fz_exa);
 
-  printf("Teilchenzahl %d, F_exa ( %p %p %p )\n", Teilchenzahl, Fx_exa, Fy_exa, Fz_exa);
+  //  printf("Teilchenzahl %d, F_exa ( %p %p %p )\n", Teilchenzahl, Fx_exa, Fy_exa, Fz_exa);
 
   switch(method) {
     case 0:
@@ -388,10 +388,10 @@ int main(int argc, char **argv)
   for (alpha=alphamin; alpha<=alphamax; alpha+=alphastep)
     { 
       Influence_function_berechnen(alpha);  /* Hockney/Eastwood */
-      check_g();
+      //      check_g();
       Elstat_berechnen(alpha); /* Hockney/Eastwood */
-      check_k();
-      {
+      //check_k();
+      /*      {
 	FILE *f = fopen("qmesh-k.dat","w");
         int j,k;
         for(i=0;i<Mesh;i++)
@@ -399,7 +399,7 @@ int main(int argc, char **argv)
 	    for(k=0;k<Mesh;k++)
 	      fprintf(f, "%e %e\n", Qmesh[c_ind(k,i,j)], Qmesh[c_ind(k,i,j)+1]);
 	fclose(f);
-      }
+	} */
 
       
       /* ACHTUNG: 
@@ -413,10 +413,10 @@ int main(int argc, char **argv)
 	{
 	  #ifdef FORCE_DEBUG
           printf("Particle %d Total Force (%g %g %g) [R(%g %g %g) K(%g %g %g)] reference (%g %g %g)\n", i, Fx[i], Fy[i], Fz[i], Fx_R[i], Fy_R[i], Fz_R[i], Fx_K[i], Fy_K[i], Fz_K[i], Fx_exa[i], Fy_exa[i], Fz_exa[i]);
-	  #endif
           rms_x += SQR(Fx_exa[i]);
           rms_y += SQR(Fy_exa[i]);
           rms_z += SQR(Fz_exa[i]);
+#endif // FORCE_DEBUG
 	  FC2 += SQR(Fx_exa[i]) + SQR(Fy_exa[i]) + SQR(Fz_exa[i]);
 	  DeltaFC2 += SQR(Fx[i]-Fx_exa[i])+SQR(Fy[i]-Fy_exa[i])+SQR(Fz[i]-Fz_exa[i]);
 	}
