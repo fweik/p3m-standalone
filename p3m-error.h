@@ -9,6 +9,6 @@
 #endif
 
 double p3m_error_ik(double, int*, int, int, double, double, double, double *);
-double p3m_error_ad();
+double p3m_error_ad(double, int*, int, int, double, double, double, double *);
 
 #endif

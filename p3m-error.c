@@ -152,20 +152,21 @@ void p3m_tune_aliasing_sums_ad(int nx, int ny, int nz,
   }
 }
 
-
-double P3M_k_space_error_AD(double box_size, double prefac, int mesh, 
-			 int cao, int n_c_part, double sum_q2, double alpha_L)
+double p3m_k_space_error_ad(double prefac, int *Mesh, int cao, int n_c_part, double sum_q2, double alpha_L, double *box_l)
 {
   int  nx, ny, nz;
+  double mesh = Mesh[0];
+  double box_size = box_l[0];
   double he_q = 0.0, mesh_i = 1./mesh, alpha_L_i = 1./alpha_L;
   double alias1, alias2, alias3, alias4, n2, cs;
-
+  printf("p3m_k_space_error_ad();\n");
   for (nx=-mesh/2; nx<mesh/2; nx++)
     for (ny=-mesh/2; ny<mesh/2; ny++)
       for (nz=-mesh/2; nz<mesh/2; nz++)
 	if((nx!=0) || (ny!=0) || (nz!=0)) {
 	  n2 = SQR(nx) + SQR(ny) + SQR(nz);
 	  p3m_tune_aliasing_sums_ad(nx,ny,nz,mesh,mesh_i,cao,alpha_L_i,&alias1,&alias2,&alias3,&alias4);	//alias4 = cs
+          printf("aliasing sums ad %d %d %d %e %e %e %e\n", nx, ny, nz, alias1, alias2, alias3, alias4);
 	  he_q += (alias1  -  SQR(alias2) / (alias3*alias4));
 	}
   return 2.0*prefac*sum_q2*sqrt(he_q/(double)n_c_part) / SQR(box_size);
@@ -175,4 +176,9 @@ double P3M_k_space_error_AD(double box_size, double prefac, int mesh,
 double p3m_error_ik(double prefac, int mesh[3], int cao, int n_c_part, double sum_q2, double alpha_L, double r_cut_iL, double *box_l) {
   return sqrt(SQR(p3m_real_space_error(prefac, r_cut_iL,  n_c_part, sum_q2, alpha_L,  box_l)) \
     + SQR(p3m_k_space_error_ik(prefac, mesh, cao, n_c_part, sum_q2, alpha_L, box_l)));
+}
+
+double p3m_error_ad(double prefac, int mesh[3], int cao, int n_c_part, double sum_q2, double alpha_L, double r_cut_iL, double *box_l) {
+  return sqrt(SQR(p3m_real_space_error(prefac, r_cut_iL,  n_c_part, sum_q2, alpha_L,  box_l)) \
+    + SQR(p3m_k_space_error_ad(prefac, mesh, cao, n_c_part, sum_q2, alpha_L, box_l)));
 }
