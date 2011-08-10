@@ -182,7 +182,7 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
   /* Zaehlvariablen: */
   int i, j, k, l; 
   /* Variablen fuer FFT: */
-  int Nx,Ny,Nz,Lda, Ldb, sx, sy, sz;   
+  //  int Nx,Ny,Nz,Lda, Ldb, sx, sy, sz;   
   /* Schnelles Modulo: */
   int MESHMASKE;
   /* Hilfsvariablen */
@@ -196,9 +196,6 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
   int direction;
   double dop;
 
-  Nx = Ny = Nz = Mesh;
-  Lda = Ldb = Mesh; 
-  sx = sy = sz = 1; 
   MESHMASKE = Mesh-1;
   dMesh = (FLOAT_TYPE)Mesh;
   H = Len/dMesh;
@@ -207,7 +204,7 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
   dTeilchenzahli = 1.0/(FLOAT_TYPE)Teilchenzahl;
 
   /* Initialisieren von Qmesh */
-  bzero(Qmesh, 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
+  memset(Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
 
   /* chargeassignment */
   for (i=0; i<Teilchenzahl; i++)
@@ -215,16 +212,6 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
       FLOAT_TYPE Ri[3] = {xS[i], yS[i], zS[i]};
       assign_charge(i, Q[i], Ri, Qmesh, 0);
     }
-
-      {
-	FILE *f = fopen("qmesh-r.dat","w");
-        int j,k;
-        for(i=0;i<Mesh;i++)
-	  for(j=0;j<Mesh;j++)
-	    for(k=0;k<Mesh;k++)
-	      fprintf(f, "%e %e\n", Qmesh[c_ind(k,i,j)], Qmesh[c_ind(k,i,j)+1]);
-	fclose(f);
-      }
 
   /* Forward Fast Fourier Transform */
   forward_fft();
@@ -263,7 +250,7 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
   /* Force assignment */
   for(direction=0;direction<3;direction++) {       
     assign_forces(1.0/(2.0*Len*Len*Len), F_K[direction], Teilchenzahl, Fmesh[direction],0);
-    }
+  }
 
   return;
 }

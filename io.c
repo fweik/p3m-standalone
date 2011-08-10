@@ -23,14 +23,15 @@ void Exakte_Werte_einlesen(char *filename, int number_of_particles)
   Fy_exa = (FLOAT_TYPE *) realloc(Fy_exa, number_of_particles*sizeof(FLOAT_TYPE));
   Fz_exa = (FLOAT_TYPE *) realloc(Fz_exa, number_of_particles*sizeof(FLOAT_TYPE));
 
-
+  Fxk_exa = (FLOAT_TYPE *) realloc(Fxk_exa, number_of_particles*sizeof(FLOAT_TYPE));
+  Fyk_exa = (FLOAT_TYPE *) realloc(Fyk_exa, number_of_particles*sizeof(FLOAT_TYPE));
+  Fzk_exa = (FLOAT_TYPE *) realloc(Fzk_exa, number_of_particles*sizeof(FLOAT_TYPE));
 
   for (i=0; i<number_of_particles; ++i)
-    fscanf(fp,"%lf\t%lf\t%lf\t%lf\n",
+    fscanf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 	   &E_Coulomb,
-	   &Fx_exa[i],
-	   &Fy_exa[i],
-	   &Fz_exa[i]); 
+           &Fx_exa[i], &Fy_exa[i], &Fz_exa[i],
+	   &Fxk_exa[i], &Fyk_exa[i], &Fzk_exa[i]); 
   
   fclose(fp);
 }

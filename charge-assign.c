@@ -31,7 +31,6 @@ void assign_charge(int id, FLOAT_TYPE q,
   FLOAT_TYPE Hi = (double)Mesh/(double)Len;
 
   int MESHMASKE = Mesh - 1;
-  double charge = 0.0;
   double pos_shift;
 
   pos_shift = (double)((cao-1)/2);
@@ -58,7 +57,6 @@ void assign_charge(int id, FLOAT_TYPE q,
 	  cur_ca_frac_val = q * tmp1 * LadInt[i2][arg[2]];
           cf[ii][cf_cnt++] = cur_ca_frac_val ;
 	  p3m_rs_mesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
-          charge += cur_ca_frac_val;
 	}
       }
     }
@@ -86,6 +84,7 @@ void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_T
 	  l = (base[2] + i2)&MESHMASKE;
 	  A = cf[ii][cf_cnt];
 	  B = p3m_rs_mesh[c_ind(j,k,l)+ii];
+
 	  F[i] -= force_prefac*A*B; 
 	  cf_cnt++;
 	}
@@ -98,7 +97,7 @@ void assign_forces(double force_prefac, FLOAT_TYPE *F, int Teilchenzahl, FLOAT_T
 
 void assign_charge_and_derivatives(int id, FLOAT_TYPE q,
 		       FLOAT_TYPE real_pos[3],
-		   FLOAT_TYPE *p3m_rs_mesh, int ii)
+				   FLOAT_TYPE *p3m_rs_mesh, int ii)
 {
   int d, i0, i1, i2;
   FLOAT_TYPE tmp0, tmp1, tmp2;
@@ -154,6 +153,7 @@ void assign_charge_and_derivatives(int id, FLOAT_TYPE q,
           dQdx[ii][cf_cnt] = tmp0_x * tmp1 * tmp2 * q;
           dQdy[ii][cf_cnt] = tmp0 * tmp1_y * tmp2 * q;
           dQdz[ii][cf_cnt] = tmp0 * tmp1 * tmp2_z * q;
+
 	  p3m_rs_mesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
           cf_cnt++;
 	}
