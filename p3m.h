@@ -63,6 +63,7 @@ FLOAT_TYPE E_Coulomb_Impuls_Summe;
 FLOAT_TYPE E_Coulomb_Real_Summe;
 
 FLOAT_TYPE *Fx_exa, *Fy_exa, *Fz_exa;
+FLOAT_TYPE *Fxk_exa, *Fyk_exa, *Fzk_exa;
 FLOAT_TYPE *Fx, *Fy, *Fz;
 FLOAT_TYPE *Fx_R, *Fy_R, *Fz_R;
 FLOAT_TYPE *Fx_D, *Fy_D, *Fz_D;

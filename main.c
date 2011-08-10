@@ -244,7 +244,7 @@ void check_g(void) {
 
 void check_k(void) {
   FILE *f = fopen("p3m-wall-k.dat", "r");
-  FLOAT_TYPE *Fxk_exa=NULL, *Fyk_exa=NULL, *Fzk_exa=NULL;
+
   double rms_k = 0.0, rms_r =0.0;
     int i;
   FLOAT_TYPE E_Coulomb;
@@ -286,6 +286,7 @@ int main(int argc, char **argv)
   FLOAT_TYPE rms_x=0.0, rms_y=0.0, rms_z=0.0;
   FLOAT_TYPE DeltaE_rel,DeltaE_abs,DeltaF_rel,DeltaF_abs;
   FLOAT_TYPE alphamin,alphamax,alphastep;
+  FLOAT_TYPE rms_k = 0.0, rms_r = 0.0;
   int method;
   char *method_name;  
 
@@ -330,7 +331,8 @@ int main(int argc, char **argv)
   fout = fopen(argv[2], "w");
   printf("Writing forces to %s\n", argv[2]);
   for(i=0;i<Teilchenzahl;i++) {
-    fprintf(fout, "%d %.22e %.22e %.22e\n", i, Fx[i], Fy[i], Fz[i]);
+    fprintf(fout, "%d %.22e %.22e %.22e %.22e %.22e %.22e\n", 
+	    i, Fx[i], Fy[i], Fz[i], Fx_K[i], Fy_K[i], Fz_K[i]);
   }
   fclose(fout);
   #endif
@@ -388,19 +390,9 @@ int main(int argc, char **argv)
   for (alpha=alphamin; alpha<=alphamax; alpha+=alphastep)
     { 
       Influence_function_berechnen(alpha);  /* Hockney/Eastwood */
-      check_g();
+  
       Elstat_berechnen(alpha); /* Hockney/Eastwood */
-      check_k();
-      {
-	FILE *f = fopen("qmesh-k.dat","w");
-        int j,k;
-        for(i=0;i<Mesh;i++)
-	  for(j=0;j<Mesh;j++)
-	    for(k=0;k<Mesh;k++)
-	      fprintf(f, "%e %e\n", Qmesh[c_ind(k,i,j)], Qmesh[c_ind(k,i,j)+1]);
-	fclose(f);
-      }
-
+  
       
       /* ACHTUNG: 
 	 Der Dipolanteil ist in der Energie NICHT dabei! 
@@ -409,14 +401,23 @@ int main(int argc, char **argv)
 	 wird durch die Teilchenzahl dividiert.
       */
       EC2 = FC2 = DeltaFC2 = 0.0;
+      rms_k = rms_r = 0.0;
       for (i=0; i<Teilchenzahl; i++)
 	{
 	  #ifdef FORCE_DEBUG
           printf("Particle %d Total Force (%g %g %g) [R(%g %g %g) K(%g %g %g)] reference (%g %g %g)\n", i, Fx[i], Fy[i], Fz[i], Fx_R[i], Fy_R[i], Fz_R[i], Fx_K[i], Fy_K[i], Fz_K[i], Fx_exa[i], Fy_exa[i], Fz_exa[i]);
-	  #endif
           rms_x += SQR(Fx_exa[i]);
           rms_y += SQR(Fy_exa[i]);
           rms_z += SQR(Fz_exa[i]);
+	  #endif
+	  rms_k += SQR(Fxk_exa[i] - Fx_K[i]);
+	  rms_k += SQR(Fyk_exa[i] - Fy_K[i]);
+	  rms_k += SQR(Fzk_exa[i] - Fz_K[i]);
+	  
+	  rms_r += SQR(Fx_exa[i] - Fxk_exa[i] - Fx_R[i]);
+	  rms_r += SQR(Fy_exa[i] - Fyk_exa[i] - Fy_R[i]);
+	  rms_r += SQR(Fz_exa[i] - Fzk_exa[i] - Fz_R[i]);
+
 	  FC2 += SQR(Fx_exa[i]) + SQR(Fy_exa[i]) + SQR(Fz_exa[i]);
 	  DeltaFC2 += SQR(Fx[i]-Fx_exa[i])+SQR(Fy[i]-Fy_exa[i])+SQR(Fz[i]-Fz_exa[i]);
 	}
@@ -433,7 +434,8 @@ int main(int argc, char **argv)
 	int mesh[3] = {Mesh, Mesh, Mesh};
         double box[3] = {Len, Len, Len};
         double estimate =  error(1.0, mesh, cao, Teilchenzahl, Q2, alpha*Len, rcut*Leni, box);
-        printf("% lf\t% e\t% e\t %e\n", alpha,DeltaF_abs,DeltaF_rel, estimate);
+        printf("% lf\t% e\t% e\t %e %e\n", alpha,DeltaF_abs, estimate, 
+	       sqrt(rms_r)/Teilchenzahl, sqrt(rms_k)/Teilchenzahl);
 	fprintf(fout,"% lf\t% e\t% e\t% e\n",alpha,DeltaF_abs, DeltaF_rel, estimate);
       }
       else {
