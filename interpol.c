@@ -15,7 +15,7 @@ void Interpolationspolynom_berechnen(int ip)
   FLOAT_TYPE dInterpol=(FLOAT_TYPE)MaxInterpol;
   FLOAT_TYPE x;
   long   i;
-  
+
   fprintf(stderr,"Interpolationspolynom (Hockney/Eastwood, Ordnung %d) vorberechnen...",ip);
   
   /* charge assignment function: */
@@ -173,7 +173,7 @@ void Interpolationspolynom_berechnen(int ip)
        break;
     case 6 : 
       { 
-      printf("IP=6: calculation of derivative of charge assignment function\n");
+	fprintf(stderr, "IP=6: calculation of derivative of charge assignment function\n");
 	for (i=-MaxInterpol; i<=MaxInterpol; i++)
 	  {
 	    x=i/(2.0*dInterpol);

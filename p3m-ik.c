@@ -3,11 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fftw3.h>
+#include <string.h>
 
 #include "p3m.h"
 #include "charge-assign.h"
 
-// #define CA_DEBUG
+#define CA_DEBUG
 
 /* Pi, weil man's so oft braucht: */
 #define PI 3.14159265358979323846264
@@ -77,46 +78,48 @@ void Init_ik(int Teilchenzahl) {
   
 }
 
+
 void Aliasing_sums_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
 				  FLOAT_TYPE *Zaehler, FLOAT_TYPE *Nenner)
 {
-  static int aliasmax = 0; /* Genauigkeit der Aliasing-Summe (2 ist wohl genug) */
+  static int aliasmax = 0; 
   
-  FLOAT_TYPE S1,S2,S3,U2;
+  FLOAT_TYPE S1,S2,S3;
   FLOAT_TYPE fak1,fak2,zwi;
   int    MX,MY,MZ;
   FLOAT_TYPE NMX,NMY,NMZ;
   FLOAT_TYPE NM2;
+  FLOAT_TYPE expo, TE;
 
   fak1 = 1.0/(FLOAT_TYPE)Mesh;
-  fak2 = SQR(PI/(alpha*Len));
+  fak2 = SQR(PI/(alpha));
 
   Zaehler[0] = Zaehler[1] = Zaehler[2] = *Nenner = 0.0;
 
   for (MX = -aliasmax; MX <= aliasmax; MX++) {
-      NMX = nshift[NX] + Mesh*MX;
-      S1   = sinc(fak1*NMX); 
-      for (MY = -aliasmax; MY <= aliasmax; MY++) {
-	NMY = nshift[NY] + Mesh*MY;
-	S2   = S1*sinc(fak1*NMY);
-	for (MZ = -aliasmax; MZ <= aliasmax; MZ++) {
-	  NMZ = nshift[NZ] + Mesh*MZ;
-	  S3   = S2*sinc(fak1*NMZ);
-	  U2  = pow(S3, 2.0*(ip+1));
-	  NM2 = SQR(NMX) + SQR(NMY) + SQR(NMZ);
-          *Nenner += U2;
+    NMX = nshift[NX] + Mesh*MX;
+    S1   = pow(sinc(fak1*NMX), 2.0*(ip+1)); 
+    for (MY = -aliasmax; MY <= aliasmax; MY++) {
+      NMY = nshift[NY] + Mesh*MY;
+      S2   = S1*pow(sinc(fak1*NMY), 2.0*(ip+1));
+      for (MZ = -aliasmax; MZ <= aliasmax; MZ++) {
+	NMZ = nshift[NZ] + Mesh*MZ;
+	S3   = S2*pow(sinc(fak1*NMZ), 2.0*(ip+1));
 
-          zwi  = U2 * exp(-fak2*NM2)/NM2;
-	  Zaehler[0] += NMX*zwi;
-          Zaehler[1] += NMY*zwi;
-          Zaehler[2] += NMZ*zwi;
-	      
-	}
+	NM2 = SQR(NMX*Leni) + SQR(NMY*Leni) + SQR(NMZ*Leni);
+	*Nenner += S3;
+	
+	expo = fak2*NM2;
+	TE = (expo < 30) ? exp(-expo) : 0.0;
+	zwi  = S3 * TE/NM2;
+	Zaehler[0] += NMX*zwi*Leni;
+	Zaehler[1] += NMY*zwi*Leni;
+	Zaehler[2] += NMZ*zwi*Leni;
       }
+    }
   }
 }
 
- 
 void Influence_function_berechnen_ik(FLOAT_TYPE alpha)
 {
   /*
@@ -129,12 +132,13 @@ void Influence_function_berechnen_ik(FLOAT_TYPE alpha)
 
   int    NX,NY,NZ;
   FLOAT_TYPE Dnx,Dny,Dnz;
-  int ind=0;
-  FLOAT_TYPE fak1,dMesh,dMeshi;
+  FLOAT_TYPE dMesh,dMeshi;
   FLOAT_TYPE Zaehler[3]={0.0,0.0,0.0},Nenner=0.0;
   FLOAT_TYPE zwi;
+  int ind = 0;
   dMesh = (FLOAT_TYPE)Mesh;
   dMeshi= 1.0/dMesh;
+
   /* bei Zahlen >= Mesh/2 wird noch Mesh abgezogen! */
   for (NX=0; NX<Mesh; NX++)
     {
@@ -147,18 +151,18 @@ void Influence_function_berechnen_ik(FLOAT_TYPE alpha)
 	      if ((NX==0) && (NY==0) && (NZ==0))
 		G_hat[ind]=0.0;
               else if ((NX%(Mesh/2) == 0) && (NY%(Mesh/2) == 0) && (NZ%(Mesh/2) == 0))
-              G_hat[ind]=0.0;
+                G_hat[ind]=0.0;
 	      else
 		{
 		  Aliasing_sums_ik(NX,NY,NZ,alpha,Zaehler,&Nenner);
-
+                  
 		  Dnx = Dn[NX];  
 		  Dny = Dn[NY];  
 		  Dnz = Dn[NZ];
 		  
-		  zwi  = Dnx*Zaehler[0] + Dny*Zaehler[1] + Dnz*Zaehler[2];
-		  zwi /= ( (SQR(Dnx) + SQR(Dny) + SQR(Dnz)) * SQR(Nenner) );
-		  G_hat[ind] = 2.0 * Len * Len * zwi / PI;
+		  zwi  = Dnx*Zaehler[0]*Leni + Dny*Zaehler[1]*Leni + Dnz*Zaehler[2]*Leni;
+		  zwi /= ( (SQR(Dnx*Leni) + SQR(Dny*Leni) + SQR(Dnz*Leni)) * SQR(Nenner) );
+		  G_hat[ind] = 2.0 * zwi / PI;
 		}
 	    }
 	}
@@ -176,44 +180,31 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
   */
   
   /* Zaehlvariablen: */
-  int i, j, k, l, m, ii; 
-  /* wahre n-Werte im Impulsraum: */
-  int nx,ny,nz;
+  int i, j, k, l; 
   /* Variablen fuer FFT: */
-  int Nx,Ny,Nz,Lda, Ldb, sx, sy, sz, status;   
+  //  int Nx,Ny,Nz,Lda, Ldb, sx, sy, sz;   
   /* Schnelles Modulo: */
   int MESHMASKE;
   /* Hilfsvariablen */
-  FLOAT_TYPE dx,dy,dz,d2,H,Hi,dMesh,MI2,modadd2,modadd3;
-  int modadd1;
+  FLOAT_TYPE H,Hi,dMesh,MI2;
   /* charge-assignment beschleunigen */
-  FLOAT_TYPE T1,T2,T3,T4,T5;
+  FLOAT_TYPE T1;
   /* Soweit links vom Referenzpunkt gehts beim Ladungsver-
      teilen los (implementiert ist noch ein Summand Mesh!): */
-  int mshift;
   FLOAT_TYPE dTeilchenzahli;
   
-  //Pour le graphique des selfforces:
-  int point,nb_points;
-
   int direction;
-  int ind = 0;
-  double F_re=0.0, F_im =0.0;
+  double dop;
 
-  Nx = Ny = Nz = Mesh;
-  Lda = Ldb = Mesh; 
-  sx = sy = sz = 1; 
   MESHMASKE = Mesh-1;
   dMesh = (FLOAT_TYPE)Mesh;
   H = Len/dMesh;
   Hi = 1.0/H;
   MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
-  mshift = Mesh-ip/2;
   dTeilchenzahli = 1.0/(FLOAT_TYPE)Teilchenzahl;
 
-  /* Initialisieren von Q_re und Q_im */
-  for(i=0;i<(2*Mesh*Mesh*Mesh); i++)
-    Qmesh[i] = 0.0;
+  /* Initialisieren von Qmesh */
+  memset(Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
 
   /* chargeassignment */
   for (i=0; i<Teilchenzahl; i++)
@@ -222,20 +213,7 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
       assign_charge(i, Q[i], Ri, Qmesh, 0);
     }
 
-    {
-    FILE *fq = fopen("qmesh_seq_cao7.dat", "w");
-    int i;
-    for(i=0;i<(Mesh*Mesh*Mesh);i++)
-      fprintf(fq, "%lf\n", Qmesh[2*i]);
-    fclose(fq);
-    }
-
-#ifdef CA_DEBUG
-  for(i=0;i<Mesh;i++)
-    for(j=0;j<Mesh;j++)
-      printf("CA_DEBUG: %lf %lf %lf\n", (Len/Mesh)*i, (Len/Mesh)*j, Qmesh[c_ind(i,j,0)]);
-  /* Durchfuehren der Fourier-Hin-Transformationen: */
-#endif
+  /* Forward Fast Fourier Transform */
   forward_fft();
  
   for (i=0; i<Mesh; i++)
@@ -249,7 +227,6 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
 	  Qmesh[c_index+1] *= T1;
 
           for(l=0;l<3;l++) {
-            double dop;
             switch(l) {
 	      case 0:
                 dop = Dn[i];
@@ -261,18 +238,19 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
                 dop = Dn[k];
                 break;
 	    }
-	    Fmesh[l][c_index]   = -2.0*PI*dop*Leni*Qmesh[c_index+1];
-	    Fmesh[l][c_index+1] =  2.0*PI*dop*Leni*Qmesh[c_index];
+	    Fmesh[l][c_index]   =  -2.0*PI*Leni*dop*Qmesh[c_index+1];
+	    Fmesh[l][c_index+1] =   2.0*PI*Leni*dop*Qmesh[c_index];
           }
 	}
 
   /* Durchfuehren der Fourier-Rueck-Transformation: */
 
   backward_fft();
+
   /* Force assignment */
   for(direction=0;direction<3;direction++) {       
     assign_forces(1.0/(2.0*Len*Len*Len), F_K[direction], Teilchenzahl, Fmesh[direction],0);
-    }
+  }
 
   return;
 }

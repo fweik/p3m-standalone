@@ -82,7 +82,7 @@ void Aliasing_sums_interlaced_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
     *Nenner : Aliasing-Summe im Nenner.
   */
   
-  static int aliasmax = 1; /* Genauigkeit der Aliasing-Summe (2 ist wohl genug) */
+  static int aliasmax = 2; /* Genauigkeit der Aliasing-Summe (2 ist wohl genug) */
   
   FLOAT_TYPE S,S1,S2,S3;
   FLOAT_TYPE fak1,fak2,zwi;
@@ -119,11 +119,11 @@ void Aliasing_sums_interlaced_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
               Zaehler[1] += NMY*zwi;
               Zaehler[2] += NMZ*zwi;
 	      
-	      //	      if (((MX+MY+MZ)%2)==0) {					//even term
+	       if (((MX+MY+MZ)%2)==0) {					//even term
 	        *Nenner2 += S3;
-		//	      } else {						//odd term: minus sign!
-	        //*Nenner2 -= S3;
-		//}
+	       } else {						//odd term: minus sign!
+	         *Nenner2 -= S3;
+	       }
 	    }
 	}
     }
@@ -143,7 +143,7 @@ void Influence_function_berechnen_ik_interlaced(FLOAT_TYPE alpha)
   int    NX,NY,NZ;
   FLOAT_TYPE Dnx,Dny,Dnz;
   FLOAT_TYPE dMesh,dMeshi;
-  FLOAT_TYPE Zaehler[3],Nenner1, Nenner2;
+  FLOAT_TYPE Zaehler[3]={0.0,0.0,0.0},Nenner1=0.0, Nenner2=0.0;
   FLOAT_TYPE zwi;
   
   dMesh = (FLOAT_TYPE)Mesh;
@@ -172,7 +172,7 @@ void Influence_function_berechnen_ik_interlaced(FLOAT_TYPE alpha)
 		  zwi /= ( SQR(Dnx) + SQR(Dny) + SQR(Dnz) );
                   zwi /= 0.5*(SQR(Nenner1) + SQR(Nenner2));		  
 
-		  G_hat[r_ind(NX,NY,NZ)] = 2.0 * Len * Len * zwi / PI;
+		  G_hat[r_ind(NX,NY,NZ)] = Mesh*Mesh*Mesh*2.0 * zwi * Leni * Leni;
 		}
 	    }
 	}
@@ -242,9 +242,8 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
 	assign_charge(i, Q[i], rpos, Qmesh, ii);
       }
     }
-
+  
   /* Durchfuehren der Fourier-Hin-Transformationen: */
-
   forward_fft();
 
   for (i=0; i<Mesh; i++)
@@ -255,10 +254,10 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
           FLOAT_TYPE dop;
 	  T1 = G_hat[r_ind(i,j,k)];
 
-          printf("ghat %lf\n", T1);
-
 	  Qmesh[c_index] *= T1;
 	  Qmesh[c_index+1] *= T1;
+
+          
 
           for(l=0;l<3;l++) {
             switch(l) {
@@ -272,21 +271,19 @@ void P3M_ik_interlaced(const FLOAT_TYPE alpha, const int Teilchenzahl)
                 dop = Dn[k];
                 break;
 	    }
-	    Fmesh[l][c_index]   = -2.0*PI*dop*Qmesh[c_index+1]*Leni;
-	    Fmesh[l][c_index+1] =  2.0*PI*dop*Qmesh[c_index]*Leni;
+	    Fmesh[l][c_index]   = -dop*Qmesh[c_index+1];
+	    Fmesh[l][c_index+1] =  dop*Qmesh[c_index];
           }
 
 	}
-  
-
   
   /* Durchfuehren der Fourier-Rueck-Transformation: */
   backward_fft();
    
   /* Kraftkomponenten: */
   for(i=0;i<3;i++) { 
-    assign_forces( 1.0/(2.0*Len*Len*Len), F_K[i], Teilchenzahl, Fmesh[i], 0);
-    assign_forces( 1.0/(2.0*Len*Len*Len), F_K[i], Teilchenzahl, Fmesh[i], 1);
+    assign_forces( 1.0/(Mesh*Mesh*Mesh), F_K[i], Teilchenzahl, Fmesh[i], 0);
+    assign_forces( 1.0/(Mesh*Mesh*Mesh), F_K[i], Teilchenzahl, Fmesh[i], 1);
   }
   return;
 }
