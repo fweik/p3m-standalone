@@ -31,7 +31,7 @@
 
 // #define WRITE_FORCES
 
-// #define FORCE_DEBUG
+ #define FORCE_DEBUG
 // #define CA_DEBUG
 
 #define r_ind(A,B,C) ((A)*Mesh*Mesh + (B)*Mesh + (C))
@@ -367,6 +367,7 @@ int main(int argc, char **argv)
       kspace_force = &P3M_ad;
       Influence_function_berechnen = &Influence_function_berechnen_ad;
       Init = &Init_ad;
+      error = &p3m_error_ad;
       break;
     case 4:
       method_name = "P3M with analytical diff, interlaced.";
@@ -386,7 +387,7 @@ int main(int argc, char **argv)
 
   Init(Teilchenzahl);
 
-  printf("# alpha\tDeltaF_abs\tDeltaF_rel\n");
+  printf("# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error", "K-Error");
   for (alpha=alphamin; alpha<=alphamax; alpha+=alphastep)
     { 
       Influence_function_berechnen(alpha);  /* Hockney/Eastwood */
@@ -408,10 +409,7 @@ int main(int argc, char **argv)
           rms_x += SQR(Fx_exa[i]);
           rms_y += SQR(Fy_exa[i]);
           rms_z += SQR(Fz_exa[i]);
-<<<<<<< HEAD
 #endif // FORCE_DEBUG
-=======
-	  #endif
 	  rms_k += SQR(Fxk_exa[i] - Fx_K[i]);
 	  rms_k += SQR(Fyk_exa[i] - Fy_K[i]);
 	  rms_k += SQR(Fzk_exa[i] - Fz_K[i]);
@@ -420,7 +418,6 @@ int main(int argc, char **argv)
 	  rms_r += SQR(Fy_exa[i] - Fyk_exa[i] - Fy_R[i]);
 	  rms_r += SQR(Fz_exa[i] - Fzk_exa[i] - Fz_R[i]);
 
->>>>>>> e8acefdefc7b8868e0627d07a0d04195fe281804
 	  FC2 += SQR(Fx_exa[i]) + SQR(Fy_exa[i]) + SQR(Fz_exa[i]);
 	  DeltaFC2 += SQR(Fx[i]-Fx_exa[i])+SQR(Fy[i]-Fy_exa[i])+SQR(Fz[i]-Fz_exa[i]);
 	}
@@ -437,13 +434,13 @@ int main(int argc, char **argv)
 	int mesh[3] = {Mesh, Mesh, Mesh};
         double box[3] = {Len, Len, Len};
         double estimate =  error(1.0, mesh, cao, Teilchenzahl, Q2, alpha*Len, rcut*Leni, box);
-        printf("% lf\t% e\t% e\t %e %e\n", alpha,DeltaF_abs, estimate, 
+        printf("%8lf\t%8e\t%8e\t %8e %8e\n", alpha,DeltaF_abs, estimate, 
 	       sqrt(rms_r)/Teilchenzahl, sqrt(rms_k)/Teilchenzahl);
 	fprintf(fout,"% lf\t% e\t% e\t% e\n",alpha,DeltaF_abs, DeltaF_rel, estimate);
       }
       else {
-	printf("% lf\t% e\t% e\n", alpha,DeltaF_abs,DeltaF_rel);
-	fprintf(fout,"% lf\t% e\t% e\n",alpha,DeltaF_abs, DeltaF_rel);
+	printf("%8lf\t%8e\t na\t%8e\t%8e\n", alpha,DeltaF_abs, sqrt(rms_r)/Teilchenzahl, sqrt(rms_k)/Teilchenzahl);
+	fprintf(fout,"% lf\t% e\t% e\t na\n",alpha,DeltaF_abs, DeltaF_rel);
       }
 #ifdef FORCE_DEBUG
       fprintf(stderr, "%lf rms %e %e %e\n", alpha, sqrt(rms_x), sqrt(rms_y), sqrt(rms_z));

@@ -154,7 +154,7 @@ void Influence_function_berechnen_ad(FLOAT_TYPE alpha)
 		  Aliasing_sums_ad(NX,NY,NZ,alpha,&Zaehler,&Nenner1, &Nenner2);
 		  zwi = Zaehler / ( Nenner1 * Nenner2 );
 
-		  G_hat[ind] = zwi * Len * Len / PI;
+		  G_hat[ind] = 2.0 * zwi / PI;
 		}
 	    }
 	}
