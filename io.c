@@ -19,14 +19,6 @@ void Exakte_Werte_einlesen(char *filename, int number_of_particles)
     fprintf(stderr, "Could not open '%s' for reading.\n", filename);
   }
 
-  Fx_exa = (FLOAT_TYPE *) realloc(Fx_exa, number_of_particles*sizeof(FLOAT_TYPE));
-  Fy_exa = (FLOAT_TYPE *) realloc(Fy_exa, number_of_particles*sizeof(FLOAT_TYPE));
-  Fz_exa = (FLOAT_TYPE *) realloc(Fz_exa, number_of_particles*sizeof(FLOAT_TYPE));
-
-  Fxk_exa = (FLOAT_TYPE *) realloc(Fxk_exa, number_of_particles*sizeof(FLOAT_TYPE));
-  Fyk_exa = (FLOAT_TYPE *) realloc(Fyk_exa, number_of_particles*sizeof(FLOAT_TYPE));
-  Fzk_exa = (FLOAT_TYPE *) realloc(Fzk_exa, number_of_particles*sizeof(FLOAT_TYPE));
-
   for (i=0; i<number_of_particles; ++i)
     fscanf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 	   &E_Coulomb,
@@ -59,7 +51,13 @@ void init_arrays(int Teilchenzahl) {
   Fy_D = (FLOAT_TYPE *) realloc(Fy_D, Teilchenzahl*sizeof(FLOAT_TYPE));
   Fz_D = (FLOAT_TYPE *) realloc(Fz_D, Teilchenzahl*sizeof(FLOAT_TYPE));
 
+  Fx_exa = (FLOAT_TYPE *) realloc(Fx_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fy_exa = (FLOAT_TYPE *) realloc(Fy_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fz_exa = (FLOAT_TYPE *) realloc(Fz_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
 
+  Fxk_exa = (FLOAT_TYPE *) realloc(Fxk_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fyk_exa = (FLOAT_TYPE *) realloc(Fyk_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
+  Fzk_exa = (FLOAT_TYPE *) realloc(Fzk_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
 }
 
 void Daten_einlesen(char *filename)

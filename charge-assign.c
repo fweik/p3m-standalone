@@ -150,9 +150,10 @@ void assign_charge_and_derivatives(int id, FLOAT_TYPE q,
           tmp2_z = LadInt_[i2][arg[2]];
 	  cur_ca_frac_val = q * tmp0 * tmp1 * tmp2;
           cf[ii][cf_cnt] = cur_ca_frac_val ;
-          dQdx[ii][cf_cnt] = tmp0_x * tmp1 * tmp2 * q;
-          dQdy[ii][cf_cnt] = tmp0 * tmp1_y * tmp2 * q;
-          dQdz[ii][cf_cnt] = tmp0 * tmp1 * tmp2_z * q;
+	  
+	  dQdx[ii][cf_cnt] = Leni * tmp0_x * tmp1 * tmp2 * q;
+	  dQdy[ii][cf_cnt] = Leni * tmp0 * tmp1_y * tmp2 * q;
+	  dQdz[ii][cf_cnt] = Leni * tmp0 * tmp1 * tmp2_z * q;
 
 	  p3m_rs_mesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
           cf_cnt++;

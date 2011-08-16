@@ -29,7 +29,7 @@
 // #define EXAKDAT "C100_10.exakt" 
  #define EXAKDAT "C4_10.exakt" 
 
-// #define WRITE_FORCES
+#define WRITE_FORCES
 
  #define FORCE_DEBUG
 // #define CA_DEBUG
@@ -74,7 +74,7 @@ void Realteil(FLOAT_TYPE alpha)
   const FLOAT_TYPE a5 =  1.061405429;
   const FLOAT_TYPE  p =  0.3275911;
 
-#pragma omp paralell for privat(dx,dy,dz, r, ar, erfc_teil, fak, t2)
+#pragma omp parallel for private(dx,dy,dz, r, ar, erfc_teil, fak, t2)
   for (t1=0; t1<Teilchenzahl-1; t1++)   /* Quick and Dirty N^2 */
     for (t2=t1+1; t2<Teilchenzahl; t2++)
       {
@@ -242,49 +242,41 @@ void check_g(void) {
 
 }
 
-void check_k(void) {
-  FILE *f = fopen("p3m-wall-k.dat", "r");
+void calc_reference_forces(char *forces_file) {
+  FILE *fin;
+  int i;
 
-  double rms_k = 0.0, rms_r =0.0;
-    int i;
-  FLOAT_TYPE E_Coulomb;
-  
-  Fxk_exa = (FLOAT_TYPE *) realloc(Fxk_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
-  Fyk_exa = (FLOAT_TYPE *) realloc(Fyk_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
-  Fzk_exa = (FLOAT_TYPE *) realloc(Fzk_exa, Teilchenzahl*sizeof(FLOAT_TYPE));
-
-
-
-  for (i=0; i<Teilchenzahl; ++i) {
-    fscanf(f,"%lf\t%lf\t%lf\t%lf\n",
-	   &E_Coulomb,
-	   &Fxk_exa[i],
-	   &Fyk_exa[i],
-	   &Fzk_exa[i]); 
-
-    rms_k += SQR(Fxk_exa[i] - Fx_K[i]);
-    rms_k += SQR(Fyk_exa[i] - Fy_K[i]);
-    rms_k += SQR(Fzk_exa[i] - Fz_K[i]);
-
-    rms_r += SQR(Fx_exa[i] - Fxk_exa[i] - Fx_R[i]);
-    rms_r += SQR(Fy_exa[i] - Fyk_exa[i] - Fy_R[i]);
-    rms_r += SQR(Fz_exa[i] - Fzk_exa[i] - Fz_R[i]);
+  alpha = Ewald_compute_optimal_alpha(rcut, Teilchenzahl);
+  printf("Optimal alpha is %lf (error: %e)\n", alpha, Ewald_estimate_error(alpha, rcut, Teilchenzahl));
+  Ewald_init(Teilchenzahl);
+  Ewald_compute_influence_function(alpha);
+  kspace_force = &Ewald_k_space;
+  Elstat_berechnen(alpha);
+  fin = fopen(forces_file, "w");
+  if(fin == NULL) {
+    fprintf(stderr, "Could not open '%s' for writing!.\n", forces_file);
+    exit(-1);
   }
-  fclose(f);
-
-  printf("kspace deviation %e\n", sqrt(rms_k)/Teilchenzahl);
-  printf("rspace deviation %e\n", sqrt(rms_r)/Teilchenzahl);
+  printf("Writing forces to %s\n", forces_file);
+  for(i=0;i<Teilchenzahl;i++) {
+    fprintf(fin, "%d %.22e %.22e %.22e %.22e %.22e %.22e\n", 
+	    i, Fx[i], Fy[i], Fz[i], Fx_K[i], Fy_K[i], Fz_K[i]);
+    Fx_exa[i] = Fx[i];
+    Fy_exa[i] = Fy[i];
+    Fz_exa[i] = Fz[i];
+    Fxk_exa[i] = Fx_K[i];
+    Fyk_exa[i] = Fy_K[i];
+    Fzk_exa[i] = Fz_K[i];
+  }
+  fclose(fin);
 }
 
 int main(int argc, char **argv)
 {
   int    i;
-  long   m;
-  FLOAT_TYPE d;
-  FLOAT_TYPE sx,sy,sz;
-  FLOAT_TYPE EC2,DeltaEC2,FC2,DeltaFC2;
+  FLOAT_TYPE EC2,FC2,DeltaFC2;
   FLOAT_TYPE rms_x=0.0, rms_y=0.0, rms_z=0.0;
-  FLOAT_TYPE DeltaE_rel,DeltaE_abs,DeltaF_rel,DeltaF_abs;
+  FLOAT_TYPE DeltaF_rel,DeltaF_abs;
   FLOAT_TYPE alphamin,alphamax,alphastep;
   FLOAT_TYPE rms_k = 0.0, rms_r = 0.0;
   int method;
@@ -309,35 +301,14 @@ int main(int argc, char **argv)
 
   Interpolationspolynom_berechnen(ip);    /* Hockney/Eastwood */
 
-  /*
-  for (i=0; i<Teilchenzahl; i++)
-    {
-      xS[i]-=floor(xS[i]*Leni)*Len;
-      yS[i]-=floor(yS[i]*Leni)*Len;
-      zS[i]-=floor(zS[i]*Leni)*Len;
-    }
-  */
   Differenzenoperator_berechnen();    /* kontinuierlich, d.h. DIFFERENTIAL! */
-  
-
 
   #ifdef WRITE_FORCES
-  alpha = Ewald_compute_optimal_alpha(rcut, Teilchenzahl);
-  printf("Optimal alpha is %lf (error: %e)\n", alpha, Ewald_estimate_error(alpha, rcut, Teilchenzahl));
-  Ewald_init(Teilchenzahl);
-  Ewald_compute_influence_function(alpha);
-  kspace_force = &Ewald_k_space;
-  Elstat_berechnen(alpha);
-  fout = fopen(argv[2], "w");
-  printf("Writing forces to %s\n", argv[2]);
-  for(i=0;i<Teilchenzahl;i++) {
-    fprintf(fout, "%d %.22e %.22e %.22e %.22e %.22e %.22e\n", 
-	    i, Fx[i], Fy[i], Fz[i], Fx_K[i], Fy_K[i], Fz_K[i]);
-  }
-  fclose(fout);
+  calc_reference_forces(argv[2]);
   #endif
-
+  #ifndef WRITE_FORCES
   Exakte_Werte_einlesen(argv[2], Teilchenzahl, &Fx_exa, &Fy_exa, &Fz_exa);
+  #endif
 
   //  printf("Teilchenzahl %d, F_exa ( %p %p %p )\n", Teilchenzahl, Fx_exa, Fy_exa, Fz_exa);
 
@@ -404,7 +375,7 @@ int main(int argc, char **argv)
       rms_k = rms_r = 0.0;
       for (i=0; i<Teilchenzahl; i++)
 	{
-	  #ifdef FORCE_DEBUG
+#ifdef FORCE_DEBUG
           printf("Particle %d Total Force (%g %g %g) [R(%g %g %g) K(%g %g %g)] reference (%g %g %g)\n", i, Fx[i], Fy[i], Fz[i], Fx_R[i], Fy_R[i], Fz_R[i], Fx_K[i], Fy_K[i], Fz_K[i], Fx_exa[i], Fy_exa[i], Fz_exa[i]);
           rms_x += SQR(Fx_exa[i]);
           rms_y += SQR(Fy_exa[i]);
@@ -449,6 +420,7 @@ int main(int argc, char **argv)
       fflush(fout);
     }
     fclose(fout);
-
+    
+    return 0;
 }
 
