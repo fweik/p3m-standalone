@@ -175,55 +175,11 @@ void Elstat_berechnen(FLOAT_TYPE alpha)
     }
 }
 
-
-void Differenzenoperator_berechnen(void)
-{
-  /* 
-     Die Routine berechnet den fourieretransformierten 
-     Differentialoperator auf der Ebene der n, nicht der k,
-     d.h. der Faktor  i*2*PI/L fehlt hier!
-  */
-  
-  int    i;
-  FLOAT_TYPE dMesh=(FLOAT_TYPE)Mesh;
-  FLOAT_TYPE dn;
-
-  Dn = (FLOAT_TYPE *) realloc(Dn, Mesh*sizeof(FLOAT_TYPE));  
-
-  fprintf(stderr,"Fouriertransformierten DIFFERENTIAL-Operator vorberechnen...");
-  
-  for (i=0; i<Mesh; i++)
-    {
-      dn    = (FLOAT_TYPE)i; 
-      dn   -= round(dn/dMesh)*dMesh;
-      Dn[i] = dn;
-    }
-
-  Dn[Mesh/2] = 0.0;  
-
-  fprintf(stderr,"\n");
-}
-
-void nshift_ausrechnen(void)
-{
-  /* Verschiebt die Meshpunkte um Mesh/2 */
-  
-  int    i;
-  FLOAT_TYPE dMesh=(FLOAT_TYPE)Mesh;
-
-  fprintf(stderr,"Mesh-Verschiebung vorberechnen...");
-
-  nshift = (FLOAT_TYPE *) realloc(nshift, Mesh*sizeof(FLOAT_TYPE));  
-
-  for (i=0; i<Mesh; i++) nshift[i] = i - round(i/dMesh)*dMesh; 
-  
-  fprintf(stderr,"\n");
-}
-
 void usage(char *name) {
   fprintf(stderr, "usage: %s <positions> <forces> <alpha_min> <alpha_max> <alpha_step> <method>\n", name);
 }
 
+/*
 void check_g(void) {
   int i,j,k;
   FILE *f = fopen("p3m-wall-gforce.dat", "r");
@@ -241,26 +197,18 @@ void check_g(void) {
   printf("g_hat rms %e\n", sqrt(rms_g)/(64*64*64));
 
 }
-
+*/
 void calc_reference_forces(char *forces_file) {
-  FILE *fin;
   int i;
 
   alpha = Ewald_compute_optimal_alpha(rcut, Teilchenzahl);
-  printf("Optimal alpha is %lf (error: %e)\n", alpha, Ewald_estimate_error(alpha, rcut, Teilchenzahl));
+  fprintf(stderr, "Optimal alpha is %lf (error: %e)\n", alpha, Ewald_estimate_error(alpha, rcut, Teilchenzahl));
   Ewald_init(Teilchenzahl);
   Ewald_compute_influence_function(alpha);
   kspace_force = &Ewald_k_space;
   Elstat_berechnen(alpha);
-  fin = fopen(forces_file, "w");
-  if(fin == NULL) {
-    fprintf(stderr, "Could not open '%s' for writing!.\n", forces_file);
-    exit(-1);
-  }
-  printf("Writing forces to %s\n", forces_file);
+
   for(i=0;i<Teilchenzahl;i++) {
-    fprintf(fin, "%d %.22e %.22e %.22e %.22e %.22e %.22e\n", 
-	    i, Fx[i], Fy[i], Fz[i], Fx_K[i], Fy_K[i], Fz_K[i]);
     Fx_exa[i] = Fx[i];
     Fy_exa[i] = Fy[i];
     Fz_exa[i] = Fz[i];
@@ -268,28 +216,32 @@ void calc_reference_forces(char *forces_file) {
     Fyk_exa[i] = Fy_K[i];
     Fzk_exa[i] = Fz_K[i];
   }
-  fclose(fin);
 }
 
 int main(int argc, char **argv)
 {
   int    i;
+  int methodnr;
   FLOAT_TYPE EC2,FC2,DeltaFC2;
+#ifdef FORCE_DEBUG
   FLOAT_TYPE rms_x=0.0, rms_y=0.0, rms_z=0.0;
+#endif
   FLOAT_TYPE DeltaF_rel,DeltaF_abs;
   FLOAT_TYPE alphamin,alphamax,alphastep;
   FLOAT_TYPE rms_k = 0.0, rms_r = 0.0;
-  int method;
-  char *method_name;  
 
   FILE* fout;
+
+  system_t system;
+  method_t *method;
+  p3m_parameters_t parameters;
 
   if(argc != 7) {
     usage(argv[0]);
     return 128;
   }
 
-  Daten_einlesen(argv[1]);
+  Daten_einlesen(&system, &parameters, argv[1]);
 
   nshift_ausrechnen();
 
@@ -297,28 +249,20 @@ int main(int argc, char **argv)
   alphamax = atof(argv[4]);
   alphastep = atof(argv[5]);
 
-  method = atoi(argv[6]);
+  methodnr = atoi(argv[6]);
 
-  Interpolationspolynom_berechnen(ip);    /* Hockney/Eastwood */
-
-  Differenzenoperator_berechnen();    /* kontinuierlich, d.h. DIFFERENTIAL! */
+  Interpolationspolynom_berechnen(parameters.ip);    /* Hockney/Eastwood */
 
   #ifdef WRITE_FORCES
   calc_reference_forces(argv[2]);
   #endif
   #ifndef WRITE_FORCES
-  Exakte_Werte_einlesen(argv[2], Teilchenzahl, &Fx_exa, &Fy_exa, &Fz_exa);
+  Exakte_Werte_einlesen(argv[2], &system);
   #endif
 
-  //  printf("Teilchenzahl %d, F_exa ( %p %p %p )\n", Teilchenzahl, Fx_exa, Fy_exa, Fz_exa);
-
-  switch(method) {
-    case 0:
-      method_name = "P3M with ik-differentiation, not interlaced";
-      kspace_force = &P3M_ik;
-      Influence_function_berechnen = &Influence_function_berechnen_ik;
-      Init = &Init_ik;
-      error = &p3m_error_ik;
+  switch(methodnr) {
+    case method_p3m_ik.method_id:
+      method = &method_p3m_ik;
       break;
     case 1:
       method_name = "P3M with ik-differentiation, interlaced";
@@ -396,11 +340,6 @@ int main(int argc, char **argv)
       DeltaF_abs = sqrt(DeltaFC2/(FLOAT_TYPE)Teilchenzahl);
       DeltaF_rel = DeltaF_abs/sqrt(FC2);
       
-      /* AUSGABE:
-	 1. Spalte: alpha
-	 2. Spalte: absoluter Fehler in der Kraft
-	 3. Spalte: relativer Fehler in der Kraft
-      */
       if(error != NULL) {
 	int mesh[3] = {Mesh, Mesh, Mesh};
         double box[3] = {Len, Len, Len};
