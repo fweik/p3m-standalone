@@ -48,7 +48,8 @@ typedef struct {
 enum {
   P3M_FLAG_ik = 1,
   P3M_FLAG_ad = 2,
-  P3M_FLAG_interlaced = 4
+  P3M_FLAG_interlaced = 4,
+  P3M_FLAG_nshift = 8
 };
 
 // methode type

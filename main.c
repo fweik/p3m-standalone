@@ -22,116 +22,20 @@
 
 #include "io.h"
 
+// Real space part
+
+#include "realpart.h"
+
+// Dipol correction
+
+#include "dipol.h"
+
 // #define WRITE_FORCES
 
 // #define FORCE_DEBUG
 // #define CA_DEBUG
 
-#define r_ind(A,B,C) ((A)*Mesh*Mesh + (B)*Mesh + (C))
-#define c_ind(A,B,C) (2*Mesh*Mesh*(A)+2*Mesh*(B)+2*(C))
-
-void print_ghat() {
-  int i;
-  if(G_hat == NULL)
-    return;
-  for(i=0;i<(Mesh*Mesh*Mesh);i++)
-    printf("G_hat %e\n", G_hat[i]);
-}
-
-/*
-void (*Influence_function_berechnen)(FLOAT_TYPE);
-void (*kspace_force)(FLOAT_TYPE,int);
-void (*Init)(int);
-double (*error)(double, int*, int, int, double, double, double, double *) = NULL;
-*/
-
-void Realteil(FLOAT_TYPE alpha)
-{
-  /* Zwei Teilchennummern: */
-  int t1,t2;
-  /* Minimum-Image-Abstand: */
-  FLOAT_TYPE dx,dy,dz,r;
-  /* Staerke der elegktrostatischen Kraefte */
-  FLOAT_TYPE fak;
-  /* Zur Approximation der Fehlerfunktion */
-  FLOAT_TYPE t,ar,erfc_teil;
-
-  const FLOAT_TYPE wupi = 1.77245385090551602729816748334;
-
-  /* Zur Approximation der komplementaeren Fehlerfunktion benoetigte
-     Konstanten. Die Approximation stammt aus Abramowitz/Stegun:
-     Handbook of Mathematical Functions, Dover (9. ed.), Kapitel 7. */
-  const FLOAT_TYPE a1 =  0.254829592;
-  const FLOAT_TYPE a2 = -0.284496736;
-  const FLOAT_TYPE a3 =  1.421413741;
-  const FLOAT_TYPE a4 = -1.453152027;
-  const FLOAT_TYPE a5 =  1.061405429;
-  const FLOAT_TYPE  p =  0.3275911;
-
-#pragma omp parallel for private(dx,dy,dz, r, ar, erfc_teil, fak, t2)
-  for (t1=0; t1<Teilchenzahl-1; t1++)   /* Quick and Dirty N^2 */
-    for (t2=t1+1; t2<Teilchenzahl; t2++)
-      {
-	dx = xS[t1] - xS[t2]; dx -= round(dx*Leni)*Len;
-	dy = yS[t1] - yS[t2]; dy -= round(dy*Leni)*Len; 
-	dz = zS[t1] - zS[t2]; dz -= round(dz*Leni)*Len;
-
-	r = sqrt(SQR(dx) + SQR(dy) + SQR(dz));
-	if (r<=rcut)
-	  {
-	    ar= alpha*r;
-	    //t = 1.0 / (1.0 + p*ar);
-	    //erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
-	    erfc_teil = erfc(ar);
-	    fak = Q[t1]*Q[t2]*
-	      (erfc_teil/r+(2*alpha/wupi)*exp(-ar*ar))/SQR(r);
-	    
-	    Fx_R[t1] += fak*dx;
-	    Fy_R[t1] += fak*dy;
-	    Fz_R[t1] += fak*dz;
-	    Fx_R[t2] -= fak*dx;
-	    Fy_R[t2] -= fak*dy;
-	    Fz_R[t2] -= fak*dz;
-	  }	 
-      }
-}
-
-
-void Dipol(FLOAT_TYPE alpha)
-{
-  FLOAT_TYPE SummeX,SummeY,SummeZ;
-  FLOAT_TYPE VorFak;
-  FLOAT_TYPE d;
-  int i;
-
-  SummeX=SummeY=SummeZ=0.0;
-  VorFak=4.0*PI/(3.0*Len*Len*Len);
-
-  for (i=0; i<Teilchenzahl; ++i)
-    if (Q[i]!=0)
-      {
-	SummeX += Q[i]*xS[i];
-	SummeY += Q[i]*yS[i];
-	SummeZ += Q[i]*zS[i];
-      }
-
- //   Coulomb-Energie: 
-
-  SummeX *= (Bjerrum*Temp*VorFak);
-  SummeY *= (Bjerrum*Temp*VorFak);  
-  SummeZ *= (Bjerrum*Temp*VorFak);
-
- // Kraefte: 
-  for (i=0; i<Teilchenzahl; ++i)
-    if (Q[i]!=0)
-      {
-	Fx_D[i] -= Q[i]*SummeX;
-	Fy_D[i] -= Q[i]*SummeY;
-	Fz_D[i] -= Q[i]*SummeZ;
-      }
-}
-
-void Elstat_berechnen(FLOAT_TYPE alpha)
+void Elstat_berechnen(system_t *s. p3m_parameters_t *p, method_t *m)
 {
   /* 
      Zuerst werden die Kraefte und Energien auf Null 
@@ -139,77 +43,52 @@ void Elstat_berechnen(FLOAT_TYPE alpha)
      Orts-und Impulsraum sowie die Dipolkorrektur aufaddiert. (P3M)
   */
 
-  int i;
-  for (i=0; i<Teilchenzahl; i++) 
+  int i, j;
+  
+  for (i=0; i<3; i++) 
     {
-      Fx[i]   = Fy[i]   = Fz[i]   = 0.0;
-      Fx_R[i] = Fy_R[i] = Fz_R[i] = 0.0;
-      Fx_K[i] = Fy_K[i] = Fz_K[i] = 0.0;
-      Fx_D[i] = Fy_D[i] = Fz_D[i] = 0.0;
+      memset(s->f.fields[i], 0, s->nparticles*sizeof(FLOAT_TYPE));
+      memset(s->f_k.fields[i], 0, s->nparticles*sizeof(FLOAT_TYPE));
+      memset(s->f_r.fields[i], 0, s->nparticles*sizeof(FLOAT_TYPE));
     }
-    
+  
+  Realteil(s, p);
 
+  //  Dipol(s, p);
   
-  E_Coulomb_Dipol = E_Coulomb_Self = E_Coulomb_Impuls_Summe = E_Coulomb_Real_Summe = 0.0;
-  
-  Realteil(alpha);
+  m->Kspace_force(s, p);
 
-  //  Dipol(alpha);
-  
-  kspace_force(alpha, Teilchenzahl);
-  
-  for (i=0; i<Teilchenzahl; i++) 
-    {
-      Fx[i] += (Fx_R[i]+Fx_K[i]);
-      Fy[i] += (Fy_R[i]+Fy_K[i]);
-      Fz[i] += (Fz_R[i]+Fz_K[i]);
-#ifdef FORCE_DEBUG
-      printf("Particle %d Total Force (%g %g %g) [R(%g %g %g) K(%g %g %g)]\n", i, Fx[i], Fy[i], Fz[i], Fx_R[i], Fy_R[i], Fz_R[i], Fx_K[i], Fy_K[i], Fz_K[i]);
-#endif
-    }
+  for(j=0; j < 3; j++) {
+    #pragma omp parallel for
+    for (i=0; i<s->nparticles; i++) 	    
+      {
+	s->f.fields[j][i] += s->f_k.fields[j][i] + s->f_r.fields[j][i];
+      }
+  }
 }
 
 void usage(char *name) {
   fprintf(stderr, "usage: %s <positions> <forces> <alpha_min> <alpha_max> <alpha_step> <method>\n", name);
 }
 
-/*
-void check_g(void) {
-  int i,j,k;
-  FILE *f = fopen("p3m-wall-gforce.dat", "r");
-  double g_now = 0.0, rms_g = 0.0;
+void calc_reference_forces(system_t *s, p3m_parameters_t *p) {
+  int i,j;
+  p3m_parameters_t op = *p;
+  
+  op.alpha = Ewald_compute_optimal_alpha(op.rcut, s->nparticles);
+  
+  fprintf(stderr, "Optimal alpha is %lf (error: %e)\n", op.alpha, Ewald_estimate_error(op.alpha, op.rcut, s->nparticles));
+  
+  Ewald_init(s->nparticles);
+  Ewald_compute_influence_function(op.alpha);
 
-  printf("g handle %p\n", f);
+  Elstat_berechnen(s, &op, &method_ewald);
 
-  for(i=0;i<64;i++) 
-    for(j=0;j<64;j++)
-      for(k=0;k<64;k++) {
-	fscanf( f, "%lf", &g_now);
-	//	printf("g_diff %e %e %e\n", G_hat[r_ind(k,i,j)], g_now, G_hat[r_ind(k,i,j)] - g_now);
-	rms_g += SQR(G_hat[r_ind(k,i,j)] - g_now);
-  }
-  printf("g_hat rms %e\n", sqrt(rms_g)/(64*64*64));
-
-}
-*/
-void calc_reference_forces(char *forces_file) {
-  int i;
-
-  alpha = Ewald_compute_optimal_alpha(rcut, Teilchenzahl);
-  fprintf(stderr, "Optimal alpha is %lf (error: %e)\n", alpha, Ewald_estimate_error(alpha, rcut, Teilchenzahl));
-  Ewald_init(Teilchenzahl);
-  Ewald_compute_influence_function(alpha);
-  kspace_force = &Ewald_k_space;
-  Elstat_berechnen(alpha);
-
-  for(i=0;i<Teilchenzahl;i++) {
-    Fx_exa[i] = Fx[i];
-    Fy_exa[i] = Fy[i];
-    Fz_exa[i] = Fz[i];
-    Fxk_exa[i] = Fx_K[i];
-    Fyk_exa[i] = Fy_K[i];
-    Fzk_exa[i] = Fz_K[i];
-  }
+  for(j=0;j<3;j++)
+    for(i=0;i<s->nparticles;i++) {
+      s->reference.f.fields[j][i] = s->f.fields[j][i];
+      s->reference.f_k.fields[j][i] = s->f_k.fields[j][i];
+    }
 }
 
 int main(int argc, char **argv)

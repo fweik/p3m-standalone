@@ -11,4 +11,6 @@ FLOAT_TYPE Ewald_estimate_error(FLOAT_TYPE, FLOAT_TYPE, int);
 
 double Ewald_error_wrapper(double a, int *b, int c, int NP, double e, double alpha_L, double r_cut_iL, double *box_l);
 
+const method_t method_ewald;
+
 #endif

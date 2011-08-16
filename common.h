@@ -1,6 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <stdlib.h>
+
 // Set floating point precision
 
 #define DOUBLE_PREC
@@ -67,6 +69,8 @@ typedef
     FLOAT_TYPE q2;
     // the reference forces
     reference_forces_t reference;
+    // dielectric constat of the environment at infinity
+    FLOAT_TYPE epsilon;
 } system_t;
 
 void Init_system(system_t *);
