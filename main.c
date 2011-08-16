@@ -35,7 +35,9 @@
 // #define FORCE_DEBUG
 // #define CA_DEBUG
 
-void Elstat_berechnen(system_t *s. p3m_parameters_t *p, method_t *m)
+void Elstat_berechnen(system_t *, p3m_parameters_t *, method_t *);
+
+void Elstat_berechnen(system_t *s, p3m_parameters_t *p, method_t *m)
 {
   /* 
      Zuerst werden die Kraefte und Energien auf Null 
