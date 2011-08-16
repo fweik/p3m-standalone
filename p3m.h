@@ -17,6 +17,8 @@ FLOAT_TYPE LadInt_[Maxip+1][2*MaxInterpol+1];
 int *ca_ind[2];
 FLOAT_TYPE *cf[2];
 
+
+
 // Struct holding p3m parameters.
 
 typedef struct {
@@ -41,11 +43,20 @@ typedef struct {
   FLOAT_TYPE *dQdx[2], *dQdy[2], *dQdz[2];
 } p3m_data_t;
 
+// Flags for method_t
+
+enum {
+  P3M_FLAG_ik = 1,
+  P3M_FLAG_ad = 2,
+  P3M_FLAG_interlaced = 4
+};
+
 // methode type
 
 typedef struct {
   int  method_id;
   const char *method_name;
+  char flags;
   void (*Init)(system_t *, p3m_parameters_t *);
   void (*Influence_function)(system_t *, p3m_parameters_t *);
   void (*Kspace_force)(system_t *, p3m_parameters_t *);

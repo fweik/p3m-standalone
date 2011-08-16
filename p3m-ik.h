@@ -8,6 +8,6 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl);
 void Init_ik(int Teilchenzahl);
 
 
-const methode_t method_p3m_ik = { 0, "P3M with ik differentiation, not intelaced.", &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, NULL };
+const method_t method_p3m_ik = { 0, "P3M with ik differentiation, not intelaced.", P3M_FLAG_ik, &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, NULL };
 
 #endif

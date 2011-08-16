@@ -22,16 +22,9 @@
 
 #include "io.h"
 
-/* Name der Datei, in der die zu bearbeitende Konfiguration steht: */
-// #define EINLESDAT "C100_10" 
- #define EINLESDAT "C4_10" 
-/* Name der Datei, in der die exakten Energien und Kraefte stehen: */
-// #define EXAKDAT "C100_10.exakt" 
- #define EXAKDAT "C4_10.exakt" 
+// #define WRITE_FORCES
 
-#define WRITE_FORCES
-
- #define FORCE_DEBUG
+// #define FORCE_DEBUG
 // #define CA_DEBUG
 
 #define r_ind(A,B,C) ((A)*Mesh*Mesh + (B)*Mesh + (C))
@@ -45,11 +38,12 @@ void print_ghat() {
     printf("G_hat %e\n", G_hat[i]);
 }
 
+/*
 void (*Influence_function_berechnen)(FLOAT_TYPE);
 void (*kspace_force)(FLOAT_TYPE,int);
 void (*Init)(int);
 double (*error)(double, int*, int, int, double, double, double, double *) = NULL;
-
+*/
 
 void Realteil(FLOAT_TYPE alpha)
 {
@@ -220,12 +214,12 @@ void calc_reference_forces(char *forces_file) {
 
 int main(int argc, char **argv)
 {
-  int    i;
+  int    i,j;
   int methodnr;
   FLOAT_TYPE EC2,FC2,DeltaFC2;
-#ifdef FORCE_DEBUG
-  FLOAT_TYPE rms_x=0.0, rms_y=0.0, rms_z=0.0;
-#endif
+
+  FLOAT_TYPE rms_v[3];
+
   FLOAT_TYPE DeltaF_rel,DeltaF_abs;
   FLOAT_TYPE alphamin,alphamax,alphastep;
   FLOAT_TYPE rms_k = 0.0, rms_r = 0.0;
@@ -233,7 +227,7 @@ int main(int argc, char **argv)
   FILE* fout;
 
   system_t system;
-  method_t *method;
+  method_t method;
   p3m_parameters_t parameters;
 
   if(argc != 7) {
@@ -241,6 +235,7 @@ int main(int argc, char **argv)
     return 128;
   }
 
+  // Inits the system and reads particle data and parameters from file.
   Daten_einlesen(&system, &parameters, argv[1]);
 
   nshift_ausrechnen();
@@ -257,100 +252,72 @@ int main(int argc, char **argv)
   calc_reference_forces(argv[2]);
   #endif
   #ifndef WRITE_FORCES
-  Exakte_Werte_einlesen(argv[2], &system);
+  Exakte_Werte_einlesen(&system, argv[2]);
   #endif
 
-  switch(methodnr) {
-    case method_p3m_ik.method_id:
-      method = &method_p3m_ik;
-      break;
-    case 1:
-      method_name = "P3M with ik-differentiation, interlaced";
-      kspace_force = &P3M_ik_interlaced;
-      Influence_function_berechnen = &Influence_function_berechnen_ik_interlaced;
-      Init = &Init_interlaced_ik;
-      break;
-    case 2:
-      method_name = "Ewald summation.";
-      kspace_force = &Ewald_k_space;
-      Influence_function_berechnen = &Ewald_compute_influence_function;
-      Init = &Ewald_init;
-      error = &Ewald_error_wrapper;
-      break;
-    case 3:
-      method_name = "P3M with analytical diff, noninterlaced.";
-      kspace_force = &P3M_ad;
-      Influence_function_berechnen = &Influence_function_berechnen_ad;
-      Init = &Init_ad;
-      error = &p3m_error_ad;
-      break;
-    case 4:
-      method_name = "P3M with analytical diff, interlaced.";
-      kspace_force = &P3M_ad_interlaced;
-      Influence_function_berechnen = &Influence_function_berechnen_ad_interlaced;
-      Init = &Init_ad_interlaced;
-      break;
-    default:
-      fprintf(stderr, "Method %d not know.\n", method);
-      return 127;
+  if(methodnr == method_p3m_ik.method_id) 
+    method = method_p3m_ik;
+  else if(methodnr == method_p3m_ik_i.method_id) 
+    method = method_p3m_ik_i;
+  else if(methodnr == method_p3m_ad.method_id) 
+    method = method_p3m_ad;
+  else if(methodnr == method_p3m_ad_i.method_id) 
+    method = method_p3m_ad_i;
+  else {
+    fprintf(stderr, "Method %d not know.", methodnr);
+    exit(126);
   }
 
-  printf("Using %s.\n", method_name);
+  fprintf(stderr, "Using %s.\n", method.method_name);
 
-  //VB
   fout = fopen("out.dat","w");
 
-  Init(Teilchenzahl);
+  method.Init(&system, &parameters);
 
   printf("# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error", "K-Error");
-  for (alpha=alphamin; alpha<=alphamax; alpha+=alphastep)
+  for (parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep)
     { 
-      Influence_function_berechnen(alpha);  /* Hockney/Eastwood */
+      method.Influence_function(&system, &parameters);  /* Hockney/Eastwood */
   
-      Elstat_berechnen(alpha); /* Hockney/Eastwood */
+      Elstat_berechnen(parameters.alpha); /* Hockney/Eastwood */
   
-      /* ACHTUNG: 
-	 Der Dipolanteil ist in der Energie NICHT dabei! 
-	 Ausserdem wird die Energie zuerst summiert, dann wird 
-	 die Differenz zur exakten Gesamtenergie gebildet und dann
-	 wird durch die Teilchenzahl dividiert.
-      */
       EC2 = FC2 = DeltaFC2 = 0.0;
       rms_k = rms_r = 0.0;
-      for (i=0; i<Teilchenzahl; i++)
+      rms_v[0] = rms_v[1] = rms_v[2] = 0.0;
+      for (i=0; i<system.nparticles; i++)
 	{
-#ifdef FORCE_DEBUG
-          printf("Particle %d Total Force (%g %g %g) [R(%g %g %g) K(%g %g %g)] reference (%g %g %g)\n", i, Fx[i], Fy[i], Fz[i], Fx_R[i], Fy_R[i], Fz_R[i], Fx_K[i], Fy_K[i], Fz_K[i], Fx_exa[i], Fy_exa[i], Fz_exa[i]);
-          rms_x += SQR(Fx_exa[i]);
-          rms_y += SQR(Fy_exa[i]);
-          rms_z += SQR(Fz_exa[i]);
-#endif // FORCE_DEBUG
-	  rms_k += SQR(Fxk_exa[i] - Fx_K[i]);
-	  rms_k += SQR(Fyk_exa[i] - Fy_K[i]);
-	  rms_k += SQR(Fzk_exa[i] - Fz_K[i]);
-	  
-	  rms_r += SQR(Fx_exa[i] - Fxk_exa[i] - Fx_R[i]);
-	  rms_r += SQR(Fy_exa[i] - Fyk_exa[i] - Fy_R[i]);
-	  rms_r += SQR(Fz_exa[i] - Fzk_exa[i] - Fz_R[i]);
+	  for(j=0;j<3;j++) {
+	    rms_v[j] += SQR(system.reference.f.fields[j][i] - system.f.fields[j][i]);
 
-	  FC2 += SQR(Fx_exa[i]) + SQR(Fy_exa[i]) + SQR(Fz_exa[i]);
-	  DeltaFC2 += SQR(Fx[i]-Fx_exa[i])+SQR(Fy[i]-Fy_exa[i])+SQR(Fz[i]-Fz_exa[i]);
+	    rms_k += SQR(system.reference.f_k.fields[j][i] 
+			 - system.f_k.fields[j][i]);
+	    rms_r += SQR(system.reference.f.fields[j][i] 
+			 - system.reference.f_k.fields[j][i] 
+			 - system.f.fields[j][i]);
+
+	    DeltaFC2 += SQR(system.f.fields[j][i] 
+			    - system.reference.f.fields[j][i]);
+	    
+	    FC2 += SQR(system.reference.f.fields[j][i]);
+	  }
+#ifdef FORCE_DEBUG
+          printf("Particle %d Total Force (%g %g %g) [R(%g %g %g) K(%g %g %g)] reference (%g %g %g)\n", i, 
+		 Fx[i], Fy[i], Fz[i], Fx_R[i], Fy_R[i], Fz_R[i], Fx_K[i], Fy_K[i], Fz_K[i], Fx_exa[i], Fy_exa[i], Fz_exa[i]);
+#endif // FORCE_DEBUG
 	}
       
-      DeltaF_abs = sqrt(DeltaFC2/(FLOAT_TYPE)Teilchenzahl);
+      DeltaF_abs = sqrt(DeltaFC2/(FLOAT_TYPE)system.nparticles);
       DeltaF_rel = DeltaF_abs/sqrt(FC2);
       
-      if(error != NULL) {
-	int mesh[3] = {Mesh, Mesh, Mesh};
-        double box[3] = {Len, Len, Len};
-        double estimate =  error(1.0, mesh, cao, Teilchenzahl, Q2, alpha*Len, rcut*Leni, box);
-        printf("%8lf\t%8e\t%8e\t %8e %8e\n", alpha,DeltaF_abs, estimate, 
-	       sqrt(rms_r)/Teilchenzahl, sqrt(rms_k)/Teilchenzahl);
-	fprintf(fout,"% lf\t% e\t% e\t% e\n",alpha,DeltaF_abs, DeltaF_rel, estimate);
+      if(method.Error != NULL) {
+        double estimate =  method.Error(&system, &parameters);
+        printf("%8lf\t%8e\t%8e\t %8e %8e\n", parameters.alpha,DeltaF_abs, estimate, 
+	       sqrt(rms_r)/system.nparticles, sqrt(rms_k)/system.nparticles);
+	fprintf(fout,"% lf\t% e\t% e\t% e\n",parameters.alpha,DeltaF_abs, DeltaF_rel, estimate);
       }
       else {
-	printf("%8lf\t%8e\t na\t%8e\t%8e\n", alpha,DeltaF_abs, sqrt(rms_r)/Teilchenzahl, sqrt(rms_k)/Teilchenzahl);
-	fprintf(fout,"% lf\t% e\t% e\t na\n",alpha,DeltaF_abs, DeltaF_rel);
+	printf("%8lf\t%8e\t na\t%8e\t%8e\n", parameters.alpha,DeltaF_abs, sqrt(rms_r)/system.nparticles, sqrt(rms_k)/system.nparticles);
+	fprintf(fout,"% lf\t% e\t% e\t na\n",parameters.alpha,DeltaF_abs, DeltaF_rel);
       }
 #ifdef FORCE_DEBUG
       fprintf(stderr, "%lf rms %e %e %e\n", alpha, sqrt(rms_x), sqrt(rms_y), sqrt(rms_z));
