@@ -35,9 +35,9 @@
 // #define FORCE_DEBUG
 // #define CA_DEBUG
 
-void Elstat_berechnen(system_t *, p3m_parameters_t *, method_t *);
+void Elstat_berechnen(system_t *, p3m_parameters_t *, const method_t *);
 
-void Elstat_berechnen(system_t *s, p3m_parameters_t *p, method_t *m)
+void Elstat_berechnen(system_t *s, p3m_parameters_t *p, const method_t *m)
 {
   /* 
      Zuerst werden die Kraefte und Energien auf Null 
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
     { 
       method.Influence_function(&system, &parameters);  /* Hockney/Eastwood */
   
-      Elstat_berechnen(parameters.alpha); /* Hockney/Eastwood */
+      Elstat_berechnen(&system, &parameters, &method); /* Hockney/Eastwood */
   
       EC2 = FC2 = DeltaFC2 = 0.0;
       rms_k = rms_r = 0.0;
