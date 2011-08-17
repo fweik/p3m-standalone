@@ -48,6 +48,7 @@ typedef struct {
 // Flags for method_t
 
 enum {
+  P3M_FLAG_none = 0,
   P3M_FLAG_ik = 1,
   P3M_FLAG_ad = 2,
   P3M_FLAG_interlaced = 4,

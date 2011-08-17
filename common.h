@@ -37,7 +37,7 @@ enum {
   METHOD_P3M_ad = 2,
   METHOD_P3M_ad_i = 3,
   METHOD_EWALD = 4
-}
+};
 
 // Container type for arrays of 3d-vectors
 // each component holds a pointer to an array
