@@ -20,8 +20,6 @@ typedef struct {
   int *id;
 } neighbor_list_t;
 
-static neighbor_list_t *neighbor_list;
-
 // functions for neighbor list algorithm
 
 // Build particle neighbor list. WARNING: This is O(n^2).

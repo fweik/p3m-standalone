@@ -4,7 +4,6 @@
 #define P3M_H
 
 #include "common.h"
-#include "p3m-common.h"
 
 #define MaxInterpol (2*100096)
 #define Maxip 6

@@ -86,7 +86,7 @@ typedef
 } system_t;
 
 void Init_system(system_t *);
-void Init_array( void *, int, size_t);
+void *Init_array(int, size_t);
 void Init_vector_array(vector_array_t *, int);
 void Free_vector_array(vector_array_t *);
 #endif

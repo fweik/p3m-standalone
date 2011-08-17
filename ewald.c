@@ -1,6 +1,7 @@
 /* Computes the Ewald sum of a system of point charges. */
 /* Time-stamp: <2007-07-31 11:57 olenz> */
 
+ 
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -28,6 +29,11 @@
 
 /* precision of alpha */
 #define ALPHA_OPT_PREC 1.0e-10
+
+// Method declaration
+
+const method_t method_ewald = { METHOD_EWALD, "Ewald summation.", P3M_FLAG_none, &Ewald_init, &Ewald_compute_influence_function, &Ewald_k_space, &Ewald_estimate_error };
+
 
 /*----------------------------------------------------------------------*/
 /* GLOBAL VARIABLES */

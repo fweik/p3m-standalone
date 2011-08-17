@@ -4,15 +4,20 @@
 #include <string.h>
 
 #include "p3m.h"
-#include "interpol.h"
+
+#include "p3m-common.h"
 
 // Methods
 
+/*
 #include "p3m-ik-i.h"
 #include "p3m-ik.h"
 #include "p3m-ad.h"
 #include "p3m-ad-i.h"
+*/
 #include "ewald.h"
+
+#include "interpol.c"
 
 // Error estimates for p3m
 
@@ -29,6 +34,16 @@
 // Dipol correction
 
 #include "dipol.h"
+
+// Error calculation
+
+#include "error.h"
+
+/*
+// Helper functions for timings
+
+#include "timings.h"
+*/
 
 // #define WRITE_FORCES
 
@@ -73,16 +88,17 @@ void usage(char *name) {
   fprintf(stderr, "usage: %s <positions> <forces> <alpha_min> <alpha_max> <alpha_step> <method>\n", name);
 }
 
+
 void calc_reference_forces(system_t *s, p3m_parameters_t *p) {
   int i,j;
   p3m_parameters_t op = *p;
   
-  op.alpha = Ewald_compute_optimal_alpha(op.rcut, s->nparticles);
+  op.alpha = Ewald_compute_optimal_alpha(s, &op);
   
-  fprintf(stderr, "Optimal alpha is %lf (error: %e)\n", op.alpha, Ewald_estimate_error(op.alpha, op.rcut, s->nparticles));
+  fprintf(stderr, "Optimal alpha is %lf (error: %e)\n", op.alpha, Ewald_estimate_error(s, &op));
   
-  Ewald_init(s->nparticles);
-  Ewald_compute_influence_function(op.alpha);
+  Ewald_init(s, p);
+  Ewald_compute_influence_function(s, p);
 
   Elstat_berechnen(s, &op, &method_ewald);
 
@@ -93,23 +109,20 @@ void calc_reference_forces(system_t *s, p3m_parameters_t *p) {
     }
 }
 
+
 int main(int argc, char **argv)
 {
-  int    i,j;
   int methodnr;
-  FLOAT_TYPE EC2,FC2,DeltaFC2;
 
-  FLOAT_TYPE rms_v[3];
-
-  FLOAT_TYPE DeltaF_rel,DeltaF_abs;
   FLOAT_TYPE alphamin,alphamax,alphastep;
-  FLOAT_TYPE rms_k = 0.0, rms_r = 0.0;
 
   FILE* fout;
 
   system_t system;
   method_t method;
   p3m_parameters_t parameters;
+  
+  error_t error;
 
   if(argc != 7) {
     usage(argv[0]);
@@ -119,7 +132,7 @@ int main(int argc, char **argv)
   // Inits the system and reads particle data and parameters from file.
   Daten_einlesen(&system, &parameters, argv[1]);
 
-  nshift_ausrechnen();
+  // nshift_ausrechnen();
 
   alphamin = atof(argv[3]);
   alphamax = atof(argv[4]);
@@ -136,21 +149,31 @@ int main(int argc, char **argv)
   Exakte_Werte_einlesen(&system, argv[2]);
   #endif
 
-  if(methodnr == method_p3m_ik.method_id) 
+  if(methodnr == method_ewald.method_id) 
+    method = method_ewald; 
+#ifdef P3M_IK_H
+  else if(methodnr == method_p3m_ik.method_id) 
     method = method_p3m_ik;
+#endif
+#ifdef P3M_IK_I_H
   else if(methodnr == method_p3m_ik_i.method_id) 
     method = method_p3m_ik_i;
+#endif  
+#ifdef P3M_AD_H
   else if(methodnr == method_p3m_ad.method_id) 
     method = method_p3m_ad;
+#endif
+#ifdef P3M_AD_I_H
   else if(methodnr == method_p3m_ad_i.method_id) 
     method = method_p3m_ad_i;
+#endif
   else {
     fprintf(stderr, "Method %d not know.", methodnr);
     exit(126);
   }
 
   if((method.Init == NULL) || (method.Influence_function == NULL) || (method.Kspace_force == NULL)) {
-    fprintf(stderr,"Internal error: Method '%s' (%d) is not correctly defined. Aborting.\n", method.method_name, emthod.method_id);
+    fprintf(stderr,"Internal error: Method '%s' (%d) is not correctly defined. Aborting.\n", method.method_name, method.method_id);
     exit(-1);
   }
 
@@ -166,47 +189,21 @@ int main(int argc, char **argv)
       method.Influence_function(&system, &parameters);  /* Hockney/Eastwood */
   
       Elstat_berechnen(&system, &parameters, &method); /* Hockney/Eastwood */
-  
-      EC2 = FC2 = DeltaFC2 = 0.0;
-      rms_k = rms_r = 0.0;
-      rms_v[0] = rms_v[1] = rms_v[2] = 0.0;
-      for (i=0; i<system.nparticles; i++)
-	{
-	  for(j=0;j<3;j++) {
-	    rms_v[j] += SQR(system.reference.f.fields[j][i] - system.f.fields[j][i]);
 
-	    rms_k += SQR(system.reference.f_k.fields[j][i] 
-			 - system.f_k.fields[j][i]);
-	    rms_r += SQR(system.reference.f.fields[j][i] 
-			 - system.reference.f_k.fields[j][i] 
-			 - system.f.fields[j][i]);
-
-	    DeltaFC2 += SQR(system.f.fields[j][i] 
-			    - system.reference.f.fields[j][i]);
-	    
-	    FC2 += SQR(system.reference.f.fields[j][i]);
-	  }
-#ifdef FORCE_DEBUG
-          printf("Particle %d Total Force (%g %g %g) [R(%g %g %g) K(%g %g %g)] reference (%g %g %g)\n", i, 
-		 Fx[i], Fy[i], Fz[i], Fx_R[i], Fy_R[i], Fz_R[i], Fx_K[i], Fy_K[i], Fz_K[i], Fx_exa[i], Fy_exa[i], Fz_exa[i]);
-#endif // FORCE_DEBUG
-	}
-      
-      DeltaF_abs = sqrt(DeltaFC2/(FLOAT_TYPE)system.nparticles);
-      DeltaF_rel = DeltaF_abs/sqrt(FC2);
+      error = Calculate_errors(&system);
       
       if(method.Error != NULL) {
         double estimate =  method.Error(&system, &parameters);
-        printf("%8lf\t%8e\t%8e\t %8e %8e\n", parameters.alpha,DeltaF_abs, estimate, 
-	       sqrt(rms_r)/system.nparticles, sqrt(rms_k)/system.nparticles);
-	fprintf(fout,"% lf\t% e\t% e\t% e\n",parameters.alpha,DeltaF_abs, DeltaF_rel, estimate);
+        printf("%8lf\t%8e\t%8e\t %8e %8e\n", parameters.alpha,error.f, estimate, 
+	       error.f_r, error.f_k);
+	fprintf(fout,"% lf\t% e\t% e\n",parameters.alpha,error.f, estimate);
       }
       else {
-	printf("%8lf\t%8e\t na\t%8e\t%8e\n", parameters.alpha,DeltaF_abs, sqrt(rms_r)/system.nparticles, sqrt(rms_k)/system.nparticles);
-	fprintf(fout,"% lf\t% e\t% e\t na\n",parameters.alpha,DeltaF_abs, DeltaF_rel);
+	printf("%8lf\t%8e\t na\t%8e\t%8e\n", parameters.alpha,error.f, error.f_r, error.f_k);
+	fprintf(fout,"% lf\t% e\t na\n",parameters.alpha,error.f);
       }
 #ifdef FORCE_DEBUG
-      fprintf(stderr, "%lf rms %e %e %e\n", alpha, sqrt(rms_x), sqrt(rms_y), sqrt(rms_z));
+      fprintf(stderr, "%lf rms %e %e %e\n", parameters.alpha, error.f_v[0], error.f_v[1], error.f_v[2]);
 #endif
       fflush(stdout);
       fflush(fout);

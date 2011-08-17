@@ -35,7 +35,7 @@ void Daten_einlesen(system_t *s, p3m_parameters_t *p, char *filename)
   FILE *fp;
   int i;
 
-  FLOAT_TYPE Temp, Bjerrum, Q2;  
+  FLOAT_TYPE Temp, Bjerrum;  
 
   assert(s != NULL);
   assert(p != NULL);
@@ -59,7 +59,7 @@ void Daten_einlesen(system_t *s, p3m_parameters_t *p, char *filename)
   fscanf(fp,"# rcut: %lf\n",&(p->rcut));
   fscanf(fp,"# Temp: %lf\n",&Temp);
   fscanf(fp,"# Bjerrum: %lf\n",&Bjerrum);
-
+  
   if((p->mesh & (p->mesh - 1)) != 0) {
     fprintf(stderr, "Meshsize must be power of 2!.");
     exit(128);
@@ -72,15 +72,18 @@ void Daten_einlesen(system_t *s, p3m_parameters_t *p, char *filename)
 
   Init_system(s);
 
-  Q2 = 0.0;
+  printf("s %p s->p %p s->p.x %p s->p.fields %p\n", s, &(s->p), s->p.x, s->p.fields);
+  
+  s->q2 = 0.0;
   /* Teilchenkoordinaten und -ladungen: */
   for (i=0; i<s->nparticles; i++) {
+    printf("read line %d from %p\n", i, fp);
+    printf("&(s->p.x[%d] %p s->q[i] %p\n", i, &(s->p.x[i]), &(s->q[i]));
+
     fscanf(fp,"%lf\t%lf\t%lf\t%lf\n",&(s->p.x[i]), &(s->p.y[i]), &(s->p.z[i]), &(s->q[i]));
-    Q2 += SQR(s->q[i]);
+    s->q2 += SQR(s->q[i]);
   }
   fclose(fp);
-  
-  s->q2 = Q2;
 }
 
 void Write_exact_forces(system_t *s, char *forces_file) {

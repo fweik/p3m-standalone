@@ -3,6 +3,8 @@
 
 #include "realpart.h"
 
+static neighbor_list_t *neighbor_list;
+
 void Realteil(system_t *s, p3m_parameters_t *p)
 {
   /* Zwei Teilchennummern: */
@@ -66,8 +68,8 @@ static inline void build_neighbor_list_for_particle(system_t *s, p3m_parameters_
     }
   }
   Init_vector_array(&(neighbor_list[id].p), np);
-  Init_array(neighbor_list[id].q, np, sizeof(FLOAT_TYPE));
-  Init_array(neighbor_list[id].id, np, sizeof(int));
+  neighbor_list[id].q = Init_array(np, sizeof(FLOAT_TYPE));
+  neighbor_list[id].id = Init_array(np, sizeof(int));
   
   for(j=0;j<3;j++)
     memcpy(neighbor_list[id].p.fields[j], buffer->fields[j], np*sizeof(FLOAT_TYPE));
@@ -79,15 +81,21 @@ static inline void build_neighbor_list_for_particle(system_t *s, p3m_parameters_
 void Init_neighborlist(system_t *s, p3m_parameters_t *p) {
   int i;
   
+  // Define and allocate buffers (nessecary due to unknow number of neigbors per particles).
+  
   int *neighbor_id_buffer = NULL;
   vector_array_t position_buffer;
   FLOAT_TYPE *charges_buffer = NULL;
   
-  Init_array(neighbor_id_buffer, s->nparticles, sizeof(int));
+  neighbor_id_buffer = Init_array(s->nparticles, sizeof(int));
   Init_vector_array(&position_buffer, s->nparticles);
-  Init_array(charges_buffer, s->nparticles, sizeof(FLOAT_TYPE));
+  charges_buffer = Init_array(s->nparticles, sizeof(FLOAT_TYPE));
   
-  Init_array( neighbor_list, s->nparticles, sizeof(neighbor_list_t));
+  // Allocate the actual list.
+  
+  neighbor_list = Init_array(s->nparticles, sizeof(neighbor_list_t));
+  
+  // Find neighbors for each particle.
   
   for(i=0;i<s->nparticles;i++)
     build_neighbor_list_for_particle(s,p,&position_buffer,neighbor_id_buffer, charges_buffer, i);

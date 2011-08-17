@@ -23,7 +23,7 @@ FLOAT_TYPE sinc(FLOAT_TYPE d)
   return 1.0;
 }
 
-void Differenzenoperator_berechnen(void)
+void Differenzenoperator_berechnen(p3m_parameters_t *p, p3m_data_t *d)
 {
   /* 
      Die Routine berechnet den fourieretransformierten 
@@ -32,32 +32,32 @@ void Differenzenoperator_berechnen(void)
   */
   
   int    i;
-  FLOAT_TYPE dMesh=(FLOAT_TYPE)Mesh;
+  FLOAT_TYPE dMesh=(FLOAT_TYPE)d->mesh;
   FLOAT_TYPE dn;
 
-  Dn = (FLOAT_TYPE *) realloc(Dn, Mesh*sizeof(FLOAT_TYPE));  
+  d->Dn = Init_array(d->mesh, sizeof(FLOAT_TYPE));  
 
-  for (i=0; i<Mesh; i++)
+  for (i=0; i<d->mesh; i++)
     {
       dn    = (FLOAT_TYPE)i; 
       dn   -= round(dn/dMesh)*dMesh;
-      Dn[i] = dn;
+      d->Dn[i] = dn;
     }
 
-  Dn[Mesh/2] = 0.0;  
+  d->Dn[d->mesh/2] = 0.0;  
 
 }
 
-void nshift_ausrechnen(void)
+void nshift_ausrechnen(p3m_data_t *d)
 {
   /* Verschiebt die Meshpunkte um Mesh/2 */
-  
+
   int    i;
-  FLOAT_TYPE dMesh=(FLOAT_TYPE)Mesh;
+  FLOAT_TYPE dMesh=(FLOAT_TYPE)d->mesh;
 
-  nshift = (FLOAT_TYPE *) realloc(nshift, Mesh*sizeof(FLOAT_TYPE));  
+  d->nshift = Init_array(d->mesh, sizeof(FLOAT_TYPE));  
 
-  for (i=0; i<Mesh; i++) 
-    nshift[i] = i - round(i/dMesh)*dMesh; 
+  for (i=0; i<d->mesh; i++) 
+    d->nshift[i] = i - round(i/dMesh)*dMesh; 
   
 }

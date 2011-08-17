@@ -1,9 +1,7 @@
 # Teilchenzahl: 300
 # Len: 10.0
 # Mesh: 64
-# kmax: 50
 # alpha: 0.647988
-# beta: 1
 # ip: 6
 # rcut: 3.001
 # Temp: 1.000000
