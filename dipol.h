@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef DIPOL_H
 #define DIPOL_H
 

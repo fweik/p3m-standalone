@@ -43,3 +43,19 @@ void Init_system(system_t *s) {
 
   assert((s->q) != NULL);
 }
+
+void Free_vector_array(vector_array_t *v) {
+  int i;
+  
+  if( v == NULL )
+    return;
+
+  for(i=0;i<3;i++) {
+    free(v->fields[i]);
+    v->fields[i] = NULL;
+  }
+
+  v->x = v->fields[0];
+  v->y = v->fields[1];
+  v->z = v->fields[2];    
+}

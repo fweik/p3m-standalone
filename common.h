@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef COMMON_H
 #define COMMON_H
 
@@ -26,6 +28,16 @@
 #define PI 3.14159265358979323846264
 
 #define SQR(A) ((A)*(A))
+
+// Method ids
+
+enum {
+  METHOD_P3M_ik = 0,
+  METHOD_P3M_ik_i = 1,
+  METHOD_P3M_ad = 2,
+  METHOD_P3M_ad_i = 3,
+  METHOD_EWALD = 4
+}
 
 // Container type for arrays of 3d-vectors
 // each component holds a pointer to an array
@@ -75,5 +87,6 @@ typedef
 
 void Init_system(system_t *);
 void Init_array( void *, int, size_t);
-
+void Init_vector_array(vector_array_t *, int);
+void Free_vector_array(vector_array_t *);
 #endif

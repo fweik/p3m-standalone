@@ -149,6 +149,11 @@ int main(int argc, char **argv)
     exit(126);
   }
 
+  if((method.Init == NULL) || (method.Influence_function == NULL) || (method.Kspace_force == NULL)) {
+    fprintf(stderr,"Internal error: Method '%s' (%d) is not correctly defined. Aborting.\n", method.method_name, emthod.method_id);
+    exit(-1);
+  }
+
   fprintf(stderr, "Using %s.\n", method.method_name);
 
   fout = fopen("out.dat","w");

@@ -78,7 +78,7 @@ void Ewald_init(int particlenumber)
   kmax2     = SQR(kmax);
 }
 
-void Ewald_k_space(FLOAT_TYPE alpha, int NP)
+void Ewald_k_space(system_t *s, p3m_parameters_t *p)
 {
   int    i;
   int    nx, ny, nz;
@@ -95,9 +95,9 @@ void Ewald_k_space(FLOAT_TYPE alpha, int NP)
 	  rhohat_im = 0.0;
 #pragma omp parallel for private(kr) reduction( + : rhohat_re) reduction( + : rhohat_im)
 	  for (i=0; i<NP; i++) {
-            kr = 2.0*PI*Leni*(nx*xS[i] + ny*yS[i] + nz*zS[i]);
-	    rhohat_re += Q[i] * cos(kr);
-	    rhohat_im += Q[i] * -sin(kr);
+            kr = 2.0*PI*Leni*(nx*s->p.x[i] + ny*s->p.y[i] + nz*s->p.z[i];
+	    rhohat_re += s->q[i] * cos(kr);
+	    rhohat_im += s->q[i] * -sin(kr);
           }
 
 	  ghat = Ghat[abs(nx)][abs(ny)][abs(nz)];
