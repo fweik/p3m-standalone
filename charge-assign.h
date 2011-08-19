@@ -3,9 +3,18 @@
 
 #include "p3m.h"
 
-void assign_charge(int, FLOAT_TYPE, FLOAT_TYPE*, FLOAT_TYPE*, int);
-void assign_forces(FLOAT_TYPE, FLOAT_TYPE*, int, FLOAT_TYPE*, int);
+#include "interpol.h"
 
-void assign_forces_ad(double, FLOAT_TYPE **, int, FLOAT_TYPE *,int);
-void assign_charge_and_derivatives(int, FLOAT_TYPE, FLOAT_TYPE *, FLOAT_TYPE *, int);
+void assign_charge(system_t *s, p3m_parameters_t *p, p3m_data_t *d, int ii);
+void assign_forces(system_t *s, p3m_parameters_t *p, p3m_data_t *d, int ii);
+
+void assign_forces_ad(system_t *s, p3m_parameters_t *p, p3m_data_t *d, int ii);
+void assign_charge_and_derivatives(system_t *s, p3m_parameters_t *p, p3m_data_t *d, int ii);
+
+#ifdef CA_DEBUG
+#define CA_TRACE(A) A
+#else
+#define CA_TRACE
+#endif
+
 #endif

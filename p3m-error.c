@@ -159,14 +159,14 @@ double p3m_k_space_error_ad(double prefac, int *Mesh, int cao, int n_c_part, dou
   double box_size = box_l[0];
   double he_q = 0.0, mesh_i = 1./mesh, alpha_L_i = 1./alpha_L;
   double alias1, alias2, alias3, alias4, n2, cs;
-  printf("p3m_k_space_error_ad();\n");
+
   for (nx=-mesh/2; nx<mesh/2; nx++)
     for (ny=-mesh/2; ny<mesh/2; ny++)
       for (nz=-mesh/2; nz<mesh/2; nz++)
 	if((nx!=0) || (ny!=0) || (nz!=0)) {
 	  n2 = SQR(nx) + SQR(ny) + SQR(nz);
 	  p3m_tune_aliasing_sums_ad(nx,ny,nz,mesh,mesh_i,cao,alpha_L_i,&alias1,&alias2,&alias3,&alias4);	//alias4 = cs
-          printf("aliasing sums ad %d %d %d %e %e %e %e\n", nx, ny, nz, alias1, alias2, alias3, alias4);
+	  if((alias3 == 0.0) || (alias4 == 0.0))
 	  he_q += (alias1  -  SQR(alias2) / (alias3*alias4));
 	}
   return 2.0*prefac*sum_q2*sqrt(he_q/(double)n_c_part) / SQR(box_size);

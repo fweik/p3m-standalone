@@ -254,3 +254,63 @@ void P3M_ik(const FLOAT_TYPE alpha, const int Teilchenzahl)
 
   return;
 }
+
+// Functions for error estimate.
+
+double p3m_k_space_error_ik(double prefac, int mesh[3], int cao, int n_c_part, double sum_q2, double alpha_L, double *box_l)
+{
+  int  nx, ny, nz;
+  double he_q = 0.0, mesh_i[3] = {1.0/mesh[0], 1.0/mesh[1], 1.0/mesh[2]}, alpha_L_i = 1./alpha_L;
+  double alias1, alias2, n2, cs;
+  double ctan_x, ctan_y;
+
+  for (nx=-mesh[0]/2; nx<mesh[0]/2; nx++) {
+    ctan_x = analytic_cotangent_sum(nx,mesh_i[0],cao);
+    for (ny=-mesh[1]/2; ny<mesh[1]/2; ny++) {
+      ctan_y = ctan_x * analytic_cotangent_sum(ny,mesh_i[1],cao);
+      for (nz=-mesh[2]/2; nz<mesh[2]/2; nz++) {
+	if((nx!=0) || (ny!=0) || (nz!=0)) {
+	  n2 = SQR(nx) + SQR(ny) + SQR(nz);
+	  cs = analytic_cotangent_sum(nz,mesh_i[2],cao)*ctan_y;
+	  p3m_tune_aliasing_sums_ik(nx,ny,nz,mesh,mesh_i,cao,alpha_L_i,&alias1,&alias2);
+	  he_q += (alias1  -  SQR(alias2/cs) / n2);
+	}
+      }
+    }
+  }
+  return 2.0*prefac*sum_q2*sqrt(he_q/(double)n_c_part) / (box_l[1]*box_l[2]);
+}
+
+
+void p3m_tune_aliasing_sums_ik(int nx, int ny, int nz, 
+			    int mesh[3], double mesh_i[3], int cao, double alpha_L_i, 
+			    double *alias1, double *alias2)
+{
+
+  int    mx,my,mz;
+  double nmx,nmy,nmz;
+  double fnmx,fnmy,fnmz;
+
+  double ex,ex2,nm2,U2,factor1;
+
+  factor1 = SQR(PI*alpha_L_i);
+
+  *alias1 = *alias2 = 0.0;
+  for (mx=-P3M_BRILLOUIN_TUNING; mx<=P3M_BRILLOUIN_TUNING; mx++) {
+    fnmx = mesh_i[0] * (nmx = nx + mx*mesh[0]);
+    for (my=-P3M_BRILLOUIN_TUNING; my<=P3M_BRILLOUIN_TUNING; my++) {
+      fnmy = mesh_i[1] * (nmy = ny + my*mesh[1]);
+      for (mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++) {
+	fnmz = mesh_i[2] * (nmz = nz + mz*mesh[2]);
+
+	nm2 = SQR(nmx) + SQR(nmy) + SQR(nmz);
+	ex2 = SQR( ex = exp(-factor1*nm2) );
+	
+	U2 = pow(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*cao);
+	
+	*alias1 += ex2 / nm2;
+	*alias2 += U2 * ex * (nx*nmx + ny*nmy + nz*nmz) / nm2;
+      }
+    }
+  }
+}

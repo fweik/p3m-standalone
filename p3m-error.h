@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef P3M_ERROR_H
 #define P3M_ERROR_H
 
