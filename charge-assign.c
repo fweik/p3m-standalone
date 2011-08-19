@@ -63,8 +63,7 @@ void assign_charge(system_t *s, p3m_parameters_t *p, p3m_data_t *d, int ii)
 }
 
 // assign the forces obtained from k-space 
-void assign_forces(double force_prefac, system_t *s, p3m_parameters_t *p, p3m_data_t *d,int ii)
-{
+void assign_forces(FLOAT_TYPE force_prefac, system_t *s, p3m_parameters_t *p, p3m_data_t *d,int ii) {
   int i,c,i0,i1,i2, dim;
   int cf_cnt=0;
   int *base;
