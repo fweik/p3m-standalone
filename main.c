@@ -9,12 +9,12 @@
 
 // Methods
 
-/*
-#include "p3m-ik-i.h"
+
+// #include "p3m-ik-i.h"
 #include "p3m-ik.h"
-#include "p3m-ad.h"
-#include "p3m-ad-i.h"
-*/
+// #include "p3m-ad.h"
+// #include "p3m-ad-i.h"
+
 #include "ewald.h"
 
 #include "interpol.c"

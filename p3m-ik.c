@@ -9,12 +9,22 @@
 #include "common.h"
 #include "p3m-common.h"
 #include "charge-assign.h"
+#include "p3m-ik.h"
 
 fftw_plan forward_plan;
 fftw_plan backward_plan[3];
 
+// declaration of the method
+
+const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.", P3M_FLAG_ik, &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, NULL };
+
+// Forward declaration of local functions
+
 static void forward_fft(void);
 static void backward_fft(void);
+static void p3m_tune_aliasing_sums_ik(int, int, int, 
+			    int *, double *, int, double, 
+			    double *, double *);
 
 inline void forward_fft(void) {
   fftw_execute(forward_plan);
@@ -48,7 +58,7 @@ p3m_data_t *Init_ik(system_t *s, p3m_parameters_t *p) {
   for(l=0;l<3;l++){
     backward_plan[l] = fftw_plan_dft_3d(mesh, mesh, mesh, (fftw_complex *)(d->Fmesh.fields[l]), (fftw_complex *)(d->Fmesh.fields[l]), FFTW_BACKWARD, FFTW_ESTIMATE);
   }
-  
+  return d;
 }
 
 
@@ -265,7 +275,8 @@ void p3m_tune_aliasing_sums_ik(int nx, int ny, int nz,
 	fnmz = mesh_i[2] * (nmz = nz + mz*mesh[2]);
 
 	nm2 = SQR(nmx) + SQR(nmy) + SQR(nmz);
-	ex2 = SQR( ex = exp(-factor1*nm2) );
+	ex = exp(-factor1*nm2);
+	ex2 = SQR( ex );
 	
 	U2 = pow(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*cao);
 	

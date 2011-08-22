@@ -3,7 +3,7 @@
 #ifndef P3M_IK_I_H
 #define P3M_IK_I_H
 
-#include "p3m.h"
+#include "common.h"
 
 void Influence_function_berechnen_ik_i(FLOAT_TYPE alpha);
 void P3M_ik_i(const FLOAT_TYPE alpha, const int Teilchenzahl);

@@ -23,6 +23,39 @@ FLOAT_TYPE sinc(FLOAT_TYPE d)
   return 1.0;
 }
 
+FLOAT_TYPE analytic_cotangent_sum(int n, FLOAT_TYPE mesh_i, int cao)
+{
+  FLOAT_TYPE c, res=0.0;
+  c = SQR(cos(PI*mesh_i*(FLOAT_TYPE)n));
+
+  switch (cao) {
+  case 1 : { 
+    res = 1; 
+    break; }
+  case 2 : { 
+    res = (1.0+c*2.0)/3.0; 
+    break; }
+  case 3 : { 
+    res = (2.0+c*(11.0+c*2.0))/15.0; 
+    break; }
+  case 4 : { 
+    res = (17.0+c*(180.0+c*(114.0+c*4.0)))/315.0; 
+    break; }
+  case 5 : { 
+    res = (62.0+c*(1072.0+c*(1452.0+c*(247.0+c*2.0))))/2835.0; 
+    break; }
+  case 6 : { 
+    res = (1382.0+c*(35396.0+c*(83021.0+c*(34096.0+c*(2026.0+c*4.0)))))/155925.0; 
+    break; }
+  case 7 : { 
+    res = (21844.0+c*(776661.0+c*(2801040.0+c*(2123860.0+c*(349500.0+c*(8166.0+c*4.0))))))/6081075.0; 
+    break; }
+  }
+  
+  return res;
+}
+
+
 void Differenzenoperator_berechnen(p3m_parameters_t *p, p3m_data_t *d)
 {
   /* 

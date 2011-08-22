@@ -12,6 +12,7 @@
 #define c_ind(A,B,C) (2*d->mesh*d->mesh*(A)+2*d->mesh*(B)+2*(C))
 
 FLOAT_TYPE sinc(FLOAT_TYPE);
+FLOAT_TYPE analytic_cotangent_sum(int n, FLOAT_TYPE mesh_i, int cao);
 
 void Differenzenoperator_berechnen(p3m_parameters_t *, p3m_data_t *);
 void nshift_ausrechnen(p3m_data_t *);
