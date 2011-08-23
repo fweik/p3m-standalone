@@ -34,7 +34,7 @@ void Realteil(system_t *s, p3m_parameters_t *p)
 	    //erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
 	    erfc_teil = erfc(ar);
 	    fak = s->q[t1]*s->q[t2]*
-	      (erfc_teil/r+(2*p->alpha/wupi)*exp(-ar*ar))/SQR(r);
+	      (erfc_teil/r+(2.0*p->alpha/wupi)*exp(-ar*ar))/SQR(r);
 	    
 	    s->f_r.x[t1] += fak*dx;
 	    s->f_r.y[t1] += fak*dy;
@@ -62,8 +62,8 @@ static inline void build_neighbor_list_for_particle(system_t *s, p3m_parameters_
       neighbor_id_buffer[np] = i;
       for(j=0;j<3;j++) {
 	buffer->fields[j][np] = s->p.fields[j][i];
-	charges_buffer[np] = s->q[i];
       }
+      charges_buffer[np] = s->q[i];
       np++;
     }
   }
@@ -76,6 +76,8 @@ static inline void build_neighbor_list_for_particle(system_t *s, p3m_parameters_
   
   memcpy(neighbor_list[id].q, charges_buffer, np*sizeof(FLOAT_TYPE));
   memcpy(neighbor_list[id].id, neighbor_id_buffer, np*sizeof(int));
+  
+  neighbor_list[id].n = np;
 }
 
 void Init_neighborlist(system_t *s, p3m_parameters_t *p) {
@@ -99,7 +101,9 @@ void Init_neighborlist(system_t *s, p3m_parameters_t *p) {
   
   for(i=0;i<s->nparticles;i++)
     build_neighbor_list_for_particle(s,p,&position_buffer,neighbor_id_buffer, charges_buffer, i);
-  
+
+  // Free buffers
+    
   Free_vector_array(&position_buffer);
   free(neighbor_id_buffer);
   free(charges_buffer);

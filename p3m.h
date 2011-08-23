@@ -60,9 +60,9 @@ typedef struct {
   int  method_id;
   const char *method_name;
   char flags;
-  void (*Init)(system_t *, p3m_parameters_t *);
-  void (*Influence_function)(system_t *, p3m_parameters_t *);
-  void (*Kspace_force)(system_t *, p3m_parameters_t *);
+  p3m_data_t *(*Init)(system_t *, p3m_parameters_t *);
+  void (*Influence_function)(system_t *, p3m_parameters_t *, p3m_data_t *);
+  void (*Kspace_force)(system_t *, p3m_parameters_t *, p3m_data_t *);
   double (*Error)(system_t *, p3m_parameters_t *);
 } method_t;
 

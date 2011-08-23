@@ -50,9 +50,9 @@
 // #define FORCE_DEBUG
 // #define CA_DEBUG
 
-void Elstat_berechnen(system_t *, p3m_parameters_t *, const method_t *);
+void Elstat_berechnen(system_t *, p3m_parameters_t *, const method_t *, p3m_data_t *);
 
-void Elstat_berechnen(system_t *s, p3m_parameters_t *p, const method_t *m)
+void Elstat_berechnen(system_t *s, p3m_parameters_t *p, const method_t *m, p3m_data_t *d)
 {
   /* 
      Zuerst werden die Kraefte und Energien auf Null 
@@ -69,11 +69,13 @@ void Elstat_berechnen(system_t *s, p3m_parameters_t *p, const method_t *m)
       memset(s->f_r.fields[i], 0, s->nparticles*sizeof(FLOAT_TYPE));
     }
   
-  Realteil(s, p);
+//  Realteil(s, p);
+  
+  Realpart_neighborlist(s,p);
 
   //  Dipol(s, p);
   
-  m->Kspace_force(s, p);
+  m->Kspace_force(s, p, d);
 
   for(j=0; j < 3; j++) {
     #pragma omp parallel for
@@ -89,7 +91,7 @@ void usage(char *name) {
 }
 
 
-void calc_reference_forces(system_t *s, p3m_parameters_t *p) {
+void calc_reference_forces(system_t *s, p3m_parameters_t *p, p3m_data_t *d) {
   int i,j;
   p3m_parameters_t op = *p;
   
@@ -97,10 +99,10 @@ void calc_reference_forces(system_t *s, p3m_parameters_t *p) {
   
   fprintf(stderr, "Optimal alpha is %lf (error: %e)\n", op.alpha, Ewald_estimate_error(s, &op));
   
-  Ewald_init(s, p);
-  Ewald_compute_influence_function(s, p);
+  d = Ewald_init(s, p);
+  Ewald_compute_influence_function(s, p, d);
 
-  Elstat_berechnen(s, &op, &method_ewald);
+  Elstat_berechnen(s, &op, &method_ewald, d);
 
   for(j=0;j<3;j++)
     for(i=0;i<s->nparticles;i++) {
@@ -121,6 +123,7 @@ int main(int argc, char **argv)
   system_t system;
   method_t method;
   p3m_parameters_t parameters;
+  p3m_data_t *data;
   
   error_t error;
 
@@ -149,6 +152,8 @@ int main(int argc, char **argv)
   Exakte_Werte_einlesen(&system, argv[2]);
   #endif
 
+  printf("method_p3m_ik.method_id %d\n", method_p3m_ik.method_id);
+  
   if(methodnr == method_ewald.method_id) 
     method = method_ewald; 
 #ifdef P3M_IK_H
@@ -181,14 +186,20 @@ int main(int argc, char **argv)
 
   fout = fopen("out.dat","w");
 
-  method.Init(&system, &parameters);
-
+  printf("Init");
+  data = method.Init(&system, &parameters);
+  printf(".\n");
+  
+  printf("Init neighborlist");
+  Init_neighborlist(&system, &parameters);
+  printf(".\n");
+  
   printf("# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error", "K-Error");
   for (parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep)
     { 
-      method.Influence_function(&system, &parameters);  /* Hockney/Eastwood */
+      method.Influence_function(&system, &parameters, data);  /* Hockney/Eastwood */
   
-      Elstat_berechnen(&system, &parameters, &method); /* Hockney/Eastwood */
+      Elstat_berechnen(&system, &parameters, &method, data); /* Hockney/Eastwood */
 
       error = Calculate_errors(&system);
       

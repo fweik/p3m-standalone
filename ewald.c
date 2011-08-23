@@ -42,7 +42,6 @@ const method_t method_ewald = { METHOD_EWALD, "Ewald summation.", P3M_FLAG_none,
 /* Some global variables, internal to ewald.c. */
 
 static int     kmax2; /* reciprocal space cutoff and its square */
-static FLOAT_TYPE Ghat[kmax+1][kmax+1][kmax+1];
 
 /*----------------------------------------------------------------------*/
 /* HELPER FUNCTIONS */
@@ -58,7 +57,7 @@ static FLOAT_TYPE Ghat[kmax+1][kmax+1][kmax+1];
 
    For symmetry reasons only one octant is actually needed. 
 */
-void Ewald_compute_influence_function(system_t *s, p3m_parameters_t *p)
+void Ewald_compute_influence_function(system_t *s, p3m_parameters_t *p, p3m_data_t *d)
 {
   
   int    nx,ny,nz;
@@ -72,19 +71,25 @@ void Ewald_compute_influence_function(system_t *s, p3m_parameters_t *p)
       for (nz=0; nz <= kmax; nz++) {
 	n_sqr = SQR(nx) + SQR(ny) + SQR(nz);
 	if ((nx==0 && ny==0 && nz==0) || n_sqr > kmax2)
-	  Ghat[nx][ny][nz] = 0.0;
+	  d->G_hat[r_ind(nx,ny,nz)] = 0.0;
 	else {
-	  Ghat[nx][ny][nz] = fak1/n_sqr * exp(-fak2*n_sqr);
+	  d->G_hat[r_ind(nx,ny,nz)] = fak1/n_sqr * exp(-fak2*n_sqr);
 	}
       }
 }  
 
-void Ewald_init(system_t *s, p3m_parameters_t *p)
+p3m_data_t *Ewald_init(system_t *s, p3m_parameters_t *p)
 {
+  p3m_data_t *d = Init_array( 1, sizeof(p3m_data_t));
   kmax2     = SQR(kmax);
+  
+  d->G_hat = Init_array( (kmax+1)*(kmax+1)*(kmax+1), sizeof(FLOAT_TYPE));
+  d->mesh = kmax+1;
+  
+  return d;
 }
 
-void Ewald_k_space(system_t *s, p3m_parameters_t *p)
+void Ewald_k_space(system_t *s, p3m_parameters_t *p, p3m_data_t *d)
 {
   int    i;
   int    nx, ny, nz;
@@ -107,7 +112,7 @@ void Ewald_k_space(system_t *s, p3m_parameters_t *p)
 	    rhohat_im += s->q[i] * -sin(kr);
           }
 
-	  ghat = Ghat[abs(nx)][abs(ny)][abs(nz)];
+	  ghat = d->G_hat[r_ind(abs(nx), abs(ny), abs(nz))];
 
 	  /* compute forces */
 #pragma omp parallel for private(kr, force_factor)

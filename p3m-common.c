@@ -94,3 +94,30 @@ void nshift_ausrechnen(p3m_data_t *d)
     d->nshift[i] = i - round(i/dMesh)*dMesh; 
   
 }
+
+void Init_data(method_t *m, p3m_parameters_t *p, p3m_data_t *d) {
+  
+};
+
+void Free_data(p3m_data_t *d) {
+  int i;
+  if(d->G_hat != NULL)
+    free(d->G_hat);
+  if(d->Qmesh != NULL)
+    free(d->Qmesh);
+
+  Free_vector_array(&d->Fmesh);
+  
+  if(d->nshift != NULL)
+    free(d->nshift);
+  if(d->Dn != NULL)
+    free(d->Dn);
+  for(i=0;i<2;i++) {
+    if(d->dQdx[i] != NULL)
+      free(d->dQdx[i]);  
+    if(d->dQdy[i] != NULL)
+      free(d->dQdy[i]);  
+    if(d->dQdz[i] != NULL)
+      free(d->dQdz[i]);  
+  }
+}

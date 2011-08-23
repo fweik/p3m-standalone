@@ -8,7 +8,7 @@
 void *Init_array(int size, size_t field_size) {
   void *a;
   
-  assert(size > 0);
+  assert(size >= 0);
   assert(field_size > 0);
 
   a = malloc(size * field_size);
@@ -21,7 +21,7 @@ void Init_vector_array(vector_array_t *v, int n) {
   int i;
 
   assert(v != NULL);
-  assert(n > 0 );
+  assert(n >= 0 );
   
   v->fields = Init_array( 3, sizeof(FLOAT_TYPE *));
 
@@ -61,8 +61,10 @@ void Free_vector_array(vector_array_t *v) {
     return;
 
   for(i=0;i<3;i++) {
-    free(v->fields[i]);
-    v->fields[i] = NULL;
+    if(v->fields[i] != NULL) {
+      free(v->fields[i]);
+      v->fields[i] = NULL;
+    }
   }
 
   v->x = v->y = v->z = NULL;
