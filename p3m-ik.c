@@ -95,13 +95,6 @@ void Aliasing_sums_ik ( system_t *s, p3m_parameters_t *p, p3m_data_t *d, int NX,
 }
 
 void Influence_function_berechnen_ik ( system_t *s, p3m_parameters_t *p, p3m_data_t *d ) {
-    /*
-      Berechnet die influence-function, d.h. sowas wie das Produkt aus
-      fouriertransformierter Ladungsverschmierung und fouriertransformierter
-      Greenschen Funktion.  (-> HOCKNEY/EASTWOOD optimal influence function!)
-      alpha  : Ewald-Parameter.
-      ip     : Ordnung des charge assigbment schemes.
-    */
 
     int    NX,NY,NZ;
     FLOAT_TYPE Dnx,Dny,Dnz;
