@@ -61,16 +61,12 @@ void Elstat_berechnen ( system_t *s, p3m_parameters_t *p, const method_t *m, p3m
         memset ( s->f_r.fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
     }
 
-    start_timer();
-    Realteil ( s, p );
-    printf ( "Realteil n2: %e\n", stop_timer() );
-    start_timer();
     Realpart_neighborlist ( s,p );
-    printf ( "Realteil n: %e\n", stop_timer() );
+    
     //  Dipol(s, p);
-    start_timer();
+
     m->Kspace_force ( s, p, d );
-    printf ( "k.teil n: %e\n", stop_timer() );
+
     for ( j=0; j < 3; j++ ) {
 #pragma omp parallel for
         for ( i=0; i<s->nparticles; i++ ) {

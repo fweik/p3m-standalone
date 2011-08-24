@@ -134,6 +134,20 @@ p3m_data_t *Init_data(const method_t *m, const system_t *s, const p3m_parameters
       d->dQdz[i] = Init_array( s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );
     }
   }  
+  
+  if ( m->flags & P3M_FLAG_ca ) {
+    int i;
+    int max = ( m->flags & P3M_FLAG_interlaced) ? 2 : 1;
+    
+    d->cf[1] = NULL;
+    d->ca_ind[1] = NULL;
+    
+    for(i = 0; i < max; i++) {
+      d->cf[i] = Init_array( p->cao3 * s->nparticles, sizeof(FLOAT_TYPE));
+      d->ca_ind[i] = Init_array( 3*s->nparticles, sizeof(int));
+    }
+  }
+  
   return d;
 }
 

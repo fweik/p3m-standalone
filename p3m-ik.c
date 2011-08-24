@@ -17,7 +17,7 @@ fftw_plan backward_plan[3];
 // declaration of the method
 
 const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.",
-                                 P3M_FLAG_ik | P3M_FLAG_Qmesh | P3M_FLAG_G_hat | P3M_FLAG_nshift,
+                                 P3M_FLAG_ik | P3M_FLAG_Qmesh | P3M_FLAG_G_hat | P3M_FLAG_nshift | P3M_FLAG_ca,
                                  &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, NULL
                                };
 

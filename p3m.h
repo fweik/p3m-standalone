@@ -13,13 +13,6 @@ FLOAT_TYPE LadInt[Maxip+1][2*MaxInterpol+1];
 /* Speichert die Interpolation der Ableitung des Ladungszuordnungspolynoms: */
 FLOAT_TYPE LadInt_[Maxip+1][2*MaxInterpol+1];
 
-// Charge assignment
-
-int *ca_ind[2];
-FLOAT_TYPE *cf[2];
-
-
-
 // Struct holding p3m parameters.
 
 typedef struct {
@@ -35,13 +28,23 @@ typedef struct {
 // Struct holding p3m data.
 
 typedef struct {
+    // Mesh size the struct is initialized for
     int mesh;
+    // Influence function
     FLOAT_TYPE *G_hat;
+    // Charge mesh
     FLOAT_TYPE *Qmesh;
+    // Force mesh for k space differentiation
     vector_array_t Fmesh;
+    // Shifted kvectors (fftw convention)
     FLOAT_TYPE *nshift;
+    // Fourier coefficients of the differential operator
     FLOAT_TYPE *Dn;
+    // Derivatives of the charge assignment function for analytical differentiation
     FLOAT_TYPE *dQdx[2], *dQdy[2], *dQdz[2];
+    // Cache for charge assignment
+    int *ca_ind[2];
+    FLOAT_TYPE *cf[2];
 } p3m_data_t;
 
 // Flags for method_t
