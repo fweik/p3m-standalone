@@ -56,17 +56,17 @@ void Init_system(system_t *s) {
 
 void Free_vector_array(vector_array_t *v) {
   int i;
-  
-  if( v == NULL )
-    return;
+      
+  if( v != NULL ) {
 
-  for(i=0;i<3;i++) {
-    if(v->fields[i] != NULL) {
-      free(v->fields[i]);
-      v->fields[i] = NULL;
+    for(i=0;i<3;i++) {
+      if(v->fields[i] != NULL) {
+        free(v->fields[i]);
+        v->fields[i] = NULL;
+      }
     }
-  }
 
-  v->x = v->y = v->z = NULL;
-  v->fields = NULL;
+    v->x = v->y = v->z = NULL;
+    v->fields = NULL;
+  }
 }

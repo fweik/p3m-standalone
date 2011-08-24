@@ -52,6 +52,17 @@ typedef struct {
   FLOAT_TYPE **fields;
   } vector_array_t;
 
+// Struct to hold the forces
+  
+typedef struct {
+  // Total forces
+  vector_array_t f;
+  // Kspace part of force
+  vector_array_t f_k;
+  // Realspace part of force
+  vector_array_t f_r;
+} forces_t;
+  
 // Struct to hold the reference forces
 
 typedef struct {

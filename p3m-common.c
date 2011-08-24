@@ -56,19 +56,17 @@ FLOAT_TYPE analytic_cotangent_sum(int n, FLOAT_TYPE mesh_i, int cao)
 }
 
 
-void Differenzenoperator_berechnen(p3m_parameters_t *p, p3m_data_t *d)
+void Init_differential_operator(p3m_data_t *d)
 {
   /* 
      Die Routine berechnet den fourieretransformierten 
-     Differentialoperator auf der Ebene der n, nicht der k,
+     Differentialoperator auf er Ebene der n, nicht der k,
      d.h. der Faktor  i*2*PI/L fehlt hier!
   */
   
   int    i;
   FLOAT_TYPE dMesh=(FLOAT_TYPE)d->mesh;
   FLOAT_TYPE dn;
-
-  d->Dn = Init_array(d->mesh, sizeof(FLOAT_TYPE));  
 
   for (i=0; i<d->mesh; i++)
     {
@@ -81,23 +79,63 @@ void Differenzenoperator_berechnen(p3m_parameters_t *p, p3m_data_t *d)
 
 }
 
-void nshift_ausrechnen(p3m_data_t *d)
+void Init_nshift(p3m_data_t *d)
 {
   /* Verschiebt die Meshpunkte um Mesh/2 */
-
+  
   int    i;
   FLOAT_TYPE dMesh=(FLOAT_TYPE)d->mesh;
-
-  d->nshift = Init_array(d->mesh, sizeof(FLOAT_TYPE));  
 
   for (i=0; i<d->mesh; i++) 
     d->nshift[i] = i - round(i/dMesh)*dMesh; 
   
 }
 
-void Init_data(method_t *m, p3m_parameters_t *p, p3m_data_t *d) {
+p3m_data_t *Init_data(const method_t *m, const system_t *s, const p3m_parameters_t *p) {
+  int mesh3 = p->mesh*p->mesh*p->mesh;
+  p3m_data_t *d = Init_array(1, sizeof(p3m_data_t));
   
-};
+  d->mesh = p->mesh;
+  
+  if( m->flags & P3M_FLAG_G_hat)
+    d->G_hat = Init_array(mesh3, sizeof(FLOAT_TYPE));
+  else
+    d->G_hat = NULL;
+  
+  if( m->flags & P3M_FLAG_Qmesh)
+    d->Qmesh = Init_array(2*mesh3, sizeof(FLOAT_TYPE));
+  else
+    d->Qmesh = NULL;
+  
+  if( m->flags & P3M_FLAG_ik ) {
+    Init_vector_array(&d->Fmesh, 2*mesh3);
+    d->Dn = Init_array(d->mesh, sizeof(FLOAT_TYPE));
+    Init_differential_operator(d);
+  }
+  else {
+    Init_vector_array(&d->Fmesh, 0);
+    d->Dn = NULL; 
+  }
+  
+  if( m->flags & P3M_FLAG_nshift ) {
+      d->nshift = Init_array(d->mesh, sizeof(FLOAT_TYPE)); 
+      Init_nshift(d);
+  }
+  
+  if( m->flags & P3M_FLAG_ad ) {
+    int i;
+    int max = ( m->flags & P3M_FLAG_interlaced) ? 2 : 1;
+    
+    d->dQdx[1] = d->dQdy[1] = d->dQdz[1] = NULL;
+    
+    for(i = 0; i < max; i++) {
+      d->dQdx[i] = Init_array( s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );
+      d->dQdy[i] = Init_array( s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );
+      d->dQdz[i] = Init_array( s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );
+    }
+  }  
+  return d;
+}
 
 void Free_data(p3m_data_t *d) {
   int i;
