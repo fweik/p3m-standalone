@@ -23,7 +23,7 @@ typedef struct {
     int        ip;
     int        cao;
     int        cao3;
-} p3m_parameters_t;
+} parameters_t;
 
 // Struct holding p3m data.
 
@@ -45,19 +45,19 @@ typedef struct {
     // Cache for charge assignment
     int *ca_ind[2];
     FLOAT_TYPE *cf[2];
-} p3m_data_t;
+} data_t;
 
 // Flags for method_t
 
 enum {
-    P3M_FLAG_none = 0,
-    P3M_FLAG_ik = 1, // Method uses ik-diff
-    P3M_FLAG_ad = 2, // Method uses ad
-    P3M_FLAG_interlaced = 4, // Method is interlaced
-    P3M_FLAG_nshift = 8, // Method needs precalculated shifted k-values
-    P3M_FLAG_G_hat = 16, // Method uses influence function
-    P3M_FLAG_Qmesh = 32, // Method needs charge mesh
-    P3M_FLAG_ca = 64 // Method uses charge assignment
+    METHOD_FLAG_none = 0,
+    METHOD_FLAG_ik = 1, // Method uses ik-diff
+    METHOD_FLAG_ad = 2, // Method uses ad
+    METHOD_FLAG_interlaced = 4, // Method is interlaced
+    METHOD_FLAG_nshift = 8, // Method needs precalculated shifted k-values
+    METHOD_FLAG_G_hat = 16, // Method uses influence function
+    METHOD_FLAG_Qmesh = 32, // Method needs charge mesh
+    METHOD_FLAG_ca = 64 // Method uses charge assignment
 };
 
 // methode type
@@ -66,10 +66,10 @@ typedef struct {
     int  method_id;
     const char *method_name;
     char flags;
-    p3m_data_t * ( *Init ) ( system_t *, p3m_parameters_t * );
-    void ( *Influence_function ) ( system_t *, p3m_parameters_t *, p3m_data_t * );
-    void ( *Kspace_force ) ( system_t *, p3m_parameters_t *, p3m_data_t * );
-    double ( *Error ) ( system_t *, p3m_parameters_t * );
+    data_t * ( *Init ) ( system_t *, parameters_t * );
+    void ( *Influence_function ) ( system_t *, parameters_t *, data_t * );
+    void ( *Kspace_force ) ( system_t *, parameters_t *, data_t *, forces_t * );
+    double ( *Error ) ( system_t *, parameters_t * );
 } method_t;
 
 #endif

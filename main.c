@@ -49,9 +49,9 @@
 // #define FORCE_DEBUG
 // #define CA_DEBUG
 
-void Elstat_berechnen ( system_t *, p3m_parameters_t *, const method_t *, p3m_data_t * );
+void Elstat_berechnen ( system_t *, parameters_t *, const method_t *, data_t * );
 
-void Elstat_berechnen ( system_t *s, p3m_parameters_t *p, const method_t *m, p3m_data_t *d ) {
+void Elstat_berechnen ( system_t *s, parameters_t *p, const method_t *m, data_t *d ) {
 
     int i, j;
 
@@ -80,11 +80,11 @@ void usage ( char *name ) {
 }
 
 
-void calc_reference_forces ( system_t *s, p3m_parameters_t *p, p3m_data_t *d ) {
+void calc_reference_forces ( system_t *s, parameters_t *p, data_t *d ) {
   
     int i,j;
     
-    p3m_parameters_t op = *p;
+    parameters_t op = *p;
 
     op.alpha = Ewald_compute_optimal_alpha ( s, &op );
 
@@ -112,8 +112,8 @@ int main ( int argc, char **argv ) {
 
     system_t system;
     method_t method;
-    p3m_parameters_t parameters;
-    p3m_data_t *data;
+    parameters_t parameters;
+    data_t *data;
 
     error_t error;
 

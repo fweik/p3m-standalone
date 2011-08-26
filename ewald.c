@@ -32,7 +32,7 @@
 
 // Method declaration
 
-const method_t method_ewald = { METHOD_EWALD, "Ewald summation.", P3M_FLAG_none, &Ewald_init, &Ewald_compute_influence_function, &Ewald_k_space, &Ewald_estimate_error };
+const method_t method_ewald = { METHOD_EWALD, "Ewald summation.", METHOD_FLAG_none, &Ewald_init, &Ewald_compute_influence_function, &Ewald_k_space, &Ewald_estimate_error };
 
 
 /*----------------------------------------------------------------------*/
@@ -57,7 +57,7 @@ static int     kmax2; /* reciprocal space cutoff and its square */
 
    For symmetry reasons only one octant is actually needed. 
 */
-void Ewald_compute_influence_function(system_t *s, p3m_parameters_t *p, p3m_data_t *d)
+void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
 {
   
   int    nx,ny,nz;
@@ -78,9 +78,9 @@ void Ewald_compute_influence_function(system_t *s, p3m_parameters_t *p, p3m_data
       }
 }  
 
-p3m_data_t *Ewald_init(system_t *s, p3m_parameters_t *p)
+data_t *Ewald_init(system_t *s, parameters_t *p)
 {
-  p3m_data_t *d = Init_array( 1, sizeof(p3m_data_t));
+  data_t *d = Init_array( 1, sizeof(data_t));
   kmax2     = SQR(kmax);
   
   d->G_hat = Init_array( (kmax+1)*(kmax+1)*(kmax+1), sizeof(FLOAT_TYPE));
@@ -89,7 +89,7 @@ p3m_data_t *Ewald_init(system_t *s, p3m_parameters_t *p)
   return d;
 }
 
-void Ewald_k_space(system_t *s, p3m_parameters_t *p, p3m_data_t *d)
+void Ewald_k_space(system_t *s, parameters_t *p, data_t *d)
 {
   int    i;
   int    nx, ny, nz;
@@ -132,7 +132,7 @@ void Ewald_k_space(system_t *s, p3m_parameters_t *p, p3m_data_t *d)
   return;
 }
 
-FLOAT_TYPE compute_error_estimate_r(system_t *s, p3m_parameters_t *p, FLOAT_TYPE alpha) {
+FLOAT_TYPE compute_error_estimate_r(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {
   FLOAT_TYPE res;
   FLOAT_TYPE rmax2 = p->rcut*p->rcut;
   /* Kolafa-Perram, eq. 16 */
@@ -141,7 +141,7 @@ FLOAT_TYPE compute_error_estimate_r(system_t *s, p3m_parameters_t *p, FLOAT_TYPE
   return res;
 }
 
-FLOAT_TYPE compute_error_estimate_k(system_t *s, p3m_parameters_t *p, FLOAT_TYPE alpha) {
+FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {
   /* compute the k space part of the error estimate */
   FLOAT_TYPE res, Leni = 1.0/s->length;
 
@@ -156,11 +156,11 @@ FLOAT_TYPE compute_error_estimate_k(system_t *s, p3m_parameters_t *p, FLOAT_TYPE
   return res;
 }
 
-FLOAT_TYPE Ewald_estimate_error(system_t *s, p3m_parameters_t *p) {
+FLOAT_TYPE Ewald_estimate_error(system_t *s, parameters_t *p) {
   return sqrt(SQR(compute_error_estimate_r(s, p, p->alpha)) + SQR(compute_error_estimate_k(s, p, p->alpha)));
 }
 
-FLOAT_TYPE Ewald_compute_optimal_alpha(system_t *s, p3m_parameters_t *p) {
+FLOAT_TYPE Ewald_compute_optimal_alpha(system_t *s, parameters_t *p) {
   /* use bisectional method to get optimal alpha value */
   FLOAT_TYPE alpha_low, f_low;
   FLOAT_TYPE alpha_high, f_high;

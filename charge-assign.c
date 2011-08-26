@@ -6,7 +6,7 @@
 
 // #define CA_DEBUG
 
-void assign_charge(system_t *s, p3m_parameters_t *p, p3m_data_t *d, int ii)
+void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 {
   int dim, i0, i1, i2, id;
   FLOAT_TYPE tmp0, tmp1;
@@ -63,7 +63,7 @@ void assign_charge(system_t *s, p3m_parameters_t *p, p3m_data_t *d, int ii)
 }
 
 // assign the forces obtained from k-space 
-void assign_forces(FLOAT_TYPE force_prefac, system_t *s, p3m_parameters_t *p, p3m_data_t *d,int ii) {
+void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d,int ii) {
   int i,i0,i1,i2, dim;
   int cf_cnt=0;
   int *base;
@@ -96,7 +96,7 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, p3m_parameters_t *p, p3
   }
 }
 
-void assign_charge_and_derivatives(system_t *s, p3m_parameters_t *p, p3m_data_t *d, int ii, int derivatives)
+void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int ii, int derivatives)
 {
   int dim, i0, i1, i2;
   int id;
@@ -164,7 +164,7 @@ void assign_charge_and_derivatives(system_t *s, p3m_parameters_t *p, p3m_data_t 
 }
 
 // assign the forces obtained from k-space 
-void assign_forces_ad(double force_prefac, system_t *s, p3m_parameters_t *p, p3m_data_t *d,int ii) 
+void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t *d,int ii) 
 {
   int i,i0,i1,i2, dim;
   int cf_cnt=0;

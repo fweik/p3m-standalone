@@ -17,7 +17,7 @@ fftw_plan backward_plan[3];
 // declaration of the method
 
 const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.",
-                                 P3M_FLAG_ik | P3M_FLAG_Qmesh | P3M_FLAG_G_hat | P3M_FLAG_nshift | P3M_FLAG_ca,
+                                 METHOD_FLAG_ik | METHOD_FLAG_Qmesh | METHOD_FLAG_G_hat | METHOD_FLAG_nshift | METHOD_FLAG_ca,
                                  &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, NULL
                                };
 
@@ -39,11 +39,11 @@ inline void backward_fft ( void ) {
         fftw_execute ( backward_plan[i] );
 }
 
-p3m_data_t *Init_ik ( system_t *s, p3m_parameters_t *p ) {
+data_t *Init_ik ( system_t *s, parameters_t *p ) {
     int l;
     int mesh = p->mesh;
 
-    p3m_data_t *d = Init_data ( &method_p3m_ik, s, p );
+    data_t *d = Init_data ( &method_p3m_ik, s, p );
 
     forward_plan = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_ESTIMATE );
 
@@ -54,7 +54,7 @@ p3m_data_t *Init_ik ( system_t *s, p3m_parameters_t *p ) {
 }
 
 
-void Aliasing_sums_ik ( system_t *s, p3m_parameters_t *p, p3m_data_t *d, int NX, int NY, int NZ,
+void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY, int NZ,
                         FLOAT_TYPE *Zaehler, FLOAT_TYPE *Nenner ) {
     FLOAT_TYPE S1,S2,S3;
     FLOAT_TYPE fak1,fak2,zwi;
@@ -94,7 +94,7 @@ void Aliasing_sums_ik ( system_t *s, p3m_parameters_t *p, p3m_data_t *d, int NX,
     }
 }
 
-void Influence_function_berechnen_ik ( system_t *s, p3m_parameters_t *p, p3m_data_t *d ) {
+void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d ) {
 
     int    NX,NY,NZ;
     FLOAT_TYPE Dnx,Dny,Dnz;
@@ -137,7 +137,7 @@ void Influence_function_berechnen_ik ( system_t *s, p3m_parameters_t *p, p3m_dat
 /* Calculates k-space part of the force, using ik-differentiation.
  */
 
-void P3M_ik ( system_t *s, p3m_parameters_t *p, p3m_data_t *d ) {
+void P3M_ik ( system_t *s, parameters_t *p, data_t *d ) {
     /* Zaehlvariablen: */
     int i, j, k, l;
     /* Schnelles Modulo: */

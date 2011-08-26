@@ -27,7 +27,7 @@ void Exakte_Werte_einlesen(system_t *s, char *filename)
   fclose(fp);
 }
 
-void Daten_einlesen(system_t *s, p3m_parameters_t *p, char *filename)
+void Daten_einlesen(system_t *s, parameters_t *p, char *filename)
 {
   /* Opens file 'filename' for reanding and reads system parameters,
    particle positions and charges. */

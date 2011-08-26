@@ -63,13 +63,6 @@ typedef struct {
   vector_array_t f_r;
 } forces_t;
   
-// Struct to hold the reference forces
-
-typedef struct {
-  vector_array_t f;
-  vector_array_t f_k;
-} reference_forces_t;
-
 // Struct to hold general system and particle data
 
 typedef
@@ -91,7 +84,7 @@ typedef
     // sum of the squares of the particle charges
     FLOAT_TYPE q2;
     // the reference forces
-    reference_forces_t reference;
+    forces_t reference;
     // dielectric constat of the environment at infinity
     FLOAT_TYPE epsilon;
 } system_t;

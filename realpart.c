@@ -5,7 +5,7 @@
 
 static neighbor_list_t *neighbor_list;
 
-void Realteil(system_t *s, p3m_parameters_t *p)
+void Realteil(system_t *s, parameters_t *p)
 {
   /* Zwei Teilchennummern: */
   int t1,t2;
@@ -46,7 +46,7 @@ void Realteil(system_t *s, p3m_parameters_t *p)
       }
 }
 
-static inline void build_neighbor_list_for_particle(system_t *s, p3m_parameters_t *p, vector_array_t *buffer, int *neighbor_id_buffer, FLOAT_TYPE *charges_buffer, int id) {
+static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p, vector_array_t *buffer, int *neighbor_id_buffer, FLOAT_TYPE *charges_buffer, int id) {
   int i, j, np=0;
   FLOAT_TYPE r, dx, dy, dz;
   FLOAT_TYPE lengthi = 1.0/s->length;
@@ -80,7 +80,7 @@ static inline void build_neighbor_list_for_particle(system_t *s, p3m_parameters_
   neighbor_list[id].n = np;
 }
 
-void Init_neighborlist(system_t *s, p3m_parameters_t *p) {
+void Init_neighborlist(system_t *s, parameters_t *p) {
   int i;
   
   // Define and allocate buffers (nessecary due to unknow number of neigbors per particles).
@@ -109,7 +109,7 @@ void Init_neighborlist(system_t *s, p3m_parameters_t *p) {
   free(charges_buffer);
 }
 
-void Realpart_neighborlist(system_t *s, p3m_parameters_t *p)
+void Realpart_neighborlist(system_t *s, parameters_t *p)
 {
   int i,j;
   /* Minimum-Image-Abstand: */

@@ -23,12 +23,12 @@ typedef struct {
 // functions for neighbor list algorithm
 
 // Build particle neighbor list. WARNING: This is O(n^2).
-void Init_neighborlist(system_t *s, p3m_parameters_t *p);
+void Init_neighborlist(system_t *s, parameters_t *p);
 // Calculate realpart of forces using list.
-void Realpart_neighborlist(system_t *s, p3m_parameters_t *p);
+void Realpart_neighborlist(system_t *s, parameters_t *p);
 
 // functions for n2 algorithm
 
-void Realteil(system_t *, p3m_parameters_t *);
+void Realteil(system_t *, parameters_t *);
 
 #endif
