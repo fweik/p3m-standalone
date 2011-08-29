@@ -192,7 +192,7 @@ int main ( int argc, char **argv ) {
 
         if ( method.Error != NULL ) {
             double estimate =  method.Error ( system, &parameters );
-            printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", parameters.alpha,error.f, estimate,
+            printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", parameters.alpha, error.f / system->nparticles , estimate,
                      error.f_r, error.f_k );
             fprintf ( fout,"% lf\t% e\t% e\n",parameters.alpha,error.f, estimate );
         } else {

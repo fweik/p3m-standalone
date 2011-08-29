@@ -5,19 +5,19 @@
 #include <fftw3.h>
 
 #include "p3m.h"
+#include "common.h"
+#include "p3m-common.h"
 #include "charge-assign.h"
+#include "p3m-ik-i.h"
 
-/* Pi, weil man's so oft braucht: */
-#define PI 3.14159265358979323846264
+// declaration of the method
 
-#define r_ind(A,B,C) ((A)*Mesh*Mesh + (B)*Mesh + (C))
-#define c_ind(A,B,C) (2*Mesh*Mesh*(A)+2*Mesh*(B)+2*(C))
+const method_t method_p3m_ik_i = { MEHOTD_P3M_ik_i, "P3M with ik differentiation, interlaced.",
+				   METHOD_FLAG_ik | METHOD_FLAG_Qmesh | METHOF_FLAG_G_hat | METHOD_FLAG_nshift | METHOD_FLAG_ca | METHOD_FLAG_interlaced,
+				   &Init_ik_i, &Influence_function_ik_i, &P3M_ik_i, NULL };
 
 fftw_plan forward_plan;
 fftw_plan backward_plan[3];
-
-FLOAT_TYPE *Fmesh[3];
-FLOAT_TYPE *F_K[3];
 
 static void forward_fft(void);
 static void backward_fft(void);
@@ -32,80 +32,48 @@ void backward_fft(void) {
     fftw_execute(backward_plan[i]);
 }
 
-
-
-static FLOAT_TYPE sinc(FLOAT_TYPE d)
-{
-  /* 
-     Berechnet die sinc-Funktion als sin(PI*x)/(PI*x).
-     (Konvention fuer sinc wie in Hockney/Eastwood!)
-  */
-
-  static FLOAT_TYPE epsi = 1e-8;
-  FLOAT_TYPE PId = PI*d;
-  
-  return (fabs(d)<=epsi) ? 1.0 : sin(PId)/PId;
-}
-
-void Init_interlaced_ik(int Teilchenzahl) {
+void Init_interlaced_ik( system_t *s, parameters_t *p ) {
   int l;
-  Qmesh = (FLOAT_TYPE *) realloc(Qmesh, 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
+  int Mesh = p->mesh;
 
-  G_hat = (FLOAT_TYPE *) realloc(G_hat, Mesh*Mesh*Mesh*sizeof(G_hat));  
+  data_t *d = Init_data( &method_p3m_ik_i, s, p );
 
-  for(l=0;l<2;l++) {
-      ca_ind[l] = (int *) realloc(ca_ind[l], 3*Teilchenzahl*sizeof(int));
-      cf[l] = (FLOAT_TYPE *) realloc(cf[l], Teilchenzahl * (ip+1) * (ip + 1) * (ip + 1) *sizeof(FLOAT_TYPE)); 
-  }
-
-  F_K[0] = Fx_K;
-  F_K[1] = Fy_K;
-  F_K[2] = Fz_K;
-
-  forward_plan = fftw_plan_dft_3d(Mesh, Mesh, Mesh, (fftw_complex *)Qmesh, (fftw_complex *)Qmesh, FFTW_FORWARD, FFTW_ESTIMATE);
+  forward_plan = fftw_plan_dft_3d(Mesh, Mesh, Mesh, (fftw_complex *)d->Qmesh, (fftw_complex *)d->Qmesh, FFTW_FORWARD, FFTW_ESTIMATE);
   for(l=0;l<3;l++){
-    Fmesh[l] = (FLOAT_TYPE *)realloc(Fmesh[l], 2*Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));  
-    backward_plan[l] = fftw_plan_dft_3d(Mesh, Mesh, Mesh, (fftw_complex *)Fmesh[l], (fftw_complex *)Fmesh[l], FFTW_BACKWARD, FFTW_ESTIMATE);
+    backward_plan[l] = fftw_plan_dft_3d(Mesh, Mesh, Mesh, (fftw_complex *)d->Fmesh.fields[l], (fftw_complex *)d->Fmesh.fields[l], FFTW_BACKWARD, FFTW_ESTIMATE);
   }
   
 }
 
-void Aliasing_sums_interlaced_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
+void Aliasing_sums_interlaced_ik( system_t *s, parameters_t *p, data_t *d, int NX, int NY, int NZ,
 				  FLOAT_TYPE *Zaehler, FLOAT_TYPE *Nenner1, FLOAT_TYPE *Nenner2)
 {
-  /*
-    Berechnet die beiden Aliasing-Summen im Zaehler und Nenner des Ausdrucks fuer die
-    optimale influence-function (siehe: Hockney/Eastwood: Formel 8-22 Seite 275 oben).
-    
-    NX,NY,NZ : Komponenten des n-Vektors, fuer den die Aliasing-Summen ausgefuehrt werden sollen.
-    *ZaehlerX,*ZaehlerY,*ZaehlerZ : x- ,y- und z-Komponente der Aliasing-Summe im Zaehler.
-    *Nenner : Aliasing-Summe im Nenner.
-  */
-  
-  static int aliasmax = 2; /* Genauigkeit der Aliasing-Summe (2 ist wohl genug) */
-  
   FLOAT_TYPE S,S1,S2,S3;
   FLOAT_TYPE fak1,fak2,zwi;
   int    MX,MY,MZ;
   FLOAT_TYPE NMX,NMY,NMZ;
   FLOAT_TYPE NM2;
+  
+  FLOAT_TYPE expo, TE;
+  int Mesh = d->mesh;
+  FLOAT_TYPE Leni = 1.0/s->length;
 
   fak1 = 1.0/(FLOAT_TYPE)Mesh;
   fak2 = SQR(PI/(alpha*Len));
-
+  
   Zaehler[0] = Zaehler[1] = Zaehler[2] = *Nenner1 = *Nenner2 = 0.0;
 
-  for (MX = -aliasmax; MX <= aliasmax; MX++)
+  for (MX = -P3M_BRILLOUIN; MX <= P3M_BRILLOUIN; MX++)
     {
       NMX = nshift[NX] + Mesh*MX;
       S   = SQR(sinc(fak1*NMX)); 
       S1  = pow(S,ip+1);
-      for (MY = -aliasmax; MY <= aliasmax; MY++)
+      for (MY = -P3M_BRILLOUIN; MY <= P3M_BRILLOUIN; MY++)
 	{
 	  NMY = nshift[NY] + Mesh*MY;
 	  S   = SQR(sinc(fak1*NMY));
 	  S2  = S1*pow(S,ip+1);
-	  for (MZ = -aliasmax; MZ <= aliasmax; MZ++)
+	  for (MZ = -P3M_BRILLOUIN; MZ <= P3M_BRILLOUIN; MZ++)
 	    {
 	      NMZ = nshift[NZ] + Mesh*MZ;
 	      S   = SQR(sinc(fak1*NMZ));
@@ -114,23 +82,25 @@ void Aliasing_sums_interlaced_ik(int NX, int NY, int NZ, FLOAT_TYPE alpha,
 
               *Nenner1 += S3;
 
-	      zwi  = S3 * exp(-fak2*NM2)/NM2;
+	      expo = fak2*NM2;
+              TE = ( expo < 30.0 ) ? exp ( -expo ) : 0.0;
+	      zwi  = S3 * TE/NM2;
 	      Zaehler[0] += NMX*zwi;
               Zaehler[1] += NMY*zwi;
               Zaehler[2] += NMZ*zwi;
 	      
-	       if (((MX+MY+MZ)%2)==0) {					//even term
+	      if (((MX+MY+MZ)%2)==0) {					//even term
 	        *Nenner2 += S3;
-	       } else {						//odd term: minus sign!
-	         *Nenner2 -= S3;
-	       }
+	      } else {						//odd term: minus sign!
+		*Nenner2 -= S3;
+	      }
 	    }
 	}
     }
 }
 
  
-void Influence_function_berechnen_ik_interlaced(FLOAT_TYPE alpha)
+void Influence_function_berechnen_ik_interlaced( system_t *s, parameters_t *p, data_t *d )
 {
   /*
     Berechnet die influence-function, d.h. sowas wie das Produkt aus
@@ -145,7 +115,11 @@ void Influence_function_berechnen_ik_interlaced(FLOAT_TYPE alpha)
   FLOAT_TYPE dMesh,dMeshi;
   FLOAT_TYPE Zaehler[3]={0.0,0.0,0.0},Nenner1=0.0, Nenner2=0.0;
   FLOAT_TYPE zwi;
-  
+
+  int ind = 0;
+  int Mesh = p->mesh;
+  FLOAT_TYPE Leni = 1.0/s->length;  
+
   dMesh = (FLOAT_TYPE)Mesh;
   dMeshi= 1.0/dMesh;
   
@@ -156,13 +130,15 @@ void Influence_function_berechnen_ik_interlaced(FLOAT_TYPE alpha)
 	{
 	  for (NZ=0; NZ<Mesh; NZ++)
 	    {
+	      ind = r_ind( NX, NZ, NZ );
+
 	      if ((NX==0) && (NY==0) && (NZ==0))
-		G_hat[r_ind(NX,NY,NZ)]=0.0;
+		d->G_hat[ind]=0.0;
               else if ((NX%(Mesh/2) == 0) && (NY%(Mesh/2) == 0) && (NZ%(Mesh/2) == 0))
-                G_hat[r_ind(NX,NY,NZ)]=0.0;
+                d->G_hat[ind]=0.0;
 	      else
 		{
-		  Aliasing_sums_interlaced_ik(NX,NY,NZ,alpha,Zaehler,&Nenner1, &Nenner2);
+		  Aliasing_sums_interlaced_ik( s, p, d, NX, NY, NZ, Zaehler, &Nenner1,  &Nenner2);
 		  
 		  Dnx = Dn[NX];  
 		  Dny = Dn[NY];  
@@ -171,8 +147,8 @@ void Influence_function_berechnen_ik_interlaced(FLOAT_TYPE alpha)
 		  zwi  = Dnx*Zaehler[0] + Dny*Zaehler[1] + Dnz*Zaehler[2];
 		  zwi /= ( SQR(Dnx) + SQR(Dny) + SQR(Dnz) );
                   zwi /= 0.5*(SQR(Nenner1) + SQR(Nenner2));		  
-
-		  G_hat[r_ind(NX,NY,NZ)] = Mesh*Mesh*Mesh*2.0 * zwi * Leni * Leni;
+		  
+		  G_hat[ind] = Mesh*Mesh*Mesh*2.0 * zwi * Leni * Leni;
 		}
 	    }
 	}

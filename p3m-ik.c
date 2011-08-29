@@ -84,7 +84,7 @@ void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY,
                 *Nenner += S3;
 
                 expo = fak2*NM2;
-                TE = ( expo < 30 ) ? exp ( -expo ) : 0.0;
+                TE = ( expo < 30.0 ) ? exp ( -expo ) : 0.0;
                 zwi  = S3 * TE/NM2;
                 Zaehler[0] += NMX*zwi*Leni;
                 Zaehler[1] += NMY*zwi*Leni;
@@ -106,30 +106,29 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
     FLOAT_TYPE Leni = 1.0/s->length;
     dMesh = ( FLOAT_TYPE ) Mesh;
     dMeshi= 1.0/dMesh;
-
-    /* bei Zahlen >= Mesh/2 wird noch Mesh abgezogen! */
+    
     for ( NX=0; NX<Mesh; NX++ ) {
-        for ( NY=0; NY<Mesh; NY++ ) {
-            for ( NZ=0; NZ<Mesh; NZ++ ) {
-                ind = r_ind ( NX,NY,NZ );
-
-                if ( ( NX==0 ) && ( NY==0 ) && ( NZ==0 ) )
-                    d->G_hat[ind]=0.0;
-                else if ( ( NX% ( Mesh/2 ) == 0 ) && ( NY% ( Mesh/2 ) == 0 ) && ( NZ% ( Mesh/2 ) == 0 ) )
-                    d->G_hat[ind]=0.0;
-                else {
-                    Aliasing_sums_ik ( s, p, d, NX,NY,NZ,Zaehler,&Nenner );
-
-                    Dnx = d->Dn[NX];
-                    Dny = d->Dn[NY];
-                    Dnz = d->Dn[NZ];
-
-                    zwi  = Dnx*Zaehler[0]*Leni + Dny*Zaehler[1]*Leni + Dnz*Zaehler[2]*Leni;
-                    zwi /= ( ( SQR ( Dnx*Leni ) + SQR ( Dny*Leni ) + SQR ( Dnz*Leni ) ) * SQR ( Nenner ) );
-                    d->G_hat[ind] = 2.0 * zwi / PI;
-                }
-            }
-        }
+      for ( NY=0; NY<Mesh; NY++ ) {
+	for ( NZ=0; NZ<Mesh; NZ++ ) {
+	  ind = r_ind ( NX,NY,NZ );
+	  
+	  if ( ( NX==0 ) && ( NY==0 ) && ( NZ==0 ) )
+	    d->G_hat[ind]=0.0;
+	  else if ( ( NX% ( Mesh/2 ) == 0 ) && ( NY% ( Mesh/2 ) == 0 ) && ( NZ% ( Mesh/2 ) == 0 ) )
+	    d->G_hat[ind]=0.0;
+	  else {
+	    Aliasing_sums_ik ( s, p, d, NX,NY,NZ,Zaehler,&Nenner );
+		  
+	    Dnx = d->Dn[NX];
+	    Dny = d->Dn[NY];
+	    Dnz = d->Dn[NZ];
+	    
+	    zwi  = Dnx*Zaehler[0]*Leni + Dny*Zaehler[1]*Leni + Dnz*Zaehler[2]*Leni;
+	    zwi /= ( ( SQR ( Dnx*Leni ) + SQR ( Dny*Leni ) + SQR ( Dnz*Leni ) ) * SQR ( Nenner ) );
+	    d->G_hat[ind] = 2.0 * zwi / PI;
+	  }
+	}
+      }
     }
 }
 
