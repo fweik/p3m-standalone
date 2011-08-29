@@ -6,67 +6,109 @@
 #include "common.h"
 
 void *Init_array(int size, size_t field_size) {
-  void *a;
-  
-  assert(size >= 0);
-  assert(field_size > 0);
+    void *a;
 
-  a = malloc(size * field_size);
+    assert(size >= 0);
+    assert(field_size > 0);
 
-  assert(a != NULL);
-  return a;
+    a = malloc(size * field_size);
+
+    assert(a != NULL);
+    return a;
 }
 
-void Init_vector_array(vector_array_t *v, int n) {
-  int i;
+vector_array_t *Init_vector_array(int n) {
+    int i;
+    vector_array_t *v;
 
-  assert(v != NULL);
-  assert(n >= 0 );
-  
-  v->fields = Init_array( 3, sizeof(FLOAT_TYPE *));
+    v = Init_array( 1, sizeof(vector_array_t));
 
-  
-  assert( v->fields != NULL );
-  
-  for(i=0;i<3;i++) {
-    v->fields[i] = Init_array( n, sizeof(FLOAT_TYPE));
-  }
+    assert(n >= 0 );
 
-  v->x = v->fields[0];
-  v->y = v->fields[1];
-  v->z = v->fields[2];
+    v->fields = Init_array( 3, sizeof(FLOAT_TYPE *));
+
+
+    assert( v->fields != NULL );
+
+    for (i=0;i<3;i++) {
+        v->fields[i] = Init_array( n, sizeof(FLOAT_TYPE));
+    }
+
+    v->x = v->fields[0];
+    v->y = v->fields[1];
+    v->z = v->fields[2];
+
+    return v;
 }
 
-void Init_system(system_t *s) {
-  assert(s!= NULL);
-  assert( s->nparticles > 0 );
+system_t *Init_system(int n) {
+    system_t *s;
 
-  Init_vector_array(&(s->p), s->nparticles);
-  Init_vector_array(&(s->f), s->nparticles);
-  Init_vector_array(&(s->f_k), s->nparticles);
-  Init_vector_array(&(s->f_r), s->nparticles);
+    assert( n > 0 );
 
-  Init_vector_array(&(s->reference.f), s->nparticles);
-  Init_vector_array(&(s->reference.f_k), s->nparticles);
+    s = Init_array( 1, sizeof(system_t));
 
-  s->q = Init_array(s->nparticles, sizeof(FLOAT_TYPE));
+    s-> nparticles = n;
 
-  assert((s->q) != NULL);
+    s-> p = Init_vector_array(s->nparticles);
+
+    s->reference = Init_forces(s->nparticles);
+
+    s->q = Init_array(s->nparticles, sizeof(FLOAT_TYPE));
+
+    return s;
+}
+
+forces_t *Init_forces(int n) {
+    forces_t *f;
+
+    f = Init_array( 1, sizeof(forces_t));
+
+    f->f = Init_vector_array(n);
+    f->f_k = Init_vector_array(n);
+    f->f_r = Init_vector_array(n);
+    
+    return f;
+}
+
+void Free_system(system_t *s) {
+  if( s == NULL)
+    return;
+  
+  Free_vector_array(s->p);
+  
+  Free_forces(s->reference);
+  
+  free(s->q);
+  
+  free(s);
+  
+}
+
+void Free_forces(forces_t *f) {
+  if( f == NULL )
+    return;
+  
+  Free_vector_array(f->f);
+  Free_vector_array(f->f_k);
+  Free_vector_array(f->f_r);
+ 
+  free(f);
 }
 
 void Free_vector_array(vector_array_t *v) {
-  int i;
-      
-  if( v != NULL ) {
+    int i;
 
-    for(i=0;i<3;i++) {
-      if(v->fields[i] != NULL) {
-        free(v->fields[i]);
-        v->fields[i] = NULL;
-      }
+    if ( v != NULL ) {
+        for (i=0;i<3;i++) {
+            if (v->fields[i] != NULL) {
+                free(v->fields[i]);
+                v->fields[i] = NULL;
+            }
+        }
+
+        v->x = v->y = v->z = NULL;
+        v->fields = NULL;
     }
-
-    v->x = v->y = v->z = NULL;
-    v->fields = NULL;
-  }
+    free(v);
 }

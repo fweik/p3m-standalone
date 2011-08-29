@@ -17,4 +17,5 @@ FLOAT_TYPE analytic_cotangent_sum(int n, FLOAT_TYPE mesh_i, int cao);
 void Differenzenoperator_berechnen(parameters_t *, data_t *);
 void nshift_ausrechnen(data_t *);
 data_t *Init_data(const method_t *, const system_t *s, const parameters_t *); 
+void Free_data(data_t *);
 #endif

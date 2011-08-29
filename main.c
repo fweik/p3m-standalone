@@ -49,28 +49,30 @@
 // #define FORCE_DEBUG
 // #define CA_DEBUG
 
-void Elstat_berechnen ( system_t *, parameters_t *, const method_t *, data_t * );
+void Elstat_berechnen ( system_t *, parameters_t *, const method_t *, data_t *, forces_t * );
 
-void Elstat_berechnen ( system_t *s, parameters_t *p, const method_t *m, data_t *d ) {
+void Elstat_berechnen ( system_t *s, parameters_t *p, const method_t *m, data_t *d, forces_t *f ) {
 
     int i, j;
 
     for ( i=0; i<3; i++ ) {
-        memset ( s->f.fields[i]  , 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
-        memset ( s->f_k.fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
-        memset ( s->f_r.fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+        memset ( f->f->fields[i]  , 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+        memset ( f->f_k->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+        memset ( f->f_r->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
     }
 
-    Realpart_neighborlist ( s,p );
-    
+    Realpart_neighborlist ( s, p, f );
+
+    //Realteil( s, p, f );
+    #pragma omp barrier
     //  Dipol(s, p);
 
-    m->Kspace_force ( s, p, d );
+    m->Kspace_force ( s, p, d, f );
 
+//#pragma omp parallel for collapse(2)
     for ( j=0; j < 3; j++ ) {
-#pragma omp parallel for
         for ( i=0; i<s->nparticles; i++ ) {
-            s->f.fields[j][i] += s->f_k.fields[j][i] + s->f_r.fields[j][i];
+            f->f->fields[j][i] += f->f_k->fields[j][i] + f->f_r->fields[j][i];
         }
     }
 }
@@ -80,10 +82,11 @@ void usage ( char *name ) {
 }
 
 
-void calc_reference_forces ( system_t *s, parameters_t *p, data_t *d ) {
+void calc_reference_forces ( system_t *s, parameters_t *p ) {
+    data_t *d;
   
     int i,j;
-    
+
     parameters_t op = *p;
 
     op.alpha = Ewald_compute_optimal_alpha ( s, &op );
@@ -93,13 +96,10 @@ void calc_reference_forces ( system_t *s, parameters_t *p, data_t *d ) {
     d = Ewald_init ( s, p );
     Ewald_compute_influence_function ( s, p, d );
 
-    Elstat_berechnen ( s, &op, &method_ewald, d );
+    Elstat_berechnen ( s, &op, &method_ewald, d, s->reference );
+    
+    Free_data(d);
 
-    for ( j=0;j<3;j++ )
-        for ( i=0;i<s->nparticles;i++ ) {
-            s->reference.f.fields[j][i] = s->f.fields[j][i];
-            s->reference.f_k.fields[j][i] = s->f_k.fields[j][i];
-        }
 }
 
 
@@ -110,10 +110,11 @@ int main ( int argc, char **argv ) {
 
     FILE* fout;
 
-    system_t system;
+    system_t *system;
     method_t method;
     parameters_t parameters;
     data_t *data;
+    forces_t *forces;
 
     error_t error;
 
@@ -123,9 +124,8 @@ int main ( int argc, char **argv ) {
     }
 
     // Inits the system and reads particle data and parameters from file.
-    Daten_einlesen ( &system, &parameters, argv[1] );
-
-    // nshift_ausrechnen();
+    system = Daten_einlesen ( &parameters, argv[1] );
+    forces = Init_forces(system->nparticles);
 
     alphamin = atof ( argv[3] );
     alphamax = atof ( argv[4] );
@@ -139,7 +139,7 @@ int main ( int argc, char **argv ) {
     calc_reference_forces ( argv[2] );
 #endif
 #ifndef WRITE_FORCES
-    Exakte_Werte_einlesen ( &system, argv[2] );
+    Exakte_Werte_einlesen ( system, argv[2] );
 #endif
 
     if ( methodnr == method_ewald.method_id )
@@ -166,7 +166,7 @@ int main ( int argc, char **argv ) {
     }
 
     if ( ( method.Init == NULL ) || ( method.Influence_function == NULL ) || ( method.Kspace_force == NULL ) ) {
-        fprintf ( stderr,"Internal error: Method '%s' (%d) is not correctly defined. Aborting.\n", method.method_name, method.method_id );
+        fprintf ( stderr,"Internal error: Method '%s' (%d) is not properly defined. Aborting.\n", method.method_name, method.method_id );
         exit ( -1 );
     }
 
@@ -175,23 +175,23 @@ int main ( int argc, char **argv ) {
     fout = fopen ( "out.dat","w" );
 
     printf ( "Init" );
-    data = method.Init ( &system, &parameters );
+    data = method.Init ( system, &parameters );
     printf ( ".\n" );
 
     printf ( "Init neighborlist" );
-    Init_neighborlist ( &system, &parameters );
+    Init_neighborlist ( system, &parameters );
     printf ( ".\n" );
 
     printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error", "K-Error" );
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
-        method.Influence_function ( &system, &parameters, data );  /* Hockney/Eastwood */
+        method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
-        Elstat_berechnen ( &system, &parameters, &method, data ); /* Hockney/Eastwood */
+        Elstat_berechnen ( system, &parameters, &method, data, forces ); /* Hockney/Eastwood */
 
-        error = Calculate_errors ( &system );
+        error = Calculate_errors ( system, forces );
 
         if ( method.Error != NULL ) {
-            double estimate =  method.Error ( &system, &parameters );
+            double estimate =  method.Error ( system, &parameters );
             printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", parameters.alpha,error.f, estimate,
                      error.f_r, error.f_k );
             fprintf ( fout,"% lf\t% e\t% e\n",parameters.alpha,error.f, estimate );

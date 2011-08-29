@@ -38,7 +38,7 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
     pos_shift = (double)((p->cao-1)/2);
     /* particle position in mesh coordinates */
     for(dim=0;dim<3;dim++) {
-      pos    = s->p.fields[dim][id]*Hi - pos_shift;
+      pos    = s->p->fields[dim][id]*Hi - pos_shift;
       nmp = (int) floor(pos + 0.5);
       base[dim]  = (nmp > 0) ? nmp%MESHMASKE : (nmp + d->mesh)%MESHMASKE;
       arg[dim] = (int) floor((pos - nmp + 0.5)*MI2);
@@ -63,7 +63,7 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 }
 
 // assign the forces obtained from k-space 
-void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d,int ii) {
+void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii) {
   int i,i0,i1,i2, dim;
   int cf_cnt=0;
   int *base;
@@ -83,15 +83,15 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
 	  for(i2=0; i2<p->cao; i2++) {
 	    l = (base[2] + i2)&MESHMASKE;
 	    A = d->cf[ii][cf_cnt];
-	    B = d->Fmesh.fields[dim][c_ind(j,k,l)+ii];
+	    B = d->Fmesh->fields[dim][c_ind(j,k,l)+ii];
 	    
-	    s->f_k.fields[dim][i] -= force_prefac*A*B; 
+	    f->f_k->fields[dim][i] -= force_prefac*A*B; 
 	    cf_cnt++;
 	  }
 	}
       }
       if(ii==1)
-	s->f_k.fields[dim][i] *= 0.5;
+	f->f_k->fields[dim][i] *= 0.5;
     }
   }
 }
@@ -129,7 +129,7 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
     for (id=0;id<s->nparticles;id++) {
       cf_cnt = id*p->cao3;
     for (dim=0;dim<3;dim++) {
-            pos    = s->p.fields[dim][id]*Hi - pos_shift;
+            pos    = s->p->fields[dim][id]*Hi - pos_shift;
             nmp = (int) floor(pos + 0.5);
             base[dim]  = (nmp > 0) ? nmp%MESHMASKE : (nmp + Mesh)%MESHMASKE;
             arg[dim] = (int) floor((pos - nmp + 0.5)*MI2);
@@ -164,7 +164,7 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
 }
 
 // assign the forces obtained from k-space 
-void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t *d,int ii) 
+void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii) 
 {
   int i,i0,i1,i2, dim;
   int cf_cnt=0;
@@ -184,16 +184,16 @@ void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t 
 	for(i2=0; i2<p->cao; i2++) {
 	  l = (base[2] + i2)&MESHMASKE;
 	  B = d->Qmesh[c_ind(j,k,l)+ii];
-	  s->f_k.x[i] -= force_prefac*B*d->dQdx[ii][cf_cnt]; 
-	  s->f_k.y[i] -= force_prefac*B*d->dQdy[ii][cf_cnt];
-	  s->f_k.z[i] -= force_prefac*B*d->dQdz[ii][cf_cnt];
+	  f->f_k->x[i] -= force_prefac*B*d->dQdx[ii][cf_cnt]; 
+	  f->f_k->y[i] -= force_prefac*B*d->dQdy[ii][cf_cnt];
+	  f->f_k->z[i] -= force_prefac*B*d->dQdz[ii][cf_cnt];
 	  cf_cnt++;
 	}
       }
     }
     if(ii==1) {
       for(dim=0;dim<3;dim++)
-	s->f_k.fields[dim][i] *= 0.5;
+	f->f_k->fields[dim][i] *= 0.5;
     }
   }
 }

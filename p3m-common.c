@@ -108,12 +108,12 @@ data_t *Init_data(const method_t *m, const system_t *s, const parameters_t *p) {
         d->Qmesh = NULL;
 
     if ( m->flags & METHOD_FLAG_ik ) {
-        Init_vector_array(&d->Fmesh, 2*mesh3);
+        d->Fmesh = Init_vector_array(2*mesh3);
         d->Dn = Init_array(d->mesh, sizeof(FLOAT_TYPE));
         Init_differential_operator(d);
     }
     else {
-        Init_vector_array(&d->Fmesh, 0);
+        d->Fmesh = NULL;
         d->Dn = NULL;
     }
 
@@ -137,7 +137,7 @@ data_t *Init_data(const method_t *m, const system_t *s, const parameters_t *p) {
 
     if ( m->flags & METHOD_FLAG_ca ) {
         int i;
-        int max = ( m->flags & METHOD_FLAG_interlaced) ? 2 : 1;
+        int max = ( m->flags & METHOD_FLAG_interlaced ) ? 2 : 1;
 
         d->cf[1] = NULL;
         d->ca_ind[1] = NULL;
@@ -146,6 +146,12 @@ data_t *Init_data(const method_t *m, const system_t *s, const parameters_t *p) {
             d->cf[i] = Init_array( p->cao3 * s->nparticles, sizeof(FLOAT_TYPE));
             d->ca_ind[i] = Init_array( 3*s->nparticles, sizeof(int));
         }
+    }
+    else {
+        d->cf[0] = NULL;
+        d->ca_ind[0] = NULL;
+        d->cf[1] = NULL;
+        d->ca_ind[1] = NULL;
     }
 
     return d;
@@ -158,7 +164,7 @@ void Free_data(data_t *d) {
     if (d->Qmesh != NULL)
         free(d->Qmesh);
 
-    Free_vector_array(&d->Fmesh);
+    Free_vector_array(d->Fmesh);
 
     if (d->nshift != NULL)
         free(d->nshift);
@@ -172,4 +178,12 @@ void Free_data(data_t *d) {
         if (d->dQdz[i] != NULL)
             free(d->dQdz[i]);
     }
+
+    for (i=0;i<2;i++) {
+        if (d->cf[i] != NULL)
+            free(d->cf[i]);
+        if (d->ca_ind[i] != NULL)
+            free(d->ca_ind[i]);
+    }
+    free(d);
 }

@@ -7,101 +7,101 @@
 
 void Exakte_Werte_einlesen(system_t *s, char *filename)
 {
-  FILE *fp;
-  int i;
-  FLOAT_TYPE E_Coulomb;
-  
-  fp=fopen(filename, "r");
-  
-  if((fp == NULL) || feof(fp)) {
-    fprintf(stderr, "Could not open '%s' for reading.\n", filename);
-    exit(127);
-  }
+    FILE *fp;
+    int i;
+    FLOAT_TYPE E_Coulomb;
 
-  for (i=0; i<s->nparticles; i++)
-    fscanf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
-	   &E_Coulomb,
-	   &s->reference.f.x[i], &s->reference.f.y[i], &s->reference.f.z[i], 
-	   &s->reference.f_k.x[i], &s->reference.f_k.y[i], &s->reference.f_k.z[i]);
-  
-  fclose(fp);
+    fp=fopen(filename, "r");
+
+    if ((fp == NULL) || feof(fp)) {
+        fprintf(stderr, "Could not open '%s' for reading.\n", filename);
+        exit(127);
+    }
+
+    for (i=0; i<s->nparticles; i++)
+        fscanf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+               &E_Coulomb,
+               &s->reference->f->x[i], &s->reference->f->y[i], &s->reference->f->z[i],
+               &s->reference->f_k->x[i], &s->reference->f_k->y[i], &s->reference->f_k->z[i]);
+
+    fclose(fp);
 }
 
-void Daten_einlesen(system_t *s, parameters_t *p, char *filename)
+system_t *Daten_einlesen(parameters_t *p, char *filename)
 {
-  /* Opens file 'filename' for reanding and reads system parameters,
-   particle positions and charges. */
-  
-  FILE *fp;
-  int i;
+    /* Opens file 'filename' for reanding and reads system parameters,
+     particle positions and charges. */
 
-  FLOAT_TYPE Temp, Bjerrum;  
+    FILE *fp;
+    int i;
 
-  assert(s != NULL);
-  assert(p != NULL);
-  assert(filename != NULL);
+    FLOAT_TYPE Temp, Bjerrum, Length;
+    int n;
 
-  fp=fopen(filename, "r");
+    system_t *s;
 
-  if((fp == NULL) || feof(fp)) {
-    fprintf(stderr, "Could not open '%s' for reading.\n", filename);
-    exit(127);
-  }
-      
-  //read system parameters
-  fscanf(fp,"# Teilchenzahl: %d\n",&(s->nparticles));
-  fscanf(fp,"# Len: %lf\n",&(s->length));
+    assert(p != NULL);
+    assert(filename != NULL);
 
-  //read p3m/ewal parameters
-  fscanf(fp,"# Mesh: %d\n",&(p->mesh));
-  fscanf(fp,"# alpha: %lf\n",&(p->alpha));
-  fscanf(fp,"# ip: %d\n",&(p->ip));
-  fscanf(fp,"# rcut: %lf\n",&(p->rcut));
-  fscanf(fp,"# Temp: %lf\n",&Temp);
-  fscanf(fp,"# Bjerrum: %lf\n",&Bjerrum);
-  
-  if((p->mesh & (p->mesh - 1)) != 0) {
-    fprintf(stderr, "Meshsize must be power of 2!.");
-    exit(128);
-  }
+    fp=fopen(filename, "r");
 
-  p->prefactor = Temp*Bjerrum;
+    if ((fp == NULL) || feof(fp)) {
+        fprintf(stderr, "Could not open '%s' for reading.\n", filename);
+        exit(127);
+    }
 
-  p->cao = p->ip + 1;
-  p->cao3 = p->cao*p->cao*p->cao;
+    //read system parameters
+    fscanf(fp,"# Teilchenzahl: %d\n",&n);
+    fscanf(fp,"# Len: %lf\n",&Length);
 
-  Init_system(s);
+    //read p3m/ewal parameters
+    fscanf(fp,"# Mesh: %d\n",&(p->mesh));
+    fscanf(fp,"# alpha: %lf\n",&(p->alpha));
+    fscanf(fp,"# ip: %d\n",&(p->ip));
+    fscanf(fp,"# rcut: %lf\n",&(p->rcut));
+    fscanf(fp,"# Temp: %lf\n",&Temp);
+    fscanf(fp,"# Bjerrum: %lf\n",&Bjerrum);
 
-  printf("s %p s->p %p s->p.x %p s->p.fields %p\n", s, &(s->p), s->p.x, s->p.fields);
-  
-  s->q2 = 0.0;
-  /* Teilchenkoordinaten und -ladungen: */
-  for (i=0; i<s->nparticles; i++) {
-    printf("read line %d from %p\n", i, fp);
-    printf("&(s->p.x[%d] %p s->q[i] %p\n", i, &(s->p.x[i]), &(s->q[i]));
+    if ((p->mesh & (p->mesh - 1)) != 0) {
+        fprintf(stderr, "Meshsize must be power of 2!.");
+        exit(128);
+    }
 
-    fscanf(fp,"%lf\t%lf\t%lf\t%lf\n",&(s->p.x[i]), &(s->p.y[i]), &(s->p.z[i]), &(s->q[i]));
-    s->q2 += SQR(s->q[i]);
-  }
-  fclose(fp);
+    p->prefactor = Temp*Bjerrum;
+
+    p->cao = p->ip + 1;
+    p->cao3 = p->cao*p->cao*p->cao;
+
+    s = Init_system(n);
+    s->length = Length;
+
+    s->q2 = 0.0;
+    /* Teilchenkoordinaten und -ladungen: */
+    for (i=0; i<s->nparticles; i++) {
+        fscanf(fp,"%lf\t%lf\t%lf\t%lf\n",&(s->p->x[i]), &(s->p->y[i]), &(s->p->z[i]), &(s->q[i]));
+        s->q2 += SQR(s->q[i]);
+    }
+    fclose(fp);
+
+    return s;
 }
 
 void Write_exact_forces(system_t *s, char *forces_file) {
-  FILE *fin;
-  int i;
+    FILE *fin;
+    int i;
 
-  fin = fopen(forces_file, "w");
+    fin = fopen(forces_file, "w");
 
-  if(fin == NULL) {
-    fprintf(stderr, "Could not open '%s' for writing!.\n", forces_file);
-    exit(127);
-  }
+    if (fin == NULL) {
+        fprintf(stderr, "Could not open '%s' for writing!.\n", forces_file);
+        exit(127);
+    }
 
-  for(i=0;i<s->nparticles;i++) {
-    fprintf(fin, "%d %.22e %.22e %.22e %.22e %.22e %.22e\n", 
-	    i, s->reference.f.x[i], s->reference.f.y[i], s->reference.f.z[i], 
-	    s->reference.f_k.x[i], s->reference.f_k.y[i], s->reference.f_k.z[i]);
-  }
+    for (i=0;i<s->nparticles;i++) {
+        fprintf(fin, "%d %.22e %.22e %.22e %.22e %.22e %.22e\n",
+                i, s->reference->f->x[i], s->reference->f->y[i], s->reference->f->z[i],
+                s->reference->f_k->x[i], s->reference->f_k->y[i], s->reference->f_k->z[i]);
+    }
 
-  fclose(fin);
+    fclose(fin);
 }

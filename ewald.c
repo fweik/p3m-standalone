@@ -89,7 +89,7 @@ data_t *Ewald_init(system_t *s, parameters_t *p)
   return d;
 }
 
-void Ewald_k_space(system_t *s, parameters_t *p, data_t *d)
+void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
 {
   int    i;
   int    nx, ny, nz;
@@ -105,26 +105,28 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d)
 	  /* compute rhohat */
 	  rhohat_re = 0.0;
 	  rhohat_im = 0.0;
+          ghat = d->G_hat[r_ind(abs(nx), abs(ny), abs(nz))];          
+          
 #pragma omp parallel for private(kr) reduction( + : rhohat_re) reduction( + : rhohat_im)
 	  for (i=0; i<s->nparticles; i++) {
-            kr = 2.0*PI*Leni*(nx*(s->p.x[i]) + ny*(s->p.y[i]) + nz*(s->p.z[i]));
+            kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
 	    rhohat_re += s->q[i] * cos(kr);
 	    rhohat_im += s->q[i] * -sin(kr);
           }
 
-	  ghat = d->G_hat[r_ind(abs(nx), abs(ny), abs(nz))];
+
 
 	  /* compute forces */
 #pragma omp parallel for private(kr, force_factor)
 	  for (i=0; i<s->nparticles; i++) {
-	    kr = 2.0*PI*Leni*(nx*(s->p.x[i]) + ny*(s->p.y[i]) + nz*(s->p.z[i]));
+	    kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
 	     
             force_factor = s->q[i] * ghat 
               * (rhohat_re*sin(kr) + rhohat_im*cos(kr));
 	      
-            s->f_k.x[i] += nx * force_factor;
-            s->f_k.y[i] += ny * force_factor;
-            s->f_k.z[i] += nz * force_factor;
+            f->f_k->x[i] += nx * force_factor;
+            f->f_k->y[i] += ny * force_factor;
+            f->f_k->z[i] += nz * force_factor;
 	    
 	  }
 	}

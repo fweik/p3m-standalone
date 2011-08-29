@@ -48,7 +48,7 @@ data_t *Init_ik ( system_t *s, parameters_t *p ) {
     forward_plan = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_ESTIMATE );
 
     for ( l=0;l<3;l++ ) {
-        backward_plan[l] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Fmesh.fields[l] ), ( fftw_complex * ) ( d->Fmesh.fields[l] ), FFTW_BACKWARD, FFTW_ESTIMATE );
+        backward_plan[l] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Fmesh->fields[l] ), ( fftw_complex * ) ( d->Fmesh->fields[l] ), FFTW_BACKWARD, FFTW_ESTIMATE );
     }
     return d;
 }
@@ -137,7 +137,7 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
 /* Calculates k-space part of the force, using ik-differentiation.
  */
 
-void P3M_ik ( system_t *s, parameters_t *p, data_t *d ) {
+void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     /* Zaehlvariablen: */
     int i, j, k, l;
     /* Schnelles Modulo: */
@@ -191,8 +191,8 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d ) {
                         dop = d->Dn[k];
                         break;
                     }
-                    d->Fmesh.fields[l][c_index]   =  -2.0*PI*Leni*dop*d->Qmesh[c_index+1];
-                    d->Fmesh.fields[l][c_index+1] =   2.0*PI*Leni*dop*d->Qmesh[c_index];
+                    d->Fmesh->fields[l][c_index]   =  -2.0*PI*Leni*dop*d->Qmesh[c_index+1];
+                    d->Fmesh->fields[l][c_index+1] =   2.0*PI*Leni*dop*d->Qmesh[c_index];
                 }
             }
 
@@ -200,7 +200,7 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d ) {
     backward_fft();
 
     /* Force assignment */
-    assign_forces ( 1.0/ ( 2.0*s->length*s->length*s->length ),s,p,d,0 );
+    assign_forces ( 1.0/ ( 2.0*s->length*s->length*s->length ),s,p,d,f,0 );
     return;
 }
 
