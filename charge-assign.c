@@ -40,7 +40,7 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
         for (dim=0;dim<3;dim++) {
             pos    = s->p->fields[dim][id]*Hi - pos_shift + 0.5*ii;
             nmp = (int) floor(pos + 0.5);
-            base[dim]  = (nmp > 0) ? nmp%MESHMASKE : (nmp + d->mesh)%MESHMASKE;
+            base[dim]  = (nmp > 0) ? nmp&MESHMASKE : (nmp + d->mesh)&MESHMASKE;
             arg[dim] = (int) floor((pos - nmp + 0.5)*MI2);
             d->ca_ind[ii][3*id + dim] = base[dim];
         }
