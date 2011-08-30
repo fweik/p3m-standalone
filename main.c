@@ -10,10 +10,11 @@
 // Methods
 
 
-// #include "p3m-ik-i.h"
+#include "p3m-ik-i.h"
 #include "p3m-ik.h"
 // #include "p3m-ad.h"
 // #include "p3m-ad-i.h"
+#include "greens.h"
 
 #include "ewald.h"
 
@@ -64,7 +65,7 @@ void Elstat_berechnen ( system_t *s, parameters_t *p, const method_t *m, data_t 
     Realpart_neighborlist ( s, p, f );
 
     //Realteil( s, p, f );
-    #pragma omp barrier
+#pragma omp barrier
     //  Dipol(s, p);
 
     m->Kspace_force ( s, p, d, f );
@@ -84,7 +85,7 @@ void usage ( char *name ) {
 
 void calc_reference_forces ( system_t *s, parameters_t *p ) {
     data_t *d;
-  
+
     int i,j;
 
     parameters_t op = *p;
@@ -97,7 +98,7 @@ void calc_reference_forces ( system_t *s, parameters_t *p ) {
     Ewald_compute_influence_function ( s, p, d );
 
     Elstat_berechnen ( s, &op, &method_ewald, d, s->reference );
-    
+
     Free_data(d);
 
 }
@@ -159,6 +160,10 @@ int main ( int argc, char **argv ) {
 #ifdef P3M_AD_I_H
     else if ( methodnr == method_p3m_ad_i.method_id )
         method = method_p3m_ad_i;
+#endif
+#ifdef GREENS_IK_H
+    else if ( methodnr == method_greens_ik.method_id )
+        method = method_greens_ik;
 #endif
     else {
         fprintf ( stderr, "Method %d not know.", methodnr );

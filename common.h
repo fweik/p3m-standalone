@@ -36,7 +36,8 @@ enum {
     METHOD_P3M_ik_i = 1,
     METHOD_P3M_ad = 2,
     METHOD_P3M_ad_i = 3,
-    METHOD_EWALD = 4
+    METHOD_EWALD = 4,
+    METHOD_GREENS_ik = 5
 };
 
 // Container type for arrays of 3d-vectors
