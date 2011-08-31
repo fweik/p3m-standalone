@@ -1,17 +1,19 @@
 #include "timings.h"
 
+#include <stdio.h>
+
 #include <mpi/mpi.h>
 
 #define MAX_TIMERS 10
 
 struct {
-  int size = 0;
+  int size;
   double timers[MAX_TIMERS];
 } timer_stack;
 
 void start_timer(void) {
-  if(timer.stack.size >= MAX_TIMERS) {
-    fprintf("Maximum number of timers (%d) reached!", MAX_TIMERS);
+  if(timer_stack.size >= MAX_TIMERS) {
+    fprintf(stderr, "Maximum number of timers (%d) reached!", MAX_TIMERS);
     return;
   }
   timer_stack.timers[timer_stack.size++] = MPI_Wtime();

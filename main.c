@@ -12,7 +12,7 @@
 
 #include "p3m-ik-i.h"
 #include "p3m-ik.h"
-// #include "p3m-ad.h"
+#include "p3m-ad.h"
 // #include "p3m-ad-i.h"
 #include "greens.h"
 
@@ -201,7 +201,7 @@ int main ( int argc, char **argv ) {
                      error.f_r, error.f_k );
             fprintf ( fout,"% lf\t% e\t% e\n",parameters.alpha,error.f, estimate );
         } else {
-            printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", parameters.alpha,error.f, error.f_r, error.f_k );
+            printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", parameters.alpha,error.f / system->nparticles , error.f_r, error.f_k );
             fprintf ( fout,"% lf\t% e\t na\n",parameters.alpha,error.f );
         }
 #ifdef FORCE_DEBUG

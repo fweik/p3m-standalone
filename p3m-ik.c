@@ -72,13 +72,13 @@ void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY,
 
     for ( MX = -P3M_BRILLOUIN; MX <= P3M_BRILLOUIN; MX++ ) {
         NMX = d->nshift[NX] + Mesh*MX;
-        S1   = pow ( sinc ( fak1*NMX ), 2.0*p->cao );
+        S1 = pow ( sinc ( fak1*NMX ), 2*p->cao );
         for ( MY = -P3M_BRILLOUIN; MY <= P3M_BRILLOUIN; MY++ ) {
             NMY = d->nshift[NY] + Mesh*MY;
-            S2   = S1*pow ( sinc ( fak1*NMY ), 2.0*p->cao );
+            S2   = S1*pow ( sinc ( fak1*NMY ), 2*p->cao );
             for ( MZ = -P3M_BRILLOUIN; MZ <= P3M_BRILLOUIN; MZ++ ) {
                 NMZ = d->nshift[NZ] + Mesh*MZ;
-                S3   = S2*pow ( sinc ( fak1*NMZ ), 2.0*p->cao );
+                S3   = S2*pow ( sinc ( fak1*NMZ ), 2*p->cao );
 
                 NM2 = SQR ( NMX*Leni ) + SQR ( NMY*Leni ) + SQR ( NMZ*Leni );
                 *Nenner += S3;
@@ -96,40 +96,40 @@ void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY,
 
 void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d ) {
 
-    int    NX,NY,NZ;
-    FLOAT_TYPE Dnx,Dny,Dnz;
-    FLOAT_TYPE dMesh,dMeshi;
-    FLOAT_TYPE Zaehler[3]={0.0,0.0,0.0},Nenner=0.0;
-    FLOAT_TYPE zwi;
-    int ind = 0;
-    int Mesh = p->mesh;
-    FLOAT_TYPE Leni = 1.0/s->length;
-    dMesh = ( FLOAT_TYPE ) Mesh;
-    dMeshi= 1.0/dMesh;
+  int    NX,NY,NZ;
+  FLOAT_TYPE Dnx,Dny,Dnz;
+  FLOAT_TYPE dMesh,dMeshi;
+  FLOAT_TYPE Zaehler[3]={0.0,0.0,0.0},Nenner=0.0;
+  FLOAT_TYPE zwi;
+  int ind = 0;
+  int Mesh = p->mesh;
+  FLOAT_TYPE Leni = 1.0/s->length;
+  dMesh = ( FLOAT_TYPE ) Mesh;
+  dMeshi= 1.0/dMesh;
     
-    for ( NX=0; NX<Mesh; NX++ ) {
-      for ( NY=0; NY<Mesh; NY++ ) {
-	for ( NZ=0; NZ<Mesh; NZ++ ) {
-	  ind = r_ind ( NX,NY,NZ );
+  for ( NX=0; NX<Mesh; NX++ ) {
+    for ( NY=0; NY<Mesh; NY++ ) {
+      for ( NZ=0; NZ<Mesh; NZ++ ) {
+	ind = r_ind ( NX, NY, NZ );
 	  
-	  if ( ( NX==0 ) && ( NY==0 ) && ( NZ==0 ) )
-	    d->G_hat[ind]=0.0;
-	  else if ( ( NX% ( Mesh/2 ) == 0 ) && ( NY% ( Mesh/2 ) == 0 ) && ( NZ% ( Mesh/2 ) == 0 ) )
-	    d->G_hat[ind]=0.0;
-	  else {
-	    Aliasing_sums_ik ( s, p, d, NX,NY,NZ,Zaehler,&Nenner );
+	if ( ( NX==0 ) && ( NY==0 ) && ( NZ==0 ) )
+	  d->G_hat[ind]=0.0;
+	else if ( ( NX% ( Mesh/2 ) == 0 ) && ( NY% ( Mesh/2 ) == 0 ) && ( NZ% ( Mesh/2 ) == 0 ) )
+	  d->G_hat[ind]=0.0;
+	else {
+	  Aliasing_sums_ik ( s, p, d, NX,NY,NZ,Zaehler,&Nenner );
 		  
-	    Dnx = d->Dn[NX];
-	    Dny = d->Dn[NY];
-	    Dnz = d->Dn[NZ];
+	  Dnx = d->Dn[NX];
+	  Dny = d->Dn[NY];
+	  Dnz = d->Dn[NZ];
 	    
-	    zwi  = Dnx*Zaehler[0]*Leni + Dny*Zaehler[1]*Leni + Dnz*Zaehler[2]*Leni;
-	    zwi /= ( ( SQR ( Dnx*Leni ) + SQR ( Dny*Leni ) + SQR ( Dnz*Leni ) ) * SQR ( Nenner ) );
-	    d->G_hat[ind] = 2.0 * zwi / PI;
-	  }
+	  zwi  = Dnx*Zaehler[0]*Leni + Dny*Zaehler[1]*Leni + Dnz*Zaehler[2]*Leni;
+	  zwi /= ( ( SQR ( Dnx*Leni ) + SQR ( Dny*Leni ) + SQR ( Dnz*Leni ) ) * SQR ( Nenner ) );
+	  d->G_hat[ind] = 2.0 * zwi / PI;
 	}
       }
     }
+  }
 }
 
 

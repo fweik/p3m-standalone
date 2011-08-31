@@ -1,9 +1,9 @@
 # Teilchenzahl: 300
 # Len: 10.0
-# Mesh: 128
+# Mesh: 16
 # alpha: 0.647988
 # ip: 6
-# rcut: 4.501
+# rcut: 4.9
 # Temp: 1.000000
 # Bjerrum: 1.000000
 0.000000 0.000000 4.500000 1.000000
