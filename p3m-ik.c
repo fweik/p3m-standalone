@@ -17,7 +17,7 @@ fftw_plan backward_plan[3];
 // declaration of the method
 
 const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.",
-                                 METHOD_FLAG_ik | METHOD_FLAG_Qmesh | METHOD_FLAG_G_hat | METHOD_FLAG_nshift | METHOD_FLAG_ca,
+                                 METHOD_FLAG_P3M | METHOD_FLAG_ik,
                                  &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, NULL
                                };
 
@@ -26,7 +26,7 @@ const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, no
 static void forward_fft ( void );
 static void backward_fft ( void );
 static void p3m_tune_aliasing_sums_ik ( int, int, int,
-                                        int *, double *, int, double,
+                                        const system_t *, const parameters_t *,
                                         double *, double * );
 
 inline void forward_fft ( void ) {
@@ -205,55 +205,59 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 
 // Functions for error estimate.
 
-double p3m_k_space_error_ik ( double prefac, int mesh[3], int cao, int n_c_part, double sum_q2, double alpha_L, double *box_l ) {
+FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
     int  nx, ny, nz;
-    double he_q = 0.0, mesh_i[3] = {1.0/mesh[0], 1.0/mesh[1], 1.0/mesh[2]}, alpha_L_i = 1./alpha_L;
-    double alias1, alias2, n2, cs;
-    double ctan_x, ctan_y;
+    FLOAT_TYPE he_q = 0.0;
+    FLOAT_TYPE alias1, alias2, n2, cs;
+    FLOAT_TYPE ctan_x, ctan_y;
+    int mesh = p->mesh;
+    FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
 
-    for ( nx=-mesh[0]/2; nx<mesh[0]/2; nx++ ) {
-        ctan_x = analytic_cotangent_sum ( nx,mesh_i[0],cao );
-        for ( ny=-mesh[1]/2; ny<mesh[1]/2; ny++ ) {
-            ctan_y = ctan_x * analytic_cotangent_sum ( ny,mesh_i[1],cao );
-            for ( nz=-mesh[2]/2; nz<mesh[2]/2; nz++ ) {
+    for ( nx=-mesh/2; nx<mesh/2; nx++ ) {
+        ctan_x = analytic_cotangent_sum ( nx, meshi,p->cao );
+        for ( ny=-mesh/2; ny<mesh/2; ny++ ) {
+            ctan_y = ctan_x * analytic_cotangent_sum ( ny, meshi, p->cao );
+            for ( nz=-mesh/2; nz<mesh/2; nz++ ) {
                 if ( ( nx!=0 ) || ( ny!=0 ) || ( nz!=0 ) ) {
                     n2 = SQR ( nx ) + SQR ( ny ) + SQR ( nz );
-                    cs = analytic_cotangent_sum ( nz,mesh_i[2],cao ) *ctan_y;
-                    p3m_tune_aliasing_sums_ik ( nx,ny,nz,mesh,mesh_i,cao,alpha_L_i,&alias1,&alias2 );
+                    cs = analytic_cotangent_sum ( nz, meshi ,p->cao ) *ctan_y;
+                    p3m_tune_aliasing_sums_ik ( nx,ny,nz, s, p, &alias1,&alias2 );
                     he_q += ( alias1  -  SQR ( alias2/cs ) / n2 );
                 }
             }
         }
     }
-    return 2.0*prefac*sum_q2*sqrt ( he_q/ ( double ) n_c_part ) / ( box_l[1]*box_l[2] );
+    return 2.0*s->q2*sqrt ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
 }
 
 
 void p3m_tune_aliasing_sums_ik ( int nx, int ny, int nz,
-                                 int mesh[3], double mesh_i[3], int cao, double alpha_L_i,
-                                 double *alias1, double *alias2 ) {
+                                 system_t *s, parameters_t *p,
+                                 FLOAT_TYPE *alias1, FLOAT_TYPE *alias2 ) {
 
     int    mx,my,mz;
-    double nmx,nmy,nmz;
-    double fnmx,fnmy,fnmz;
+    FLOAT_TYPE nmx,nmy,nmz;
+    FLOAT_TYPE fnmx,fnmy,fnmz;
 
-    double ex,ex2,nm2,U2,factor1;
+    FLOAT_TYPE ex,ex2,nm2,U2,factor1;
+    int mesh = p->mesh;
+    FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
 
-    factor1 = SQR ( PI*alpha_L_i );
+    factor1 = SQR ( PI / ( p->alpha * s->length ) );
 
     *alias1 = *alias2 = 0.0;
     for ( mx=-P3M_BRILLOUIN_TUNING; mx<=P3M_BRILLOUIN_TUNING; mx++ ) {
-        fnmx = mesh_i[0] * ( nmx = nx + mx*mesh[0] );
+        fnmx = meshi * ( nmx = nx + mx*mesh );
         for ( my=-P3M_BRILLOUIN_TUNING; my<=P3M_BRILLOUIN_TUNING; my++ ) {
-            fnmy = mesh_i[1] * ( nmy = ny + my*mesh[1] );
+            fnmy = meshi * ( nmy = ny + my*mesh );
             for ( mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++ ) {
-                fnmz = mesh_i[2] * ( nmz = nz + mz*mesh[2] );
+                fnmz = meshi * ( nmz = nz + mz*mesh );
 
                 nm2 = SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz );
                 ex = exp ( -factor1*nm2 );
                 ex2 = SQR ( ex );
 
-                U2 = pow ( sinc ( fnmx ) *sinc ( fnmy ) *sinc ( fnmz ), 2.0*cao );
+                U2 = pow ( sinc ( fnmx ) *sinc ( fnmy ) *sinc ( fnmz ), 2.0*p->cao );
 
                 *alias1 += ex2 / nm2;
                 *alias2 += U2 * ex * ( nx*nmx + ny*nmy + nz*nmz ) / nm2;

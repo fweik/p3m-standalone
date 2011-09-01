@@ -13,7 +13,7 @@
 #include "p3m-ik-i.h"
 #include "p3m-ik.h"
 #include "p3m-ad.h"
-// #include "p3m-ad-i.h"
+#include "p3m-ad-i.h"
 #include "greens.h"
 
 #include "ewald.h"
@@ -199,10 +199,10 @@ int main ( int argc, char **argv ) {
             double estimate =  method.Error ( system, &parameters );
             printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", parameters.alpha, error.f / system->nparticles , estimate,
                      error.f_r, error.f_k );
-            fprintf ( fout,"% lf\t% e\t% e\n",parameters.alpha,error.f, estimate );
+            fprintf ( fout,"% lf\t% e\t% e\n",parameters.alpha,error.f / system->nparticles , estimate );
         } else {
             printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", parameters.alpha,error.f / system->nparticles , error.f_r, error.f_k );
-            fprintf ( fout,"% lf\t% e\t na\n",parameters.alpha,error.f );
+            fprintf ( fout,"% lf\t% e\t na\n",parameters.alpha,error.f / system->nparticles );
         }
 #ifdef FORCE_DEBUG
         fprintf ( stderr, "%lf rms %e %e %e\n", parameters.alpha, error.f_v[0], error.f_v[1], error.f_v[2] );

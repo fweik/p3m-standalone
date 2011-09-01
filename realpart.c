@@ -135,6 +135,7 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, forces_t *f )
     const FLOAT_TYPE wupi = 1.77245385090551602729816748334;
 
 #pragma omp parallel for private(dx, dy, dz, ar, r, erfc_teil, fak, j)
+    FLOAT_TYPE t;
     for (i=0; i<s->nparticles-1; i++)
         for (j=0; j<neighbor_list[i].n; j++)
         {
@@ -150,8 +151,8 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, forces_t *f )
             {
                 ar= p->alpha*r;
                 //t = 1.0 / (1.0 + p*ar);
-                //erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
-                erfc_teil = erfc(ar);
+                erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
+                //erfc_teil = erfc(ar);
                 fak = s->q[i]*neighbor_list[i].q[j]*
                       (erfc_teil/r+(2*p->alpha/wupi)*exp(-ar*ar))/SQR(r);
 

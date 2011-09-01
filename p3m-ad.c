@@ -10,13 +10,11 @@
 #include "p3m-ad.h"
 
 const method_t method_p3m_ad = { METHOD_P3M_ad, "P3M with analytic differentiation, not intelaced.", 
-				 METHOD_FLAG_ad | METHOD_FLAG_ca | METHOD_FLAG_G_hat | METHOD_FLAG_nshift | METHOD_FLAG_Qmesh, 
+				 METHOD_FLAG_P3M | METHOD_FLAG_ad, 
 				 &Init_ad, &Influence_function_berechnen_ad, &P3M_ad, NULL };
 
 fftw_plan forward_plan;
 fftw_plan backward_plan;
-
-FLOAT_TYPE *F_K[3];
 
 static void forward_fft(void);
 static void backward_fft(void);
@@ -56,7 +54,7 @@ void Aliasing_sums_ad(int NX, int NY, int NZ, system_t *s, parameters_t *p, data
   FLOAT_TYPE Leni = 1.0/Len;
 
   fak1 = 1.0/(FLOAT_TYPE)Mesh;
-  fak2 = SQR(PI/(s->length*p->alpha));
+  fak2 = SQR(PI/p->alpha);
 
   *Zaehler = *Nenner1 = *Nenner2 = 0.0;
 
@@ -70,7 +68,7 @@ void Aliasing_sums_ad(int NX, int NY, int NZ, system_t *s, parameters_t *p, data
 	NMZ = d->nshift[NZ] + Mesh*MZ;
 	S3   = S2*pow(sinc(fak1*NMZ), 2.0*p->cao);
 
-	NM2 = SQR(NMX) + SQR(NMY) + SQR(NMZ);
+	NM2 = SQR(NMX*Leni) + SQR(NMY*Leni) + SQR(NMZ*Leni);
 	*Nenner1 += S3;
 	*Nenner2 += S3 * NM2;
 
@@ -89,7 +87,7 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
   int    NX,NY,NZ;
   FLOAT_TYPE dMesh,dMeshi;
   FLOAT_TYPE Zaehler=0.0,Nenner1=0.0, Nenner2=0.0;
-  FLOAT_TYPE zwi;
+
   int ind = 0;
   int Mesh = p->mesh;
   dMesh = (FLOAT_TYPE)Mesh;
@@ -111,7 +109,7 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
 	      else
 		{
 		  Aliasing_sums_ad(NX,NY,NZ,s,p,d,&Zaehler,&Nenner1, &Nenner2);
-		  d->G_hat[ind] = Zaehler / ( Nenner1 * Nenner2 );
+		  d->G_hat[ind] = Zaehler / ( PI * Nenner1 * Nenner2 );
 		}
 	    }
 	}
@@ -123,10 +121,10 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 {
   
   /* Zaehlvariablen: */
-  int i, j, k; 
+  int i, j, k, c_index; 
   /* Hilfsvariablen */
   FLOAT_TYPE T1;
-
+  FLOAT_TYPE Leni = 1.0/s->length;
   int Mesh = p->mesh;
   
   memset(d->Qmesh, 0, 2*Mesh*Mesh*Mesh * sizeof(FLOAT_TYPE));
@@ -141,7 +139,7 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     for (j=0; j<Mesh; j++)
       for (k=0; k<Mesh; k++)
 	{
-          int c_index = c_ind(i,j,k);
+          c_index = c_ind(i,j,k);
 
 	  T1 = d->G_hat[r_ind(i,j,k)];
 	  d->Qmesh[c_index] *= T1;
@@ -153,7 +151,7 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   backward_fft();
 
   /* Force assignment */
-  assign_forces_ad( 1.0/(SQR(s->length*PI)) , s, p, d, f, 0 );
+  assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0 );
 
   return;
 }

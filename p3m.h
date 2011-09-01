@@ -60,6 +60,9 @@ enum {
     METHOD_FLAG_ca = 64 // Method uses charge assignment
 };
 
+// Common flags for all p3m methods for convinience
+#define METHOD_FLAG_P3M (METHOD_FLAG_nshift | METHOD_FLAG_G_hat | METHOD_FLAG_Qmesh | METHOD_FLAG_ca)
+
 // methode type
 
 typedef struct {
