@@ -5,11 +5,18 @@
 #include <fftw3.h>
 #include <string.h>
 
+// General typ definitions
 #include "p3m.h"
 #include "common.h"
 #include "p3m-common.h"
+// Charge assignment
 #include "charge-assign.h"
+
+// For realpart error
+#include "realpart.h"
+
 #include "p3m-ik.h"
+
 
 fftw_plan forward_plan;
 fftw_plan backward_plan[3];
@@ -18,7 +25,7 @@ fftw_plan backward_plan[3];
 
 const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.",
                                  METHOD_FLAG_P3M | METHOD_FLAG_ik,
-                                 &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, NULL
+                                 &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, &Error_ik
                                };
 
 // Forward declaration of local functions
@@ -28,6 +35,8 @@ static void backward_fft ( void );
 static void p3m_tune_aliasing_sums_ik ( int, int, int,
                                         const system_t *, const parameters_t *,
                                         double *, double * );
+
+static FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE, const system_t *, const parameters_t * );
 
 inline void forward_fft ( void ) {
     fftw_execute ( forward_plan );
@@ -177,7 +186,7 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
                 T1 = d->G_hat[r_ind ( i,j,k ) ];
                 d->Qmesh[c_index] *= T1;
                 d->Qmesh[c_index+1] *= T1;
-
+ 
                 for ( l=0;l<3;l++ ) {
                     switch ( l ) {
                     case 0:
@@ -204,6 +213,10 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 }
 
 // Functions for error estimate.
+
+FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
+  return sqrt( SQR( Realspace_error( s, p ) ) + SQR( p3m_k_space_error_ik( 1.0, s, p) ) );
+}
 
 FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
     int  nx, ny, nz;
@@ -232,7 +245,7 @@ FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const pa
 
 
 void p3m_tune_aliasing_sums_ik ( int nx, int ny, int nz,
-                                 system_t *s, parameters_t *p,
+                                 const system_t *s, const parameters_t *p,
                                  FLOAT_TYPE *alias1, FLOAT_TYPE *alias2 ) {
 
     int    mx,my,mz;

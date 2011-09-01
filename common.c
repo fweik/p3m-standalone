@@ -1,8 +1,9 @@
 #include <stdlib.h>
 #include <assert.h>
-
+#include <math.h>
 #include <stdio.h>
 
+#include "p3m.h"
 #include "common.h"
 
 void *Init_array(int size, size_t field_size) {
@@ -112,3 +113,4 @@ void Free_vector_array(vector_array_t *v) {
     }
     free(v);
 }
+

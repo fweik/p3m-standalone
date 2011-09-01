@@ -19,38 +19,31 @@ void Realteil( system_t *s, parameters_t *p, forces_t *f )
     const FLOAT_TYPE wupi = 1.77245385090551602729816748334;
 
 #pragma omp parallel for private(dx,dy,dz, r, ar, erfc_teil, fak, t2)
-    for (t1=0; t1<s->nparticles-1; t1++) {
-        for (t2=t1+1; t2<s->nparticles; t2++) {
-            dx = s->p->x[t1] - s->p->x[t2];
-            dx -= round(dx*lengthi)*s->length;
-            dy = s->p->y[t1] - s->p->y[t2];
-            dy -= round(dy*lengthi)*s->length;
-            dz = s->p->z[t1] - s->p->z[t2];
-            dz -= round(dz*lengthi)*s->length;
+    for (t1=0; t1<s->nparticles; t1++) {
+        for (t2=0; t2<s->nparticles; t2++) {
+	  if(t1 == t2)
+	    continue;
 
-            r = sqrt(SQR(dx) + SQR(dy) + SQR(dz));
-            if (r<=p->rcut)
+	  dx = s->p->x[t1] - s->p->x[t2];
+	  dx -= round(dx*lengthi)*s->length;
+	  dy = s->p->y[t1] - s->p->y[t2];
+	  dy -= round(dy*lengthi)*s->length;
+	  dz = s->p->z[t1] - s->p->z[t2];
+	  dz -= round(dz*lengthi)*s->length;
+	  
+	  r = sqrt(SQR(dx) + SQR(dy) + SQR(dz));
+	  if (r<=p->rcut)
             {
-                ar= p->alpha*r;
-                //t = 1.0 / (1.0 + p*ar);
-                //erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
-                erfc_teil = erfc(ar);
-                fak = s->q[t1]*s->q[t2]*
-                      (erfc_teil/r+(2.0*p->alpha/wupi)*exp(-ar*ar))/SQR(r);
-
-#pragma omp atomic
-                f->f_r->x[t1] += fak*dx;
-#pragma omp atomic
-                f->f_r->y[t1] += fak*dy;
-#pragma omp atomic
-                f->f_r->z[t1] += fak*dz;
-#pragma omp atomic
-                f->f_r->x[t2] -= fak*dx;
-#pragma omp atomic
-                f->f_r->y[t2] -= fak*dy;
-#pragma omp atomic
-                f->f_r->z[t2] -= fak*dz;
-
+	      ar= p->alpha*r;
+	      //t = 1.0 / (1.0 + p*ar);
+	      //erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
+	      erfc_teil = erfc(ar);
+	      fak = s->q[t1]*s->q[t2]*
+		(erfc_teil/r+(2.0*p->alpha/wupi)*exp(-ar*ar))/SQR(r);
+	      
+	      f->f_r->x[t1] += fak*dx;
+	      f->f_r->y[t1] += fak*dy;
+	      f->f_r->z[t1] += fak*dz;
             }
         }
     }
@@ -134,8 +127,20 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, forces_t *f )
     FLOAT_TYPE lengthi = 1.0/s->length;
     const FLOAT_TYPE wupi = 1.77245385090551602729816748334;
 
-#pragma omp parallel for private(dx, dy, dz, ar, r, erfc_teil, fak, j)
+  /* Zur Approximation der komplementaeren Fehlerfunktion benoetigte
+     Konstanten. Die Approximation stammt aus Abramowitz/Stegun:
+     Handbook of Mathematical Functions, Dover (9. ed.), Kapitel 7. */
     FLOAT_TYPE t;
+    const FLOAT_TYPE a1 =  0.254829592;
+    const FLOAT_TYPE a2 = -0.284496736;
+    const FLOAT_TYPE a3 =  1.421413741;
+    const FLOAT_TYPE a4 = -1.453152027;
+    const FLOAT_TYPE a5 =  1.061405429;
+    const FLOAT_TYPE a6 =  0.3275911;
+
+
+    //#pragma omp parallel for private(dx, dy, dz, ar, r, erfc_teil, fak, j)
+
     for (i=0; i<s->nparticles-1; i++)
         for (j=0; j<neighbor_list[i].n; j++)
         {
@@ -150,24 +155,29 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, forces_t *f )
             if (r<=p->rcut)
             {
                 ar= p->alpha*r;
-                //t = 1.0 / (1.0 + p*ar);
-                erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
-                //erfc_teil = erfc(ar);
+                //t = 1.0 / (1.0 + a6*ar);
+                //erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
+                erfc_teil = erfc(ar);
                 fak = s->q[i]*neighbor_list[i].q[j]*
                       (erfc_teil/r+(2*p->alpha/wupi)*exp(-ar*ar))/SQR(r);
 
-#pragma omp atomic
+		//#pragma omp atomic
                 f->f_r->x[i] += fak*dx;
-#pragma omp atomic
+		//#pragma omp atomic
                 f->f_r->y[i] += fak*dy;
-#pragma omp atomic
+		//#pragma omp atomic
                 f->f_r->z[i] += fak*dz;
-#pragma omp atomic
+		//#pragma omp atomic
                 f->f_r->x[neighbor_list[i].id[j]] -= fak*dx;
-#pragma omp atomic
+		//#pragma omp atomic
                 f->f_r->y[neighbor_list[i].id[j]] -= fak*dy;
-#pragma omp atomic
+		//#pragma omp atomic
                 f->f_r->z[neighbor_list[i].id[j]] -= fak*dz;
             }
         }
+}
+
+FLOAT_TYPE Realspace_error( const system_t *s, const parameters_t *p )
+{
+  return (2.0*s->q2*exp(-SQR(p->rcut * p->alpha))) / (sqrt((double)s->nparticles* p->rcut ));
 }

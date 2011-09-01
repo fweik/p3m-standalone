@@ -62,10 +62,10 @@ void Elstat_berechnen ( system_t *s, parameters_t *p, const method_t *m, data_t 
         memset ( f->f_r->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
     }
 
-    Realpart_neighborlist ( s, p, f );
+    //Realpart_neighborlist ( s, p, f );
 
-    //Realteil( s, p, f );
-#pragma omp barrier
+    Realteil( s, p, f );
+
     //  Dipol(s, p);
 
     m->Kspace_force ( s, p, d, f );

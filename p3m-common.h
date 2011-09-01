@@ -4,7 +4,7 @@
 #include "p3m.h"
 
 #define P3M_BRILLOUIN_TUNING 0
-#define P3M_BRILLOUIN 0
+#define P3M_BRILLOUIN 2
 
 #define PI 3.14159265358979323846264
 

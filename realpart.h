@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef REALPART_H
 #define REALPART_H
 
@@ -30,5 +28,9 @@ void Realpart_neighborlist(system_t *, parameters_t *, forces_t *);
 // functions for n2 algorithm
 
 void Realteil(system_t *, parameters_t *, forces_t *);
+
+// Error of the realspace part
+
+FLOAT_TYPE Realspace_error( const system_t *, const parameters_t * );
 
 #endif

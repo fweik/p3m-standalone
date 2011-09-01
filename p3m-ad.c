@@ -9,9 +9,11 @@
 #include "charge-assign.h"
 #include "p3m-ad.h"
 
+#include "realpart.h"
+
 const method_t method_p3m_ad = { METHOD_P3M_ad, "P3M with analytic differentiation, not intelaced.", 
 				 METHOD_FLAG_P3M | METHOD_FLAG_ad, 
-				 &Init_ad, &Influence_function_berechnen_ad, &P3M_ad, NULL };
+				 &Init_ad, &Influence_function_berechnen_ad, &P3M_ad, &Error_ad };
 
 fftw_plan forward_plan;
 fftw_plan backward_plan;
@@ -154,4 +156,77 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0 );
 
   return;
+}
+
+void p3m_tune_aliasing_sums_ad(int nx, int ny, int nz, 
+			       system_t *s, parameters_t *p,
+			       FLOAT_TYPE *alias1, FLOAT_TYPE *alias2, FLOAT_TYPE *alias3,FLOAT_TYPE *alias4)
+{
+
+  int    mx,my,mz;
+  FLOAT_TYPE nmx,nmy,nmz;
+  FLOAT_TYPE fnmx,fnmy,fnmz;
+
+  FLOAT_TYPE ex,ex2,nm2,U2,factor1;
+
+  FLOAT_TYPE mesh_i = 1.0 / p->mesh;
+
+  factor1 = SQR ( PI / ( p->alpha*s->length ) );
+
+  *alias1 = *alias2 = *alias3 = *alias4 = 0.0;
+
+  for (mx=-P3M_BRILLOUIN_TUNING; mx<=P3M_BRILLOUIN_TUNING; mx++) {
+    fnmx = mesh_i * (nmx = nx + mx*p->mesh);
+    for (my=-P3M_BRILLOUIN_TUNING; my<=P3M_BRILLOUIN_TUNING; my++) {
+      fnmy = mesh_i * (nmy = ny + my*p->mesh);
+      for (mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++) {
+	fnmz = mesh_i * (nmz = nz + mz*p->mesh);
+	
+	nm2 = SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz );
+        ex = exp(-factor1*nm2);
+	ex2 = SQR( ex );
+	
+	U2 = pow(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*p->cao);
+	
+	*alias1 += ex2 / nm2;
+	*alias2 += U2 * ex;
+	*alias3 += U2 * nm2;
+	*alias4 += U2;
+      }
+    }
+  }
+}
+
+FLOAT_TYPE p3m_k_space_error_ad( system_t *s, parameters_t *p )
+{
+  int  nx, ny, nz;
+  FLOAT_TYPE mesh = p->mesh;
+  FLOAT_TYPE box_size = s->length;
+  FLOAT_TYPE he_q = 0.0;
+  FLOAT_TYPE alias1, alias2, alias3, alias4, n2, cs;
+  FLOAT_TYPE ctan_x, ctan_y;
+  FLOAT_TYPE mesh_i = 1.0/mesh;
+
+  for (nx=-mesh/2; nx<mesh/2; nx++) {
+    ctan_x = analytic_cotangent_sum ( nx, mesh_i, p->cao );
+    for (ny=-mesh/2; ny<mesh/2; ny++) {
+      ctan_y = ctan_x * analytic_cotangent_sum ( ny, mesh_i, p->cao );
+      for (nz=-mesh/2; nz<mesh/2; nz++) {
+	cs = ctan_y * analytic_cotangent_sum ( nz, mesh_i, p->cao );
+	if((nx!=0) || (ny!=0) || (nz!=0)) {
+	  n2 = SQR(nx) + SQR(ny) + SQR(nz);
+	  p3m_tune_aliasing_sums_ad(nx,ny,nz, s, p, &alias1,&alias2,&alias3,&alias4);	//alias4 = cs
+
+	  if(alias3 == 0.0)
+	    continue;
+	  he_q += (alias1  -  SQR(alias2) / (alias3*cs));
+	}
+      }
+    }
+  }
+  return 2.0*s->q2*sqrt ( he_q/ (FLOAT_TYPE)s->nparticles) / SQR(box_size);
+}
+
+FLOAT_TYPE Error_ad( system_t *s, parameters_t *p ) {
+  return sqrt( SQR ( Realspace_error( s, p) ) + SQR ( p3m_k_space_error_ad( s, p ) ) );
 }

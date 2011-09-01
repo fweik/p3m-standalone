@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef COMMON_H
 #define COMMON_H
 
@@ -91,4 +89,5 @@ forces_t *Init_forces(int);
 void Free_system(system_t *);
 void Free_forces(forces_t *);
 void Free_vector_array(vector_array_t *);
+
 #endif

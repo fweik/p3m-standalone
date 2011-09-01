@@ -8,7 +8,7 @@
 void Exakte_Werte_einlesen(system_t *s, char *filename)
 {
     FILE *fp;
-    int i;
+    int i, ret_val;
     FLOAT_TYPE E_Coulomb;
 
     fp=fopen(filename, "r");
@@ -18,12 +18,16 @@ void Exakte_Werte_einlesen(system_t *s, char *filename)
         exit(127);
     }
 
-    for (i=0; i<s->nparticles; i++)
-        fscanf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+    for (i=0; i<s->nparticles; i++) {
+        ret_val = fscanf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
                &E_Coulomb,
                &s->reference->f->x[i], &s->reference->f->y[i], &s->reference->f->z[i],
                &s->reference->f_k->x[i], &s->reference->f_k->y[i], &s->reference->f_k->z[i]);
-
+	if(ret_val != 7) {
+          fprintf(stderr, "Error while reading file '%s'\n", filename);
+          exit(-1);
+        }
+    }
     fclose(fp);
 }
 
@@ -38,6 +42,8 @@ system_t *Daten_einlesen(parameters_t *p, char *filename)
     FLOAT_TYPE Temp, Bjerrum, Length;
     int n;
 
+    int ret_val = 0;
+
     system_t *s;
 
     assert(p != NULL);
@@ -51,22 +57,22 @@ system_t *Daten_einlesen(parameters_t *p, char *filename)
     }
 
     //read system parameters
-    fscanf(fp,"# Teilchenzahl: %d\n",&n);
-    fscanf(fp,"# Len: %lf\n",&Length);
+    ret_val += fscanf(fp,"# Teilchenzahl: %d\n",&n);
+    ret_val += fscanf(fp,"# Len: %lf\n",&Length);
 
     //read p3m/ewal parameters
-    fscanf(fp,"# Mesh: %d\n",&(p->mesh));
-    fscanf(fp,"# alpha: %lf\n",&(p->alpha));
-    fscanf(fp,"# ip: %d\n",&(p->ip));
-    fscanf(fp,"# rcut: %lf\n",&(p->rcut));
-    fscanf(fp,"# Temp: %lf\n",&Temp);
-    fscanf(fp,"# Bjerrum: %lf\n",&Bjerrum);
+    ret_val += fscanf(fp,"# Mesh: %d\n",&(p->mesh));
+    ret_val += fscanf(fp,"# alpha: %lf\n",&(p->alpha));
+    ret_val += fscanf(fp,"# ip: %d\n",&(p->ip));
+    ret_val += fscanf(fp,"# rcut: %lf\n",&(p->rcut));
+    ret_val += fscanf(fp,"# Temp: %lf\n",&Temp);
+    ret_val += fscanf(fp,"# Bjerrum: %lf\n",&Bjerrum);
 
-    if ((p->mesh & (p->mesh - 1)) != 0) {
-        fprintf(stderr, "Meshsize must be power of 2!.");
-        exit(128);
+    if(ret_val != 8) {
+      fprintf(stderr, "Error while reading file '%s'\n", filename);
+      exit(-1);
     }
-
+    
     p->prefactor = Temp*Bjerrum;
 
     p->cao = p->ip + 1;
@@ -78,7 +84,11 @@ system_t *Daten_einlesen(parameters_t *p, char *filename)
     s->q2 = 0.0;
     /* Teilchenkoordinaten und -ladungen: */
     for (i=0; i<s->nparticles; i++) {
-        fscanf(fp,"%lf\t%lf\t%lf\t%lf\n",&(s->p->x[i]), &(s->p->y[i]), &(s->p->z[i]), &(s->q[i]));
+        ret_val = fscanf(fp,"%lf\t%lf\t%lf\t%lf\n",&(s->p->x[i]), &(s->p->y[i]), &(s->p->z[i]), &(s->q[i]));
+        if(ret_val != 4) {
+          fprintf(stderr, "Error while reading file '%s'\n", filename);
+          exit(-1);
+        }
         s->q2 += SQR(s->q[i]);
     }
     fclose(fp);
