@@ -3,7 +3,7 @@
 
 #include "p3m.h"
 
-void Interpolationspolynom_berechnen(int ip)
+void Init_interpolation(int ip, data_t *d)
 {
   /* 
      Die Ordnung ist an Petersens ip angelehnt.
@@ -15,6 +15,15 @@ void Interpolationspolynom_berechnen(int ip)
   FLOAT_TYPE dInterpol=(FLOAT_TYPE)MaxInterpol;
   FLOAT_TYPE x;
   long   i;
+
+  FLOAT_TYPE **LadInt = d->LadInt = Init_array( ip + 2, sizeof(FLOAT_TYPE *));
+  FLOAT_TYPE **LadInt_ = d->LadInt_ = Init_array( ip + 2, sizeof(FLOAT_TYPE *));
+
+  for( i = 0; i <= ip; i++) {
+    LadInt[i] = Init_array( 2* MaxInterpol + 1, sizeof(FLOAT_TYPE) );
+    LadInt_[i] = Init_array( 2* MaxInterpol + 1, sizeof(FLOAT_TYPE) );
+  }
+  LadInt[ip+1] = LadInt_[ip+1] = NULL;
 
   fprintf(stderr,"Interpolationspolynom (Hockney/Eastwood, Ordnung %d) vorberechnen...",ip);
   
@@ -106,8 +115,8 @@ void Interpolationspolynom_berechnen(int ip)
       }
     }
 
+
   fprintf(stderr,"\nAbleitung des Interpolationspolynoms (Hockney/Eastwood, Ordnung %d) vorberechnen...\n",ip);
-  
   /* ABLEITUNG der charge assignment function: */
   //VB: j'ai ajouté les cas IP = 1 à 5!
   switch (ip) 

@@ -1,6 +1,8 @@
 #ifndef INTERPOL_H
 #define INTERPOL_H
 
-void Interpolationspolynom_berechnen(int ip);
+#include "p3m.h"
+
+void Init_interpolation(int, data_t *);
 
 #endif

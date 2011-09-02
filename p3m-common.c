@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "p3m-common.h"
+#include "interpol.h"
 
 FLOAT_TYPE sinc(FLOAT_TYPE d)
 {
@@ -146,12 +147,17 @@ data_t *Init_data(const method_t *m, const system_t *s, const parameters_t *p) {
             d->cf[i] = Init_array( p->cao3 * s->nparticles, sizeof(FLOAT_TYPE));
             d->ca_ind[i] = Init_array( 3*s->nparticles, sizeof(int));
         }
+
+        Init_interpolation( p->ip, d );
+
     }
     else {
         d->cf[0] = NULL;
         d->ca_ind[0] = NULL;
         d->cf[1] = NULL;
         d->ca_ind[1] = NULL;
+	d->LadInt = NULL;
+	d->LadInt_ = NULL;
     }
 
     return d;
@@ -177,6 +183,18 @@ void Free_data(data_t *d) {
             free(d->dQdy[i]);
         if (d->dQdz[i] != NULL)
             free(d->dQdz[i]);
+    }
+
+    if(d->LadInt != NULL ) {
+      for(i=0;d->LadInt[i] != NULL; i++)
+	free(d->LadInt[i]);
+      free(d->LadInt);
+    }
+
+    if(d->LadInt_ != NULL ) {
+      for(i=0;d->LadInt_[i] != NULL; i++)
+	free(d->LadInt_[i]);
+      free(d->LadInt_);
     }
 
     for (i=0;i<2;i++) {

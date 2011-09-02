@@ -134,8 +134,6 @@ int main ( int argc, char **argv ) {
 
     methodnr = atoi ( argv[6] );
 
-    Interpolationspolynom_berechnen ( parameters.ip ); /* Hockney/Eastwood */
-
 #ifdef WRITE_FORCES
     calc_reference_forces ( argv[2] );
 #endif

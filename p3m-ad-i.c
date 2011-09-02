@@ -15,7 +15,7 @@
 
 const method_t method_p3m_ad_i = { METHOD_P3M_ad_i, "P3M with analytic differentiation, intelaced.", 
 				   METHOD_FLAG_P3M | METHOD_FLAG_ad | METHOD_FLAG_interlaced, 
-				   &Init_ad_i, &Influence_function_ad_i, &P3M_ad_i, NULL };
+				   &Init_ad_i, &Influence_function_ad_i, &P3M_ad_i, &Error_ad_i };
 
 fftw_plan forward_plan;
 fftw_plan backward_plan;
@@ -172,15 +172,15 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 
 void P3M_tune_aliasing_sums_AD_interlaced(int nx, int ny, int nz, 
 					  system_t *s, parameters_t *p,
-					  double *alias1, double *alias2, double *alias3,double *alias4,
-					  double *alias5,double *alias6)
+					  FLOAT_TYPE *alias1, FLOAT_TYPE *alias2, FLOAT_TYPE *alias3,FLOAT_TYPE *alias4,
+					  FLOAT_TYPE *alias5,FLOAT_TYPE *alias6)
 {
 
   int    mx,my,mz;
-  double nmx,nmy,nmz;
-  double fnmx,fnmy,fnmz;
+  FLOAT_TYPE nmx,nmy,nmz;
+  FLOAT_TYPE fnmx,fnmy,fnmz;
 
-  double ex,ex2,nm2,U2,factor1;
+  FLOAT_TYPE ex,ex2,nm2,U2,factor1;
 
   int mesh = p->mesh;
   FLOAT_TYPE mesh_i = 1.0/mesh;
@@ -217,22 +217,30 @@ void P3M_tune_aliasing_sums_AD_interlaced(int nx, int ny, int nz,
   }
 }
 
-double p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
+FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
 {
   int  nx, ny, nz;
-  double he_q = 0.0;
-  double alias1, alias2, alias3, alias4, alias5, alias6, n2;
+  FLOAT_TYPE he_q = 0.0;
+  FLOAT_TYPE alias1, alias2, alias3, alias4, alias5, alias6, n2;
   int mesh = p->mesh;
+  FLOAT_TYPE ctan_x, ctan_y, cs;
+  FLOAT_TYPE mesh_i = 1.0 / mesh;
 
-  for (nx=-mesh/2; nx<mesh/2; nx++)
-    for (ny=-mesh/2; ny<mesh/2; ny++)
-      for (nz=-mesh/2; nz<mesh/2; nz++)
-	if((nx!=0) || (ny!=0) || (nz!=0)) {
-	  n2 = SQR(nx) + SQR(ny) + SQR(nz);
-	  P3M_tune_aliasing_sums_AD_interlaced(nx,ny,nz,s,p,&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
-	  he_q += (alias1  -  SQR(alias2) / (0.5*(alias3*alias4 + alias5*alias6)));
+  for (nx=-mesh/2; nx<mesh/2; nx++) {
+    ctan_x = analytic_cotangent_sum ( nx, mesh_i, p->cao );
+      for (ny=-mesh/2; ny<mesh/2; ny++) {
+	ctan_y = ctan_x * analytic_cotangent_sum ( ny, mesh_i, p->cao );
+	for (nz=-mesh/2; nz<mesh/2; nz++) {
+	  if((nx!=0) || (ny!=0) || (nz!=0)) {
+	    cs = ctan_y * analytic_cotangent_sum ( nz, mesh_i, p->cao );
+	    n2 = SQR(nx) + SQR(ny) + SQR(nz);
+	    P3M_tune_aliasing_sums_AD_interlaced(nx,ny,nz,s,p,&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
+	    he_q += (alias1  -  SQR(alias2) / (0.5*(alias3*cs + alias5*alias6)));
+	  }
 	}
-  return 2.0*s->q2*sqrt(he_q/(double)s->nparticles) / SQR(s->length);
+      }
+  }
+  return 2.0*s->q2*sqrt(he_q/(FLOAT_TYPE)s->nparticles) / SQR(s->length);
 }
 
 FLOAT_TYPE Error_ad_i( system_t *s, parameters_t *p ) {

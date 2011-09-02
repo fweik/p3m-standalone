@@ -47,13 +47,13 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 
         for (i0=0; i0<p->cao; i0++) {
             i = (base[0] + i0)&MESHMASKE;
-            tmp0 = s->q[id] * LadInt[i0][arg[0]];
+            tmp0 = s->q[id] * d->LadInt[i0][arg[0]];
             for (i1=0; i1<p->cao; i1++) {
                 j = (base[1] + i1)&MESHMASKE;
-                tmp1 = tmp0 * LadInt[i1][arg[1]];
+                tmp1 = tmp0 * d->LadInt[i1][arg[1]];
                 for (i2=0; i2<p->cao; i2++) {
                     k = (base[2] + i2)&MESHMASKE;
-                    cur_ca_frac_val = tmp1 * LadInt[i2][arg[2]];
+                    cur_ca_frac_val = tmp1 * d->LadInt[i2][arg[2]];
                     d->cf[ii][cf_cnt++] = cur_ca_frac_val ;
                     d->Qmesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
                 }
@@ -138,16 +138,16 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
 
         for (i0=0; i0<p->cao; i0++) {
             i = (base[0] + i0)&MESHMASKE;
-            tmp0 = LadInt[i0][arg[0]];
-            tmp0_x = LadInt_[i0][arg[0]];
+            tmp0 = d->LadInt[i0][arg[0]];
+            tmp0_x = d->LadInt_[i0][arg[0]];
             for (i1=0; i1<p->cao; i1++) {
                 j = (base[1] + i1)&MESHMASKE;
-                tmp1 = LadInt[i1][arg[1]];
-                tmp1_y = LadInt_[i1][arg[1]];
+                tmp1 = d->LadInt[i1][arg[1]];
+                tmp1_y = d->LadInt_[i1][arg[1]];
                 for (i2=0; i2<p->cao; i2++) {
                     k = (base[2] + i2)&MESHMASKE;
-                    tmp2 = LadInt[i2][arg[2]];
-                    tmp2_z = LadInt_[i2][arg[2]];
+                    tmp2 = d->LadInt[i2][arg[2]];
+                    tmp2_z = d->LadInt_[i2][arg[2]];
                     cur_ca_frac_val = s->q[id] * tmp0 * tmp1 * tmp2;
                     d->cf[ii][cf_cnt] = cur_ca_frac_val ;
                     if (derivatives) {

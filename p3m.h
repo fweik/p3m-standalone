@@ -8,11 +8,6 @@
 #define MaxInterpol (2*100096)
 #define Maxip 6
 
-/* Speichert die Interpolation des Ladungszuordnungspolynoms: */
-FLOAT_TYPE LadInt[Maxip+1][2*MaxInterpol+1];
-/* Speichert die Interpolation der Ableitung des Ladungszuordnungspolynoms: */
-FLOAT_TYPE LadInt_[Maxip+1][2*MaxInterpol+1];
-
 // Struct holding method parameters.
 
 typedef struct {
@@ -23,6 +18,7 @@ typedef struct {
     int        ip;
     int        cao;
     int        cao3;
+    FLOAT_TYPE precision;
 } parameters_t;
 
 // Struct holding method data.
@@ -45,6 +41,9 @@ typedef struct {
     // Cache for charge assignment
     int *ca_ind[2];
     FLOAT_TYPE *cf[2];
+    // Array for interpolated charge assignment function
+    FLOAT_TYPE **LadInt;
+    FLOAT_TYPE **LadInt_;
 } data_t;
 
 // Flags for method_t
