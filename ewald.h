@@ -1,7 +1,7 @@
 #ifndef EWALD_H
 #define EWALD_H
 
-#include "p3m.h"
+#include "types.h"
 
 #ifndef r_ind
 #define r_ind(A,B,C) ((A)*d->mesh*d->mesh + (B)*d->mesh + (C))

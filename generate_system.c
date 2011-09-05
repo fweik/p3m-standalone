@@ -8,7 +8,7 @@
 
 #include "stdlib.h"
 
-system_t *generate_medelung(int size, FLOAT_TYPE box) {
+system_t *generate_madelung(int size, FLOAT_TYPE box) {
   int i,j;
   system_t *s;
 
@@ -78,7 +78,7 @@ system_t *generate_system( int form_factor, int size, FLOAT_TYPE box, FLOAT_TYPE
     return generate_madelung(size,box);
     break;
   default:
-    fprtintf( stderr, "Warning, form factor not known.\n");
+    fprintf( stderr, "Warning, form factor not known.\n");
   }
   return (void *)NULL;
 }

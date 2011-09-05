@@ -6,7 +6,7 @@
 #include <string.h>
 
 // General typ definitions
-#include "p3m.h"
+#include "types.h"
 #include "common.h"
 #include "p3m-common.h"
 // Charge assignment
@@ -115,7 +115,10 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
   FLOAT_TYPE Leni = 1.0/s->length;
   dMesh = ( FLOAT_TYPE ) Mesh;
   dMeshi= 1.0/dMesh;
-    
+
+  if(Mesh > 512) 
+    exit(-23);
+
   for ( NX=0; NX<Mesh; NX++ ) {
     for ( NY=0; NY<Mesh; NY++ ) {
       for ( NZ=0; NZ<Mesh; NZ++ ) {

@@ -1,7 +1,7 @@
 #ifndef REALPART_H
 #define REALPART_H
 
-#include "p3m.h"
+#include "types.h"
 
 /* Calculate Real space part of the Ewald sum.
  * Used in all methods

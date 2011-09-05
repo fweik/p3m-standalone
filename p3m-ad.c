@@ -5,7 +5,7 @@
 #include <fftw3.h>
 #include <string.h>
 
-#include "p3m.h"
+#include "types.h"
 #include "charge-assign.h"
 #include "p3m-ad.h"
 

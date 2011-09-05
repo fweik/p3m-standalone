@@ -1,8 +1,14 @@
 #include <math.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "p3m-common.h"
+
+#include "common.h"
 #include "interpol.h"
+
+
+#define FREE_TRACE(A) A
 
 FLOAT_TYPE sinc(FLOAT_TYPE d)
 {
@@ -92,17 +98,12 @@ void Init_nshift(data_t *d)
 
 }
 
-data_t *Init_data(const method_t *m, const system_t *s, const parameters_t *p) {
+data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
     int mesh3 = p->mesh*p->mesh*p->mesh;
     data_t *d = Init_array(1, sizeof(data_t));
 
     d->mesh = p->mesh;
-
-    if ( m->flags & METHOD_FLAG_G_hat)
-        d->G_hat = Init_array(mesh3, sizeof(FLOAT_TYPE));
-    else
-        d->G_hat = NULL;
-
+    
     if ( m->flags & METHOD_FLAG_Qmesh)
         d->Qmesh = Init_array(2*mesh3, sizeof(FLOAT_TYPE));
     else
@@ -118,16 +119,26 @@ data_t *Init_data(const method_t *m, const system_t *s, const parameters_t *p) {
         d->Dn = NULL;
     }
 
+    d->nshift = NULL;
+
     if ( m->flags & METHOD_FLAG_nshift ) {
-        d->nshift = Init_array(d->mesh, sizeof(FLOAT_TYPE));
-        Init_nshift(d);
+      d->nshift = Init_array(d->mesh, sizeof(FLOAT_TYPE));
+      Init_nshift(d);
     }
 
-    if ( m->flags & METHOD_FLAG_ad ) {
-        int i;
-        int max = ( m->flags & METHOD_FLAG_interlaced) ? 2 : 1;
+    if ( m->flags & METHOD_FLAG_G_hat) {
+        d->G_hat = Init_array(mesh3, sizeof(FLOAT_TYPE));
+        m->Influence_function( s, p, d );   
+    }
+    else
+        d->G_hat = NULL;    
 
-        d->dQdx[1] = d->dQdy[1] = d->dQdz[1] = NULL;
+    d->dQdx[0] = d->dQdy[0] = d->dQdz[0] = NULL;
+    d->dQdx[1] = d->dQdy[1] = d->dQdz[1] = NULL;
+
+    if ( m->flags & METHOD_FLAG_ad ) {
+      int i;
+        int max = ( m->flags & METHOD_FLAG_interlaced) ? 2 : 1;
 
         for (i = 0; i < max; i++) {
             d->dQdx[i] = Init_array( s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );
@@ -137,45 +148,56 @@ data_t *Init_data(const method_t *m, const system_t *s, const parameters_t *p) {
     }
 
     if ( m->flags & METHOD_FLAG_ca ) {
-        int i;
-        int max = ( m->flags & METHOD_FLAG_interlaced ) ? 2 : 1;
-
-        d->cf[1] = NULL;
-        d->ca_ind[1] = NULL;
-
-        for (i = 0; i < max; i++) {
-            d->cf[i] = Init_array( p->cao3 * s->nparticles, sizeof(FLOAT_TYPE));
-            d->ca_ind[i] = Init_array( 3*s->nparticles, sizeof(int));
-        }
-
-        Init_interpolation( p->ip, d );
-
+      int i;
+      int max = ( m->flags & METHOD_FLAG_interlaced ) ? 2 : 1;
+      
+      d->cf[1] = NULL;
+      d->ca_ind[1] = NULL;
+      
+      for (i = 0; i < max; i++) {
+	d->cf[i] = Init_array( p->cao3 * s->nparticles, sizeof(FLOAT_TYPE));
+	d->ca_ind[i] = Init_array( 3*s->nparticles, sizeof(int));
+      }
+	
+      Init_interpolation( p->ip, d );
+	
     }
     else {
-        d->cf[0] = NULL;
-        d->ca_ind[0] = NULL;
-        d->cf[1] = NULL;
-        d->ca_ind[1] = NULL;
-	d->LadInt = NULL;
-	d->LadInt_ = NULL;
+      d->cf[0] = NULL;
+      d->ca_ind[0] = NULL;
+      d->cf[1] = NULL;
+      d->ca_ind[1] = NULL;
+      d->LadInt = NULL;
+      d->LadInt_ = NULL;
     }
-
+    
     return d;
 }
 
 void Free_data(data_t *d) {
     int i;
+
+    if( d == NULL )
+      return;
+
+    FREE_TRACE(puts("Free_data(); Free ghat.");)
     if (d->G_hat != NULL)
         free(d->G_hat);
+
+    FREE_TRACE(puts("Free qmesh.");)
     if (d->Qmesh != NULL)
         free(d->Qmesh);
 
+    FREE_TRACE(puts("Free Fmesh.");)
     Free_vector_array(d->Fmesh);
 
+    FREE_TRACE(puts("Free dshift.");)
     if (d->nshift != NULL)
         free(d->nshift);
+
     if (d->Dn != NULL)
         free(d->Dn);
+
     for (i=0;i<2;i++) {
         if (d->dQdx[i] != NULL)
             free(d->dQdx[i]);
@@ -204,4 +226,5 @@ void Free_data(data_t *d) {
             free(d->ca_ind[i]);
     }
     free(d);
+
 }

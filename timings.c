@@ -22,6 +22,6 @@ void start_timer(void) {
 double stop_timer(void) {
   if(timer_stack.size == 0)
     return -1.0;
-  return timer_stack.timers[--timer_stack.size];
+  return MPI_Wtime() - timer_stack.timers[--timer_stack.size];
 }
 

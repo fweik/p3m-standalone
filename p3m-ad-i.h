@@ -3,7 +3,7 @@
 #ifndef P3M_AD_I_H
 #define P3M_AD_I_H
 
-#include "p3m.h"
+#include "types.h"
 
 void Influence_function_ad_i( system_t *, parameters_t *, data_t * );
 void P3M_ad_i( system_t *, parameters_t *, data_t *, forces_t * );

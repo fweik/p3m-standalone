@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "p3m.h"
+#include "types.h"
 
 #include "p3m-common.h"
 
@@ -44,64 +44,21 @@
 
 #include "timings.h"
 
+#include "generate_system.h"
 
 // #define WRITE_FORCES
 
 // #define FORCE_DEBUG
 // #define CA_DEBUG
 
-void Elstat_berechnen ( system_t *, parameters_t *, const method_t *, data_t *, forces_t * );
 
-void Elstat_berechnen ( system_t *s, parameters_t *p, const method_t *m, data_t *d, forces_t *f ) {
 
-    int i, j;
-
-    for ( i=0; i<3; i++ ) {
-        memset ( f->f->fields[i]  , 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
-        memset ( f->f_k->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
-        memset ( f->f_r->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
-    }
-
-    //Realpart_neighborlist ( s, p, f );
-
-    Realteil( s, p, f );
-
-    //  Dipol(s, p);
-
-    m->Kspace_force ( s, p, d, f );
-
-//#pragma omp parallel for collapse(2)
-    for ( j=0; j < 3; j++ ) {
-        for ( i=0; i<s->nparticles; i++ ) {
-            f->f->fields[j][i] += f->f_k->fields[j][i] + f->f_r->fields[j][i];
-        }
-    }
-}
 
 void usage ( char *name ) {
     fprintf ( stderr, "usage: %s <positions> <forces> <alpha_min> <alpha_max> <alpha_step> <method>\n", name );
 }
 
 
-void calc_reference_forces ( system_t *s, parameters_t *p ) {
-    data_t *d;
-
-    int i,j;
-
-    parameters_t op = *p;
-
-    op.alpha = Ewald_compute_optimal_alpha ( s, &op );
-
-    fprintf ( stderr, "Optimal alpha is %lf (error: %e)\n", op.alpha, Ewald_estimate_error ( s, &op ) );
-
-    d = Ewald_init ( s, p );
-    Ewald_compute_influence_function ( s, p, d );
-
-    Elstat_berechnen ( s, &op, &method_ewald, d, s->reference );
-
-    Free_data(d);
-
-}
 
 
 int main ( int argc, char **argv ) {
@@ -134,12 +91,11 @@ int main ( int argc, char **argv ) {
 
     methodnr = atoi ( argv[6] );
 
-#ifdef WRITE_FORCES
-    calc_reference_forces ( argv[2] );
-#endif
-#ifndef WRITE_FORCES
-    Exakte_Werte_einlesen ( system, argv[2] );
-#endif
+
+
+    Calculate_reference_forces( system, &parameters );
+    // Exakte_Werte_einlesen( system, argv[2] );
+
 
     if ( methodnr == method_ewald.method_id )
         method = method_ewald;
@@ -189,7 +145,7 @@ int main ( int argc, char **argv ) {
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
         method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
-        Elstat_berechnen ( system, &parameters, &method, data, forces ); /* Hockney/Eastwood */
+        Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 
         error = Calculate_errors ( system, forces );
 

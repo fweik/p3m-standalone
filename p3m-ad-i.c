@@ -5,7 +5,7 @@
 #include <fftw3.h>
 #include <string.h>
 
-#include "p3m.h"
+#include "types.h"
 
 #include "p3m-ad-i.h"
 
@@ -144,7 +144,7 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 
   /* chargeassignment */
   assign_charge_and_derivatives( s, p, d, 0, 1 );
-  //  assign_charge_and_derivatives( s, p, d, 1, 1 );
+  assign_charge_and_derivatives( s, p, d, 1, 1 );
 
   /* Forward Fast Fourier Transform */
   forward_fft();
@@ -166,7 +166,7 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 
   /* Force assignment */
   assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0);
-  //  assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 1);
+  assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 1);
 
 }
 

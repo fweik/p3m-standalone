@@ -1,7 +1,7 @@
 #ifndef CHARGEASSIGN_H
 #define CHARGEASSIGN_H
 
-#include "p3m.h"
+#include "types.h"
 #include "p3m-common.h"
 
 #include "interpol.h"

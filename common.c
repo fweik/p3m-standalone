@@ -2,9 +2,13 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
-#include "p3m.h"
+#include "types.h"
 #include "common.h"
+#include "realpart.h"
+#include "ewald.h"
+#include "p3m-common.h"
 
 void *Init_array(int size, size_t field_size) {
     void *a;
@@ -110,7 +114,59 @@ void Free_vector_array(vector_array_t *v) {
 
         v->x = v->y = v->z = NULL;
         v->fields = NULL;
+
+	free(v);
     }
-    free(v);
 }
 
+void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
+
+    int i, j;
+
+    for ( i=0; i<3; i++ ) {
+        memset ( f->f->fields[i]  , 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+        memset ( f->f_k->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+        memset ( f->f_r->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+    }
+
+    Realpart_neighborlist ( s, p, f );
+
+    // Realteil( s, p, f );
+
+    //  Dipol(s, p);
+
+    m->Kspace_force ( s, p, d, f );
+
+#pragma omp parallel for private( i )
+    for ( j=0; j < 3; j++ ) {
+        for ( i=0; i<s->nparticles; i++ ) {
+            f->f->fields[j][i] += f->f_k->fields[j][i] + f->f_r->fields[j][i];
+        }
+    }
+}
+
+void Calculate_reference_forces ( system_t *s, parameters_t *p ) {
+  int i;
+    data_t *d;
+
+    parameters_t op = *p;
+
+    forces_t *f = Init_forces ( s->nparticles );
+
+    fprintf( stderr, "Calculating reference for system with %d particles in %e box.\n", s->nparticles, s->length );
+
+    op.alpha = Ewald_compute_optimal_alpha ( s, &op );
+
+    d = method_ewald.Init ( s, &op );
+
+    fprintf ( stderr, "Optimal alpha is %lf (error: %e, rcut %e, kmax %d)\n", op.alpha, Ewald_estimate_error ( s, &op ), op.rcut, op.mesh - 1 );
+
+    Init_neighborlist( s, &op );
+     
+    method_ewald.Influence_function( s, &op, d );
+     
+    Calculate_forces ( &method_ewald, s, &op, d, s->reference );
+
+    Free_data(d);
+    Free_forces(f);
+}

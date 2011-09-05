@@ -1,7 +1,7 @@
 #ifndef P3M_COMMON_H
 #define P3M_COMMON_H
 
-#include "p3m.h"
+#include "types.h"
 
 #define P3M_BRILLOUIN_TUNING 0
 #define P3M_BRILLOUIN 2
@@ -16,6 +16,6 @@ FLOAT_TYPE analytic_cotangent_sum(int n, FLOAT_TYPE mesh_i, int cao);
 
 void Differenzenoperator_berechnen(parameters_t *, data_t *);
 void nshift_ausrechnen(data_t *);
-data_t *Init_data(const method_t *, const system_t *s, const parameters_t *); 
+data_t *Init_data(const method_t *, system_t *s, parameters_t *); 
 void Free_data(data_t *);
 #endif

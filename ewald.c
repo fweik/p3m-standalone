@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "common.h"
+#include "p3m-common.h"
+
 #include "ewald.h"
 
 /*----------------------------------------------------------------------*/
@@ -32,7 +35,9 @@
 
 // Method declaration
 
-const method_t method_ewald = { METHOD_EWALD, "Ewald summation.", METHOD_FLAG_none, &Ewald_init, &Ewald_compute_influence_function, &Ewald_k_space, &Ewald_estimate_error };
+const method_t method_ewald = { METHOD_EWALD, "Ewald summation.", 
+				METHOD_FLAG_G_hat, 
+				&Ewald_init, &Ewald_compute_influence_function, &Ewald_k_space, &Ewald_estimate_error };
 
 
 /*----------------------------------------------------------------------*/
@@ -80,10 +85,12 @@ void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
 
 data_t *Ewald_init(system_t *s, parameters_t *p)
 {
-  data_t *d = Init_array( 1, sizeof(data_t));
+  p->mesh = kmax+1;
+
+
+  data_t *d = Init_data( &method_ewald, s, p );
   kmax2     = SQR(kmax);
-  
-  d->G_hat = Init_array( (kmax+1)*(kmax+1)*(kmax+1), sizeof(FLOAT_TYPE));
+
   d->mesh = kmax+1;
   
   return d;

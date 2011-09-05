@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "p3m.h"
+#include "types.h"
 #include "io.h"
+#include "common.h"
 
 void Exakte_Werte_einlesen(system_t *s, char *filename)
 {

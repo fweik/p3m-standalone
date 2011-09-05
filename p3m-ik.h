@@ -1,7 +1,7 @@
 #ifndef P3M_IK_H
 #define P3M_IK_H
 
-#include "p3m.h"
+#include "types.h"
 
 void Influence_function_berechnen_ik(system_t*, parameters_t*, data_t*);
 void P3M_ik(system_t *, parameters_t *, data_t *, forces_t *);

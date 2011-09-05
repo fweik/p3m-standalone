@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "p3m.h"
+#include "types.h"
 #include "interpol.h"
 #include "charge-assign.h"
 

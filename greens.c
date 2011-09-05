@@ -5,7 +5,7 @@
 #include <fftw3.h>
 #include <string.h>
 
-#include "p3m.h"
+#include "types.h"
 #include "common.h"
 #include "p3m-common.h"
 #include "charge-assign.h"
@@ -55,8 +55,6 @@ void Greens_function ( system_t *s, parameters_t *p, data_t *d ) {
     int    NX,NY,NZ;
     FLOAT_TYPE Dnx,Dny,Dnz;
     FLOAT_TYPE dMesh,dMeshi;
-    FLOAT_TYPE Zaehler[3]={0.0,0.0,0.0},Nenner=0.0;
-    FLOAT_TYPE zwi;
     FLOAT_TYPE NM2, expo, TE;
     int ind = 0;
     int Mesh = p->mesh;

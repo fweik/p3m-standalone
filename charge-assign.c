@@ -129,11 +129,11 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
     for (id=0;id<s->nparticles;id++) {
         cf_cnt = id*p->cao3;
         for (dim=0;dim<3;dim++) {
-            pos    = s->p->fields[dim][id]*Hi - pos_shift;
-            nmp = (int) floor(pos + 0.5);
-            base[dim]  = (nmp > 0) ? nmp&MESHMASKE : (nmp + Mesh)&MESHMASKE;
-            arg[dim] = (int) floor((pos - nmp + 0.5)*MI2);
-            d->ca_ind[ii][3*id + dim] = base[dim];
+	  pos    = s->p->fields[dim][id]*Hi - pos_shift + 0.5*ii;;
+	  nmp = (int) floor(pos + 0.5);
+	  base[dim]  = (nmp > 0) ? nmp&MESHMASKE : (nmp + Mesh)&MESHMASKE;
+	  arg[dim] = (int) floor((pos - nmp + 0.5)*MI2);
+	  d->ca_ind[ii][3*id + dim] = base[dim];
         }
 
         for (i0=0; i0<p->cao; i0++) {

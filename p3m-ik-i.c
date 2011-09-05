@@ -6,7 +6,7 @@
 
 #include <fftw3.h>
 
-#include "p3m.h"
+#include "types.h"
 #include "common.h"
 #include "p3m-common.h"
 #include "charge-assign.h"
@@ -227,11 +227,11 @@ void p3m_tune_aliasing_sums_ik_i (int nx, int ny, int nz,
   factor1 = SQR(PI / ( p->alpha * s->length ) );
 
   *alias1 = *alias2 = 0.0;
-  for (mx=-P3M_BRILLOUIN; mx<=P3M_BRILLOUIN; mx++) {
+  for (mx=-P3M_BRILLOUIN_TUNING; mx<=P3M_BRILLOUIN_TUNING; mx++) {
     fnmx = mesh_i * (nmx = nx + mx*mesh);
-    for (my=-P3M_BRILLOUIN; my<=P3M_BRILLOUIN; my++) {
+    for (my=-P3M_BRILLOUIN_TUNING; my<=P3M_BRILLOUIN_TUNING; my++) {
       fnmy = mesh_i * (nmy = ny + my*mesh);
-      for (mz=-P3M_BRILLOUIN; mz<=P3M_BRILLOUIN; mz++) {
+      for (mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++) {
       
        if (((mx+my+mz)%2)==0) {					//consider only even terms!
 	fnmz = mesh_i * (nmz = nz + mz*mesh);

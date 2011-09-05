@@ -1,9 +1,28 @@
 #include <math.h>
 #include <string.h>
 
+#include "common.h"
+
 #include "realpart.h"
 
+
 static neighbor_list_t *neighbor_list;
+
+inline FLOAT_TYPE AS_erfc_part(double d)
+{
+#define AS_a1  0.254829592
+#define AS_a2 -0.284496736
+#define AS_a3  1.421413741
+#define AS_a4 -1.453152027
+#define AS_a5  1.061405429
+#define AS_p   0.3275911
+  double t;
+  
+  t = 1.0 / (1.0 + AS_p * d);
+  
+  return t * (AS_a1 + t * (AS_a2 + t * (AS_a3 + t * (AS_a4 + t * AS_a5) ) ) );
+}
+
 
 void Realteil( system_t *s, parameters_t *p, forces_t *f )
 {
@@ -101,12 +120,16 @@ void Init_neighborlist(system_t *s, parameters_t *p) {
 
     // Allocate the actual list.
 
-    neighbor_list = Init_array(s->nparticles, sizeof(neighbor_list_t));
+    neighbor_list = Init_array(s->nparticles + 1, sizeof(neighbor_list_t));
 
     // Find neighbors for each particle.
 
     for (i=0;i<s->nparticles;i++)
         build_neighbor_list_for_particle( s, p, position_buffer, neighbor_id_buffer, charges_buffer, i );
+
+    // NULL terminate the list
+
+    neighbor_list[s->nparticles].n = -1;
 
     // Free buffers
 
@@ -119,47 +142,39 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, forces_t *f )
 {
     int i,j;
     /* Minimum-Image-Abstand: */
-    FLOAT_TYPE dx,dy,dz,r;
+    FLOAT_TYPE dx,dy,dz,r, r2, rcut2 = SQR ( p->rcut );
     /* Staerke der elegktrostatischen Kraefte */
     FLOAT_TYPE fak;
     /* Zur Approximation der Fehlerfunktion */
     FLOAT_TYPE ar,erfc_teil;
     FLOAT_TYPE lengthi = 1.0/s->length;
     const FLOAT_TYPE wupi = 1.77245385090551602729816748334;
+    const FLOAT_TYPE wupii = 1.0/wupi;
 
-  /* Zur Approximation der komplementaeren Fehlerfunktion benoetigte
-     Konstanten. Die Approximation stammt aus Abramowitz/Stegun:
-     Handbook of Mathematical Functions, Dover (9. ed.), Kapitel 7. */
-    FLOAT_TYPE t;
-    const FLOAT_TYPE a1 =  0.254829592;
-    const FLOAT_TYPE a2 = -0.284496736;
-    const FLOAT_TYPE a3 =  1.421413741;
-    const FLOAT_TYPE a4 = -1.453152027;
-    const FLOAT_TYPE a5 =  1.061405429;
-    const FLOAT_TYPE a6 =  0.3275911;
-
-
-    //#pragma omp parallel for private(dx, dy, dz, ar, r, erfc_teil, fak, j)
+    //#pragma omp  parallel for private(dx, dy, dz, ar, r, erfc_teil, fak, j)
 
     for (i=0; i<s->nparticles-1; i++)
         for (j=0; j<neighbor_list[i].n; j++)
         {
-            dx = s->p->x[i] - neighbor_list[i].p->x[j];
+            dx = s->p->fields[0][i] - neighbor_list[i].p->x[j];
             dx -= round(dx*lengthi)*s->length;
-            dy = s->p->y[i] - neighbor_list[i].p->y[j];
+            dy = s->p->fields[1][i] - neighbor_list[i].p->y[j];
             dy -= round(dy*lengthi)*s->length;
-            dz = s->p->z[i] - neighbor_list[i].p->z[j];
+            dz = s->p->fields[2][i] - neighbor_list[i].p->z[j];
             dz -= round(dz*lengthi)*s->length;
 
-            r = sqrt(SQR(dx) + SQR(dy) + SQR(dz));
-            if (r<=p->rcut)
+            r2 = SQR(dx) + SQR(dy) + SQR(dz);
+            if (r2<=rcut2)
             {
-                ar= p->alpha*r;
-                //t = 1.0 / (1.0 + a6*ar);
-                //erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
-                erfc_teil = erfc(ar);
-                fak = s->q[i]*neighbor_list[i].q[j]*
-                      (erfc_teil/r+(2*p->alpha/wupi)*exp(-ar*ar))/SQR(r);
+	      r = sqrt( r2 );
+	      ar= p->alpha*r;
+
+	      //erfc_teil = erfc(ar);
+              //  fak = s->q[i]*neighbor_list[i].q[j]*
+	      //	  (erfc_teil/r+(2*p->alpha/wupi)*exp(-ar*ar))/ r2;
+
+	      erfc_teil = AS_erfc_part( ar ) / r;
+	      fak = s->q[i] * neighbor_list[i].q[j] * exp( - ar * ar ) * (erfc_teil + 2.0 * p->alpha * wupii ) / r2;
 
 		//#pragma omp atomic
                 f->f_r->x[i] += fak*dx;
@@ -175,6 +190,16 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, forces_t *f )
                 f->f_r->z[neighbor_list[i].id[j]] -= fak*dz;
             }
         }
+}
+
+void Free_neighborlist(void) {
+  int i = 0;
+  while(neighbor_list[i].n >= 0) {
+    Free_vector_array(neighbor_list[i].p);
+    free(neighbor_list[i].q);
+    i++;
+  }
+  free(neighbor_list);
 }
 
 FLOAT_TYPE Realspace_error( const system_t *s, const parameters_t *p )

@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "p3m.h"
+#include "types.h"
+#include "interpol.h"
+#include "common.h"
 
 void Init_interpolation(int ip, data_t *d)
 {
@@ -25,8 +27,6 @@ void Init_interpolation(int ip, data_t *d)
   }
   LadInt[ip+1] = LadInt_[ip+1] = NULL;
 
-  fprintf(stderr,"Interpolationspolynom (Hockney/Eastwood, Ordnung %d) vorberechnen...",ip);
-  
   /* charge assignment function: */
   switch (ip) 
     {
@@ -115,10 +115,6 @@ void Init_interpolation(int ip, data_t *d)
       }
     }
 
-
-  fprintf(stderr,"\nAbleitung des Interpolationspolynoms (Hockney/Eastwood, Ordnung %d) vorberechnen...\n",ip);
-  /* ABLEITUNG der charge assignment function: */
-  //VB: j'ai ajouté les cas IP = 1 à 5!
   switch (ip) 
     {
     case 1:
@@ -182,7 +178,6 @@ void Init_interpolation(int ip, data_t *d)
        break;
     case 6 : 
       { 
-	fprintf(stderr, "IP=6: calculation of derivative of charge assignment function\n");
 	for (i=-MaxInterpol; i<=MaxInterpol; i++)
 	  {
 	    x=i/(2.0*dInterpol);
