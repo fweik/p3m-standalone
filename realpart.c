@@ -135,8 +135,8 @@ void Init_neighborlist(system_t *s, parameters_t *p, data_t *d) {
     // Free buffers
 
     Free_vector_array(position_buffer);
-    free(neighbor_id_buffer);
-    free(charges_buffer);
+    fftw_free(neighbor_id_buffer);
+    fftw_free(charges_buffer);
 }
 
 void Realpart_neighborlist(system_t *s, parameters_t *p, data_t *d, forces_t *f )
@@ -199,11 +199,11 @@ void Free_neighborlist(data_t *d) {
   int i = 0;
   while(d->neighbor_list[i].n >= 0) {
     Free_vector_array(d->neighbor_list[i].p);
-    free(d->neighbor_list[i].id);
-    free(d->neighbor_list[i].q);
+    fftw_free(d->neighbor_list[i].id);
+    fftw_free(d->neighbor_list[i].q);
     i++;
   }
-  free(d->neighbor_list);
+  fftw_free(d->neighbor_list);
 }
 
 FLOAT_TYPE Realspace_error( const system_t *s, const parameters_t *p )

@@ -186,48 +186,48 @@ void Free_data(data_t *d) {
 
     FREE_TRACE(puts("Free_data(); Free ghat.");)
     if (d->G_hat != NULL)
-        free(d->G_hat);
+        fftw_free(d->G_hat);
 
     FREE_TRACE(puts("Free qmesh.");)
     if (d->Qmesh != NULL)
-        free(d->Qmesh);
+        fftw_free(d->Qmesh);
 
     FREE_TRACE(puts("Free Fmesh.");)
     Free_vector_array(d->Fmesh);
 
     FREE_TRACE(puts("Free dshift.");)
     if (d->nshift != NULL)
-        free(d->nshift);
+        fftw_free(d->nshift);
 
     if (d->Dn != NULL)
-        free(d->Dn);
+        fftw_free(d->Dn);
 
     for (i=0;i<2;i++) {
         if (d->dQdx[i] != NULL)
-            free(d->dQdx[i]);
+            fftw_free(d->dQdx[i]);
         if (d->dQdy[i] != NULL)
-            free(d->dQdy[i]);
+            fftw_free(d->dQdy[i]);
         if (d->dQdz[i] != NULL)
-            free(d->dQdz[i]);
+            fftw_free(d->dQdz[i]);
     }
 
     if(d->LadInt != NULL ) {
       for(i=0;d->LadInt[i] != NULL; i++)
-	free(d->LadInt[i]);
-      free(d->LadInt);
+	fftw_free(d->LadInt[i]);
+      fftw_free(d->LadInt);
     }
 
     if(d->LadInt_ != NULL ) {
       for(i=0;d->LadInt_[i] != NULL; i++)
-	free(d->LadInt_[i]);
-      free(d->LadInt_);
+	fftw_free(d->LadInt_[i]);
+      fftw_free(d->LadInt_);
     }
 
     for (i=0;i<2;i++) {
         if (d->cf[i] != NULL)
-            free(d->cf[i]);
+            fftw_free(d->cf[i]);
         if (d->ca_ind[i] != NULL)
-            free(d->ca_ind[i]);
+            fftw_free(d->ca_ind[i]);
     }
 
     for(i=0; i<d->forward_plans; i++) {
@@ -238,6 +238,6 @@ void Free_data(data_t *d) {
       fftw_destroy_plan(d->backward_plan[i]);
     }
 
-    free(d);
+    fftw_free(d);
 
 }

@@ -89,9 +89,9 @@ void Free_system(system_t *s) {
   
   Free_forces(s->reference);
   
-  free(s->q);
+  fftw_free(s->q);
   
-  free(s);
+  fftw_free(s);
   
 }
 
@@ -103,7 +103,7 @@ void Free_forces(forces_t *f) {
   Free_vector_array(f->f_k);
   Free_vector_array(f->f_r);
  
-  free(f);
+  fftw_free(f);
 }
 
 void Free_vector_array(vector_array_t *v) {
@@ -112,17 +112,17 @@ void Free_vector_array(vector_array_t *v) {
     if ( v != NULL ) {
         for (i=0;i<3;i++) {
             if (v->fields[i] != NULL) {
-                free(v->fields[i]);
+                fftw_free(v->fields[i]);
                 v->fields[i] = NULL;
             }
         }
 
-        free(v->fields);
+        fftw_free(v->fields);
 
         v->x = v->y = v->z = NULL;
         v->fields = NULL;
 
-	free(v);
+	fftw_free(v);
     }
 }
 

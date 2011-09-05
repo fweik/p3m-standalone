@@ -82,7 +82,7 @@ int main( void ) {
       puts("Free...");
       Free_data(d[i]);
       Free_forces(f[i]);
-      free(p[i]);
+      fftw_free(p[i]);
     }
     #pragma omp barrier
     puts("Free systems...");
