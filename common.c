@@ -5,6 +5,10 @@
 #include <string.h>
 #include <fftw3.h>
 
+#ifdef DETAILED_TIMINGS
+#include <mpi.h>
+#endif
+
 #include "types.h"
 #include "common.h"
 #include "realpart.h"
@@ -126,19 +130,43 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
 
     int i, j;
 
+#ifdef DETAILED_TIMINGS
+    FLOAT_TYPE t;
+#endif
+
     for ( i=0; i<3; i++ ) {
         memset ( f->f->fields[i]  , 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
         memset ( f->f_k->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
         memset ( f->f_r->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
     }
 
+#ifdef DETAILED_TIMINGS
+    if(__detailed_timings)
+      t = MPI_Wtime();
+#endif
     Realpart_neighborlist ( s, p, d, f );
+#ifdef DETAILED_TIMINGS
+    if(__detailed_timings)
+      printf(" %e", MPI_Wtime() - t);
+#endif
+
 
     // Realteil( s, p, f );
 
     //  Dipol(s, p);
 
+#ifdef DETAILED_TIMINGS
+    if(__detailed_timings)
+      t = MPI_Wtime();
+#endif
+
     m->Kspace_force ( s, p, d, f );
+
+#ifdef DETAILED_TIMINGS
+    if(__detailed_timings)
+      printf(" %e", MPI_Wtime() - t);
+#endif
+
 
     //#pragma omp parallel for private( i )
     for ( j=0; j < 3; j++ ) {
@@ -156,13 +184,9 @@ void Calculate_reference_forces ( system_t *s, parameters_t *p ) {
 
     forces_t *f = Init_forces ( s->nparticles );
 
-    fprintf( stderr, "Calculating reference for system with %d particles in %e box.\n", s->nparticles, s->length );
-
     op.alpha = Ewald_compute_optimal_alpha ( s, &op );
 
     d = method_ewald.Init ( s, &op );
-
-    fprintf ( stderr, "Optimal alpha is %lf (error: %e, rcut %e, kmax %d)\n", op.alpha, Ewald_estimate_error ( s, &op ), op.rcut, op.mesh - 1 );
 
     Init_neighborlist( s, &op, d );
      

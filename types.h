@@ -5,6 +5,10 @@
 
 // Set floating point precision
 
+#ifdef DETAILED_TIMINGS
+extern int __detailed_timings;
+#endif
+
 #define DOUBLE_PREC
 
 #ifdef SINGLE_PREC

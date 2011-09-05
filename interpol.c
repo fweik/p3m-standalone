@@ -197,6 +197,4 @@ void Init_interpolation(int ip, data_t *d)
 	exit(1);
       }
     }
-  
-  fprintf(stderr,"\n");
 }

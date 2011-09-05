@@ -10,6 +10,8 @@
 #include "interpol.h"
 #include "realpart.h"
 
+#define TUNE_DEBUG
+
 #ifdef TUNE_DEBUG
   #include <stdio.h>
   #define TUNE_TRACE(A) A
@@ -27,7 +29,7 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision ) {
   data_t *d = NULL;
 
   FLOAT_TYPE rcut_max = 0.5 * s->length;
-  FLOAT_TYPE rcut_step = RCUT_STEP * s->length;
+  FLOAT_TYPE rcut_step = 0.25 * s->length;
   FLOAT_TYPE last_success = -1.0;
 
   FLOAT_TYPE best_time=1e250, time=1e240;
@@ -36,10 +38,11 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision ) {
 
   int success = 0;
   int direction=1;
+  int failed_once=0;
 
   TUNE_TRACE(printf("Starting tuning for '%s' with prec '%e'\n", m->method_name, precision);)
 
-  for(it.mesh = MESH_MIN; it.mesh <= MESH_MAX; it.mesh*=2 ) {
+  for(it.mesh = MESH_MIN; it.mesh <= MESH_MAX; it.mesh+=MESH_STEP ) {
     TUNE_TRACE(printf("Trying mesh '%d'\n", it.mesh);)
     for(it.cao = CAO_MAX; it.cao >= CAO_MIN; it.cao--) {
       TUNE_TRACE(printf("Trying cao '%d'\n", it.cao);)
@@ -50,12 +53,13 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision ) {
       d = m->Init( s, &it );
 
       // Reinit rcut loop
-      rcut_step = RCUT_STEP * s->length;
-      direction = 1;
+      rcut_step = 0.5 * rcut_max;
+      direction = -1;
 
       last_success = -1.0;
+      failed_once=0;
 
-      for(it.rcut = 0; rcut_step >= RCUT_STEP_MIN * s->length; it.rcut += direction * rcut_step ) {
+      for(it.rcut = rcut_max; rcut_step >= RCUT_STEP_MIN * s->length; it.rcut += direction * rcut_step ) {
 	TUNE_TRACE(printf("rcut %e", it.rcut);)
 	if(it.rcut > rcut_max || it.rcut < 0 )
 	  break;
@@ -75,10 +79,17 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision ) {
 	}
 	// If we were not successfull try lager cutoff and reduce step
 	else {
-	  direction = 1;
-	  TUNE_TRACE(printf("\n");)
+          if(last_success < 0.0) {
+	    direction = -1;
+	    TUNE_TRACE(puts("Never successful...");)
+	  }
+	  else {
+	    direction = 1;
+	    TUNE_TRACE(printf("-\n");)
+	    failed_once=1;
+	  }
 	}
-	if(last_success >= 0.0)
+	if(failed_once == 1)
 	  rcut_step /= 2.0;
       }
       if(last_success >= 0.0) {

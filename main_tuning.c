@@ -19,7 +19,7 @@
 
 int main( void ) {
 
-  int particles, i;
+  int particles, i, j;
 
   FILE *fout = fopen( "timings.dat" , "w" );
   FILE *fprec = fopen( "precisions.dat", "w" );
@@ -41,7 +41,7 @@ int main( void ) {
 
   // strong scaling
 
-  for(particles = 1000; particles <= 10000; particles += 1000) {
+  for(particles = 10000; particles <= 100000; particles += 1000) {
     printf("Init system with %d particles.", particles);
 
     s = generate_system( FORM_FACTOR_RANDOM, particles, 20.0, 1.0 );
@@ -51,10 +51,10 @@ int main( void ) {
     puts("Calc reference.");
     Calculate_reference_forces( s, &op );
 
-   #pragma omp barrier
+#pragma omp barrier
 
     // methods are independent of each other
-  #pragma omp parallel for
+#pragma omp parallel for private(j)
     for(i=0;i<4;i++) {
       puts("Init.");
       f[i] = Init_forces( s->nparticles );
@@ -71,7 +71,8 @@ int main( void ) {
       puts("Calc...");
 
       time[i] = MPI_Wtime();      
-      Calculate_forces ( m[i], s, p[i], d[i], f[i] );
+      for(j=0;j<100;j++)
+	Calculate_forces ( m[i], s, p[i], d[i], f[i] );
       time[i] = MPI_Wtime() - time[i];
 
       e[i] = Calculate_errors( s, f[i] );
@@ -83,6 +84,7 @@ int main( void ) {
       Free_forces(f[i]);
       free(p[i]);
     }
+    #pragma omp barrier
     puts("Free systems...");
     Free_system(s);
     fprintf(fout, "%d %e %e %e %e\n", particles, time[0], time[1], time[2], time[3] );

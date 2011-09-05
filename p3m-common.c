@@ -139,7 +139,7 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
 
     if ( m->flags & METHOD_FLAG_ad ) {
       int i;
-        int max = ( m->flags & METHOD_FLAG_interlaced) ? 2 : 1;
+      int max = ( m->flags & METHOD_FLAG_interlaced) ? 2 : 1;
 
         for (i = 0; i < max; i++) {
             d->dQdx[i] = Init_array( s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );

@@ -5,8 +5,9 @@
 
 // @TODO: Make this more elegant
 
-#define MESH_MIN 4
+#define MESH_MIN 8
 #define MESH_MAX 256
+#define MESH_STEP 4
 
 #define RCUT_STEP 0.02
 #define RCUT_STEP_MIN 0.001

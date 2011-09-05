@@ -151,8 +151,6 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
 void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     /* Zaehlvariablen: */
     int i, j, k, l;
-    /* Schnelles Modulo: */
-    int MESHMASKE;
     /* Hilfsvariablen */
     FLOAT_TYPE H,Hi,dMesh,MI2;
     /* charge-assignment beschleunigen */
@@ -165,7 +163,6 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     int Mesh = p->mesh;
     int c_index;
 
-    MESHMASKE = Mesh-1;
     dMesh = ( FLOAT_TYPE ) Mesh;
     H = s->length/dMesh;
     Hi = 1.0/H;
