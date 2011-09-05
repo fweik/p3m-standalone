@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <fftw3.h>
 
 #include "types.h"
 #include "common.h"
@@ -16,7 +17,7 @@ void *Init_array(int size, size_t field_size) {
     assert(size >= 0);
     assert(field_size > 0);
 
-    a = malloc(size * field_size);
+    a = fftw_malloc(size * field_size);
 
     assert(a != NULL);
     return a;
@@ -112,6 +113,8 @@ void Free_vector_array(vector_array_t *v) {
             }
         }
 
+        free(v->fields);
+
         v->x = v->y = v->z = NULL;
         v->fields = NULL;
 
@@ -129,7 +132,7 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
         memset ( f->f_r->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
     }
 
-    Realpart_neighborlist ( s, p, f );
+    Realpart_neighborlist ( s, p, d, f );
 
     // Realteil( s, p, f );
 
@@ -161,11 +164,13 @@ void Calculate_reference_forces ( system_t *s, parameters_t *p ) {
 
     fprintf ( stderr, "Optimal alpha is %lf (error: %e, rcut %e, kmax %d)\n", op.alpha, Ewald_estimate_error ( s, &op ), op.rcut, op.mesh - 1 );
 
-    Init_neighborlist( s, &op );
+    Init_neighborlist( s, &op, d );
      
     method_ewald.Influence_function( s, &op, d );
      
     Calculate_forces ( &method_ewald, s, &op, d, s->reference );
+
+    Free_neighborlist(d);
 
     Free_data(d);
     Free_forces(f);

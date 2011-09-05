@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <fftw3.h>
 
 #include "p3m-common.h"
 
@@ -170,7 +171,10 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
       d->LadInt = NULL;
       d->LadInt_ = NULL;
     }
-    
+
+    d->forward_plans = 0;
+    d->backward_plans = 0;
+
     return d;
 }
 
@@ -225,6 +229,15 @@ void Free_data(data_t *d) {
         if (d->ca_ind[i] != NULL)
             free(d->ca_ind[i]);
     }
+
+    for(i=0; i<d->forward_plans; i++) {
+      fftw_destroy_plan(d->forward_plan[i]);
+    }
+
+    for(i=0; i<d->backward_plans; i++) {
+      fftw_destroy_plan(d->backward_plan[i]);
+    }
+
     free(d);
 
 }

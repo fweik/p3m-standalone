@@ -93,8 +93,8 @@ int main ( int argc, char **argv ) {
 
 
 
-    Calculate_reference_forces( system, &parameters );
-    // Exakte_Werte_einlesen( system, argv[2] );
+    //Calculate_reference_forces( system, &parameters );
+    Exakte_Werte_einlesen( system, argv[2] );
 
 
     if ( methodnr == method_ewald.method_id )
@@ -138,7 +138,7 @@ int main ( int argc, char **argv ) {
     printf ( ".\n" );
 
     printf ( "Init neighborlist" );
-    Init_neighborlist ( system, &parameters );
+    Init_neighborlist ( system, &parameters, data );
     printf ( ".\n" );
 
     printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error", "K-Error" );

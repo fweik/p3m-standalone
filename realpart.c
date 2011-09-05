@@ -6,8 +6,6 @@
 #include "realpart.h"
 
 
-static neighbor_list_t *neighbor_list;
-
 inline FLOAT_TYPE AS_erfc_part(double d)
 {
 #define AS_a1  0.254829592
@@ -68,10 +66,11 @@ void Realteil( system_t *s, parameters_t *p, forces_t *f )
     }
 }
 
-static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p, vector_array_t *buffer, int *neighbor_id_buffer, FLOAT_TYPE *charges_buffer, int id) {
+static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p, data_t *d, vector_array_t *buffer, int *neighbor_id_buffer, FLOAT_TYPE *charges_buffer, int id) {
     int i, j, np=0;
     FLOAT_TYPE r, dx, dy, dz;
     FLOAT_TYPE lengthi = 1.0/s->length;
+    neighbor_list_t *neighbor_list = d->neighbor_list;
 
     for (i=id+1;i<s->nparticles;i++) {
         dx = s->p->x[id] - s->p->x[i];
@@ -105,7 +104,7 @@ static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p
     neighbor_list[id].n = np;
 }
 
-void Init_neighborlist(system_t *s, parameters_t *p) {
+void Init_neighborlist(system_t *s, parameters_t *p, data_t *d) {
     int i;
 
     // Define and allocate buffers (nessecary due to unknow number of neigbors per particles).
@@ -113,6 +112,7 @@ void Init_neighborlist(system_t *s, parameters_t *p) {
     int *neighbor_id_buffer = NULL;
     vector_array_t *position_buffer;
     FLOAT_TYPE *charges_buffer = NULL;
+    neighbor_list_t *neighbor_list;
 
     neighbor_id_buffer = Init_array(s->nparticles, sizeof(int));
     position_buffer = Init_vector_array(s->nparticles);
@@ -120,12 +120,13 @@ void Init_neighborlist(system_t *s, parameters_t *p) {
 
     // Allocate the actual list.
 
-    neighbor_list = Init_array(s->nparticles + 1, sizeof(neighbor_list_t));
-
+    d->neighbor_list = Init_array(s->nparticles + 1, sizeof(neighbor_list_t));
+    neighbor_list = d->neighbor_list;   
+ 
     // Find neighbors for each particle.
 
     for (i=0;i<s->nparticles;i++)
-        build_neighbor_list_for_particle( s, p, position_buffer, neighbor_id_buffer, charges_buffer, i );
+      build_neighbor_list_for_particle( s, p, d, position_buffer, neighbor_id_buffer, charges_buffer, i );
 
     // NULL terminate the list
 
@@ -138,7 +139,7 @@ void Init_neighborlist(system_t *s, parameters_t *p) {
     free(charges_buffer);
 }
 
-void Realpart_neighborlist(system_t *s, parameters_t *p, forces_t *f )
+void Realpart_neighborlist(system_t *s, parameters_t *p, data_t *d, forces_t *f )
 {
     int i,j;
     /* Minimum-Image-Abstand: */
@@ -150,6 +151,8 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, forces_t *f )
     FLOAT_TYPE lengthi = 1.0/s->length;
     const FLOAT_TYPE wupi = 1.77245385090551602729816748334;
     const FLOAT_TYPE wupii = 1.0/wupi;
+
+    neighbor_list_t *neighbor_list = d->neighbor_list;
 
     //#pragma omp  parallel for private(dx, dy, dz, ar, r, erfc_teil, fak, j)
 
@@ -192,14 +195,15 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, forces_t *f )
         }
 }
 
-void Free_neighborlist(void) {
+void Free_neighborlist(data_t *d) {
   int i = 0;
-  while(neighbor_list[i].n >= 0) {
-    Free_vector_array(neighbor_list[i].p);
-    free(neighbor_list[i].q);
+  while(d->neighbor_list[i].n >= 0) {
+    Free_vector_array(d->neighbor_list[i].p);
+    free(d->neighbor_list[i].id);
+    free(d->neighbor_list[i].q);
     i++;
   }
-  free(neighbor_list);
+  free(d->neighbor_list);
 }
 
 FLOAT_TYPE Realspace_error( const system_t *s, const parameters_t *p )

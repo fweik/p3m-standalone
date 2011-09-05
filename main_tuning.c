@@ -11,6 +11,8 @@
 #include "p3m-ad.h"
 #include "p3m-ad-i.h"
 
+#include "realpart.h"
+
 #include "generate_system.h"
 
 int main( void ) {
@@ -18,20 +20,20 @@ int main( void ) {
   int particles, i;
 
   FILE *fout = fopen( "timings.dat" , "w" );
-  method_t *m[2] = { &method_p3m_ad, &method_p3m_ik };
+  method_t *m[4] = { &method_p3m_ad, &method_p3m_ik };
 
   system_t *s;
 
-  forces_t *f[2];
+  forces_t *f[4];
 
-  parameters_t *p[2], op;
+  parameters_t *p[4], op;
 
-  data_t *d[2];
+  data_t *d[4];
 
-  FLOAT_TYPE time[2];
+  FLOAT_TYPE time[4];
 
   // strong scaling
-  for(particles = 1000; particles < 100000; particles += 1000) {
+  for(particles = 10; particles <= 10; particles += 100) {
     printf("Init system with %d particles.", particles);
     #warning no ref forces
     s = generate_system( FORM_FACTOR_RANDOM, particles, 20.0, 1.0 );
@@ -52,12 +54,13 @@ int main( void ) {
       puts("Influence function.");
       m[i]->Influence_function( s, p[i], d[i] );
       puts("Init neighborlist");
-      Init_neighborlist( s, p[i] );
+      Init_neighborlist( s, p[i], d[i] );
 
       puts("Calc...");
-      start_timer();
+
       Calculate_forces ( m[i], s, p[i], d[i], f[i] );
-      time [i] = stop_timer();
+
+      Free_neighborlist(d[i]);
 
       puts("Free...");
       Free_data(d[i]);

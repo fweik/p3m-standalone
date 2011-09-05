@@ -82,6 +82,21 @@ struct {
     FLOAT_TYPE epsilon;
 } system_t;
 
+// struct for the neighbor list to speed up the real part calculation
+
+typedef 
+struct {
+  // number of particles in list
+  int n;
+  // postitions of neighbors
+  vector_array_t *p;
+  // charges of neighbors
+  FLOAT_TYPE *q;
+  // ids in system array of neighbors
+  int *id;
+} neighbor_list_t;
+
+
 // Struct holding method parameters.
 
 typedef struct {
@@ -119,8 +134,14 @@ typedef struct {
     FLOAT_TYPE **LadInt;
     FLOAT_TYPE **LadInt_;
     // fftw plans
-    fftw_plan forward_plan;
+    //number of plans
+    int forward_plans;
+    int backward_plans;
+    // actual plans
+    fftw_plan forward_plan[3];
     fftw_plan backward_plan[3];
+    // neighbor list for real space calculation
+    neighbor_list_t *neighbor_list;
 } data_t;
 
 // Flags for method_t
@@ -133,12 +154,11 @@ enum {
     METHOD_FLAG_nshift = 8, // Method needs precalculated shifted k-values
     METHOD_FLAG_G_hat = 16, // Method uses influence function
     METHOD_FLAG_Qmesh = 32, // Method needs charge mesh
-    METHOD_FLAG_ca = 64 // Method uses charge assignment
+    METHOD_FLAG_ca = 64, // Method uses charge assignment
 };
 
 // Common flags for all p3m methods for convinience
-#define METHOD_FLAG_P3M (METHOD_FLAG_nshift | METHOD_FLAG_G_hat | METHOD_FLAG_Qmesh | METHOD_FLAG_ca)
-
+#define METHOD_FLAG_P3M (METHOD_FLAG_nshift | METHOD_FLAG_G_hat | METHOD_FLAG_Qmesh | METHOD_FLAG_ca )
 // methode type
 
 typedef struct {

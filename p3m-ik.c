@@ -18,9 +18,6 @@
 #include "p3m-ik.h"
 
 
-fftw_plan forward_plan;
-fftw_plan backward_plan[3];
-
 // declaration of the method
 
 const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.",
@@ -30,22 +27,22 @@ const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, no
 
 // Forward declaration of local functions
 
-static void forward_fft ( void );
-static void backward_fft ( void );
+static void forward_fft ( data_t * );
+static void backward_fft ( data_t * );
 static void p3m_tune_aliasing_sums_ik ( int, int, int,
                                         const system_t *, const parameters_t *,
                                         double *, double * );
 
 static FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE, const system_t *, const parameters_t * );
 
-inline void forward_fft ( void ) {
-    fftw_execute ( forward_plan );
+inline void forward_fft ( data_t *d ) {
+    fftw_execute ( d->forward_plan[0] );
 }
 
-inline void backward_fft ( void ) {
+inline void backward_fft ( data_t *d ) {
     int i;
     for ( i=0;i<3;i++ )
-        fftw_execute ( backward_plan[i] );
+        fftw_execute ( d->backward_plan[i] );
 }
 
 data_t *Init_ik ( system_t *s, parameters_t *p ) {
@@ -54,10 +51,13 @@ data_t *Init_ik ( system_t *s, parameters_t *p ) {
 
     data_t *d = Init_data ( &method_p3m_ik, s, p );
 
-    forward_plan = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_ESTIMATE );
+    d->forward_plans = 1;
+    d->backward_plans = 3;
+
+    d->forward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_ESTIMATE );
 
     for ( l=0;l<3;l++ ) {
-        backward_plan[l] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Fmesh->fields[l] ), ( fftw_complex * ) ( d->Fmesh->fields[l] ), FFTW_BACKWARD, FFTW_ESTIMATE );
+        d->backward_plan[l] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Fmesh->fields[l] ), ( fftw_complex * ) ( d->Fmesh->fields[l] ), FFTW_BACKWARD, FFTW_ESTIMATE );
     }
     return d;
 }
@@ -179,7 +179,7 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     assign_charge ( s, p, d, 0 );
 
     /* Forward Fast Fourier Transform */
-    forward_fft();
+    forward_fft(d);
 
     for ( i=0; i<Mesh; i++ )
         for ( j=0; j<Mesh; j++ )
@@ -208,7 +208,7 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
             }
 
     /* Durchfuehren der Fourier-Rueck-Transformation: */
-    backward_fft();
+    backward_fft(d);
 
     /* Force assignment */
     assign_forces ( 1.0/ ( 2.0*s->length*s->length*s->length ),s,p,d,f,0 );

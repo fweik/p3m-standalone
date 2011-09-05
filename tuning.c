@@ -23,6 +23,7 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision ) {
   parameters_t *p = Init_array( 1, sizeof( parameters_t ) );
   //Parameter iteraters, best parameter set
   parameters_t it, p_best;
+  // Array to store forces
   forces_t *f = Init_forces(s->nparticles);
 
   data_t *d = NULL;
@@ -84,16 +85,19 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision ) {
       }
       if(last_success >= 0.0) {
 	TUNE_TRACE(puts("Starting timing...");)
+
 	it.rcut = last_success;   
 	success = 1;
-        TUNE_TRACE(puts("Init neighborlist...");)
-	Init_neighborlist( s, &it );
-        TUNE_TRACE(puts("Influence_funtion");)
-	m->Influence_function( s, p, d );
-        TUNE_TRACE(puts("Calc...");)
+
+	Init_neighborlist( s, &it, d );
+
+	m->Influence_function( s, &it, d );
+
 	start_timer();
 	Calculate_forces ( m, s, &it, d, f );
 	time = stop_timer();
+
+	Free_neighborlist(d);
 
 	TUNE_TRACE(printf("\n mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time, error, it.alpha );)
 

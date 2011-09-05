@@ -15,32 +15,31 @@ const method_t method_p3m_ad = { METHOD_P3M_ad, "P3M with analytic differentiati
 				 METHOD_FLAG_P3M | METHOD_FLAG_ad, 
 				 &Init_ad, &Influence_function_berechnen_ad, &P3M_ad, &Error_ad };
 
-fftw_plan forward_plan;
-fftw_plan backward_plan;
+static void forward_fft( data_t *d );
+static void backward_fft( data_t *d );
 
-static void forward_fft(void);
-static void backward_fft(void);
-
-inline void forward_fft(void) {
-  fftw_execute(forward_plan);
+inline void forward_fft ( data_t *d ) {
+  fftw_execute ( d->forward_plan[0] );
 }
 
-inline void backward_fft(void) {
-    fftw_execute(backward_plan);
+inline void backward_fft ( data_t *d ) {
+  fftw_execute ( d->backward_plan[0] );
 }
 
-data_t *Init_ad( system_t *s, parameters_t *p ) {
-  int Mesh = p->mesh;
-  
-  data_t *d = Init_data( &method_p3m_ad, s, p);
-  
-  forward_plan = fftw_plan_dft_3d(Mesh, Mesh, Mesh, (fftw_complex *)d->Qmesh, (fftw_complex *)d->Qmesh, FFTW_FORWARD, FFTW_ESTIMATE);
+data_t *Init_ad ( system_t *s, parameters_t *p ) {
+    int mesh = p->mesh;
 
-  backward_plan = fftw_plan_dft_3d(Mesh, Mesh, Mesh, (fftw_complex *)d->Qmesh, (fftw_complex *)d->Qmesh, FFTW_BACKWARD, FFTW_ESTIMATE);
+    data_t *d = Init_data ( &method_p3m_ad, s, p );
 
-  return d;
+    d->forward_plans = 1;
+    d->backward_plans = 1;
+
+    d->forward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_ESTIMATE );
+
+    d->backward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Qmesh ), ( fftw_complex * ) ( d->Qmesh ), FFTW_BACKWARD, FFTW_ESTIMATE );
+
+    return d;
 }
-
 
 void Aliasing_sums_ad(int NX, int NY, int NZ, system_t *s, parameters_t *p, data_t *d,
 		      FLOAT_TYPE *Zaehler, FLOAT_TYPE *Nenner1, FLOAT_TYPE *Nenner2)
@@ -135,7 +134,7 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   assign_charge_and_derivatives( s, p, d, 0, 1 );
   
   /* Forward Fast Fourier Transform */
-  forward_fft();
+  forward_fft(d);
  
   for (i=0; i<Mesh; i++)
     for (j=0; j<Mesh; j++)
@@ -150,7 +149,7 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 
   /* Durchfuehren der Fourier-Rueck-Transformation: */
 
-  backward_fft();
+  backward_fft(d);
 
   /* Force assignment */
   assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0 );
