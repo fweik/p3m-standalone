@@ -19,7 +19,7 @@ system_t *generate_madelung(int size, FLOAT_TYPE box) {
   s->q2 = 0.0;
 
   for(i=0;i<size;i++) {
-    for(j=0;j<2;j++) {
+    for(j=0;j<3;j++) {
       s->p->fields[j][i] = a*i;
     }
     s->q[i] = 1.0 - 2.0 * (i%2);
@@ -39,7 +39,7 @@ system_t *generate_inner_box(int size, FLOAT_TYPE box) {
   s->q2 = 0.0;
 
   for(i=0;i<size;i++) {
-    for(j=0;j<2;j++) {
+    for(j=0;j<3;j++) {
       s->p->fields[j][i] = lower_left + 0.5 * box*drand48();
     }
     s->q[i] = 1.0 - 2.0 * (i%2);
@@ -57,7 +57,7 @@ system_t *generate_random_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge
   s->q2 = 0.0;
   
   for(i=0;i<size;i++) {
-    for(j=0;j<2;j++) {
+    for(j=0;j<3;j++) {
       s->p->fields[j][i] = box*drand48();
     }
     s->q[i] = 1.0 - 2.0 * (i%2);

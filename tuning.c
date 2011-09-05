@@ -10,7 +10,7 @@
 #include "interpol.h"
 #include "realpart.h"
 
-#define TUNE_DEBUG
+//#define TUNE_DEBUG
 
 #ifdef TUNE_DEBUG
   #include <stdio.h>

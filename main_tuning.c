@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <mpi.h>
+#include <math.h>
 
 #include "types.h"
 #include "common.h"
@@ -22,7 +23,7 @@ int main( void ) {
   int particles, i, j;
 
   FILE *fout = fopen( "timings.dat" , "w" );
-  FILE *fprec = fopen( "precisions.dat", "w" );
+  //  FILE *fprec = fopen( "precisions.dat", "w" );
   const method_t *m[4] = { &method_p3m_ik, &method_p3m_ik_i, &method_p3m_ad, &method_p3m_ad_i };
 
   fprintf(fout, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
@@ -35,26 +36,24 @@ int main( void ) {
 
   data_t *d[4];
 
-  error_t e[4];
+  //  error_t e[4];
 
   FLOAT_TYPE time[4];
 
-  // strong scaling
+  // weak scaling
 
-  for(particles = 10000; particles <= 100000; particles += 1000) {
-    printf("Init system with %d particles.", particles);
+  for(particles = 10000; particles <= 100000; particles += 10000) {
+    printf("Init system with %d particles.\n", particles);
 
-    s = generate_system( FORM_FACTOR_RANDOM, particles, 20.0, 1.0 );
+    s = generate_system( FORM_FACTOR_RANDOM, particles, pow(particles / 10000, 1.0/3.0) * 20.0, 1.0 );
  
-    op.rcut = 0.49*s->length;
+    //op.rcut = 0.49*s->length;
 
-    puts("Calc reference.");
-    Calculate_reference_forces( s, &op );
-
-#pragma omp barrier
+    //    puts("Calc reference.");
+    //Calculate_reference_forces( s, &op );
 
     // methods are independent of each other
-#pragma omp parallel for private(j)
+
     for(i=0;i<4;i++) {
       puts("Init.");
       f[i] = Init_forces( s->nparticles );
@@ -71,11 +70,11 @@ int main( void ) {
       puts("Calc...");
 
       time[i] = MPI_Wtime();      
-      for(j=0;j<100;j++)
+      for(j=0;j<50;j++)
 	Calculate_forces ( m[i], s, p[i], d[i], f[i] );
       time[i] = MPI_Wtime() - time[i];
 
-      e[i] = Calculate_errors( s, f[i] );
+      //e[i] = Calculate_errors( s, f[i] );
 
       Free_neighborlist(d[i]);
 
@@ -84,16 +83,16 @@ int main( void ) {
       Free_forces(f[i]);
       fftw_free(p[i]);
     }
-    #pragma omp barrier
+
     puts("Free systems...");
     Free_system(s);
     fprintf(fout, "%d %e %e %e %e\n", particles, time[0], time[1], time[2], time[3] );
-    fprintf(fprec, "%d %e %e %e %e\n", particles, e[0].f / particles, e[1].f / particles, e[2].f / particles, e[2].f / particles );
+    //    fprintf(fprec, "%d %e %e %e %e\n", particles, e[0].f / particles, e[1].f / particles, e[2].f / particles, e[2].f / particles );
     fflush(fout);
-    fflush(fprec);
+    //fflush(fprec);
   }
   fclose(fout);
-  fclose(fprec);
+  //  fclose(fprec);
 
   return 0;
 }
