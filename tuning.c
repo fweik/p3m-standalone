@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <math.h>
-
+#include <mpi.h>
 
 #include "tuning.h"
 
@@ -9,8 +9,6 @@
 #include "timings.h"
 #include "interpol.h"
 #include "realpart.h"
-
-#define TUNE_DEBUG
 
 #ifdef TUNE_DEBUG
   #include <stdio.h>
@@ -32,7 +30,7 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision ) {
   FLOAT_TYPE rcut_step = RCUT_STEP * s->length;
   FLOAT_TYPE last_success = -1.0;
 
-  FLOAT_TYPE best_time=1e250, time;
+  FLOAT_TYPE best_time=1e250, time=1e240;
 
   FLOAT_TYPE rs_error, error = -1.0;
 
@@ -93,9 +91,9 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision ) {
 
 	m->Influence_function( s, &it, d );
 
-	start_timer();
+	time = MPI_Wtime();
 	Calculate_forces ( m, s, &it, d, f );
-	time = stop_timer();
+	time = MPI_Wtime() - time;
 
 	Free_neighborlist(d);
 

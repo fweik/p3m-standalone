@@ -140,7 +140,7 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
 
     m->Kspace_force ( s, p, d, f );
 
-#pragma omp parallel for private( i )
+    //#pragma omp parallel for private( i )
     for ( j=0; j < 3; j++ ) {
         for ( i=0; i<s->nparticles; i++ ) {
             f->f->fields[j][i] += f->f_k->fields[j][i] + f->f_r->fields[j][i];
@@ -149,7 +149,7 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
 }
 
 void Calculate_reference_forces ( system_t *s, parameters_t *p ) {
-  int i;
+
     data_t *d;
 
     parameters_t op = *p;

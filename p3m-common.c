@@ -9,7 +9,7 @@
 #include "interpol.h"
 
 
-#define FREE_TRACE(A) A
+#define FREE_TRACE(A) 
 
 FLOAT_TYPE sinc(FLOAT_TYPE d)
 {
