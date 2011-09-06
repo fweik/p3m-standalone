@@ -9,12 +9,15 @@
 #define MESH_MAX 256
 #define MESH_STEP 4
 
+#define ALPHA_STEP_MIN 1e-4
+#define ALPHA_STEP 0.1
+
 #define RCUT_STEP 0.02
 #define RCUT_STEP_MIN 0.001
 
 #define CAO_MIN 1
 #define CAO_MAX 7
 
-parameters_t *Tune( const method_t *, system_t *, FLOAT_TYPE );
+parameters_t *Tune( const method_t *, system_t *, FLOAT_TYPE, FLOAT_TYPE );
 
 #endif

@@ -60,7 +60,7 @@ int main( void ) {
 
       f[i] = Init_forces( s->nparticles );
 
-      p[i] = Tune ( m[i], s, 1e-4 );
+      p[i] = Tune ( m[i], s, 1e-4, 2.0 );
       
       fprintf(stderr, "tuned...\n");
 

@@ -10,7 +10,7 @@
 #include "interpol.h"
 #include "realpart.h"
 
-#define TUNE_DEBUG
+//#define TUNE_DEBUG
 
 #ifdef TUNE_DEBUG
   #include <stdio.h>
@@ -28,13 +28,17 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision, FLOAT_
 
   data_t *d = NULL;
 
-  it.rcut = rcut;
+  FLOAT_TYPE rcut_max = 0.5 * s->length;
+  FLOAT_TYPE rcut_step = 0.25 * s->length;
+  FLOAT_TYPE last_success = -1.0;
 
   FLOAT_TYPE best_time=1e250, time=1e240;
 
-  FLOAT_TYPE last_error=1e100, error = -1.0;
-  FLOAT_TYPE alpha_step = 0.1;
-  int direction=1, over_min=0, success=0;
+  FLOAT_TYPE rs_error, error = -1.0;
+
+  int success = 0;
+  int direction=1;
+  int failed_once=0;
 
   TUNE_TRACE(printf("Starting tuning for '%s' with prec '%e'\n", m->method_name, precision);)
 
@@ -48,25 +52,48 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision, FLOAT_
       Free_data(d);
       d = m->Init( s, &it );
 
-      // reinit alpha loop
-      direction = 1;
-      alpha_step = ALPHA_STEP;
+      // Reinit rcut loop
+      rcut_step = 0.5 * rcut_max;
+      direction = -1;
 
-      for( it.alpha = ALPHA_STEP_MIN; alpha_step <= ALPHA_STEP_MIN; it.alpha += direction*alpha_step ) {
-	TUNE_TRACE(printf("alpha %e\n", it.alpha);)
-	error = m->Error( s, &it );
-	if( (last_error - error) >= 1e-3 ) {
-	  continue;
+      last_success = -1.0;
+      failed_once=0;
+
+      for(it.rcut = rcut_max; rcut_step >= RCUT_STEP_MIN * s->length; it.rcut += direction * rcut_step ) {
+	TUNE_TRACE(printf("rcut %e", it.rcut);)
+	if(it.rcut > rcut_max || it.rcut < 0 )
+	  break;
+
+	// Calculate corresponding alpha
+        it.alpha = 0.0;
+        rs_error = Realspace_error ( s, &it );
+	it.alpha = sqrt(log(M_SQRT2*rs_error/precision)) / it.rcut;
+
+	// Decide how to move on
+        // move to bigger cutoff while precision has never been reached
+ 	// If we where successfull, try smaller cutoff an decrease step
+	if( ( error = m->Error( s, &it ) ) <= precision ) {
+	  TUNE_TRACE(printf(" success\n");)
+	  last_success = it.rcut;
+	  direction = -1;
 	}
-	if( (last_error - error) <= 1e-3 ) {
-	  direction = -direction;
-          over_min = 1;
+	// If we were not successfull try lager cutoff and reduce step
+	else {
+          if(last_success < 0.0) {
+	    direction = -1;
+	    TUNE_TRACE(puts("Never successful...");)
+	  }
+	  else {
+	    direction = 1;
+	    TUNE_TRACE(printf("-\n");)
+	    failed_once=1;
+	  }
 	}
-	if( over_min == 1 )
-	  alpha_step /= 2.0;
-      } 
-      /*
-       TUNE_TRACE(puts("Starting timing...");)
+	if(failed_once == 1)
+	  rcut_step /= 2.0;
+      }
+      if(last_success >= 0.0) {
+	TUNE_TRACE(puts("Starting timing...");)
 
 	it.rcut = last_success;   
 	success = 1;
@@ -92,7 +119,7 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision, FLOAT_
       } else {
 	// If we didn't get the precision here, there is no point going to lower cao.
 	break;
-	} */
+      }
     }
     if( time > 1.2*best_time ) {
       // No further gain expected with bigger mesh;
