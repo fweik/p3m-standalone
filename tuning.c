@@ -32,16 +32,20 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision, FLOAT_
 
   FLOAT_TYPE best_time=1e250, time=1e240;
 
-  FLOAT_TYPE last_error=1e100, error = -1.0;
+  FLOAT_TYPE min_error=1e110, error = -1.0;
   FLOAT_TYPE alpha_step = 0.1;
-  int direction=1, over_min=0, success=0;
+  FLOAT_TYPE alpha_min_error = 0.0;
+  int direction=1, over_min=0, success=0, cao_start;
+  FLOAT_TYPE last_error = 0.0;
 
   TUNE_TRACE(printf("Starting tuning for '%s' with prec '%e'\n", m->method_name, precision);)
 
   for(it.mesh = MESH_MIN; it.mesh <= MESH_MAX; it.mesh+=MESH_STEP ) {
-    TUNE_TRACE(printf("Trying mesh '%d'\n", it.mesh);)
-    for(it.cao = CAO_MAX; it.cao >= CAO_MIN; it.cao--) {
-      TUNE_TRACE(printf("Trying cao '%d'\n", it.cao);)
+      // If we were already successful with a smaller mesh
+      // we can start at fastest cao so far.
+      cao_start = ( best_time < 1e200 ) ? p_best.cao - 1 : CAO_MAX;
+    for(it.cao = cao_start; it.cao >= 2; it.cao--) {
+
       it.cao3 = it.cao * it.cao * it.cao;
       it.ip = it.cao - 1;
 
@@ -51,50 +55,62 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision, FLOAT_
       // reinit alpha loop
       direction = 1;
       alpha_step = ALPHA_STEP;
+      min_error = 1e110;
 
-      for( it.alpha = ALPHA_STEP_MIN; alpha_step <= ALPHA_STEP_MIN; it.alpha += direction*alpha_step ) {
-	TUNE_TRACE(printf("alpha %e\n", it.alpha);)
+      for( it.alpha = 0.2; alpha_step >= 0.01; it.alpha += direction*alpha_step ) {
 	error = m->Error( s, &it );
-	if( (last_error - error) >= 1e-3 ) {
+
+	if( error <= precision && error < min_error ) {
+	  min_error = error;
+	  alpha_min_error = it.alpha;
+	}
+	if( (last_error - error) >= 0.0 ) {
+	  last_error = error;
 	  continue;
 	}
-	if( (last_error - error) <= 1e-3 ) {
+	if( (last_error - error) <= 0.0 ) {
+	  last_error=error;
 	  direction = -direction;
           over_min = 1;
 	}
 	if( over_min == 1 )
 	  alpha_step /= 2.0;
-      } 
-      /*
-       TUNE_TRACE(puts("Starting timing...");)
+      }
 
-	it.rcut = last_success;   
+      TUNE_TRACE(printf("mesh %d cao %d rcut %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, error, it.alpha ););
+      
+      if( min_error <= precision ) {
+	it.alpha = alpha_min_error;   
 	success = 1;
-
-	Init_neighborlist( s, &it, d );
-
-	m->Influence_function( s, &it, d );
-
-	time = MPI_Wtime();
-	Calculate_forces ( m, s, &it, d, f );
-	time = MPI_Wtime() - time;
-
-	Free_neighborlist(d);
-
-	TUNE_TRACE(printf("\n mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time, error, it.alpha );)
-
-	if( time < best_time ) {
-	  p_best = it;
-	  p_best.precision = error;
-	  best_time = time;
-	  TUNE_TRACE(printf("New best. mesh %d cao %d rcut %e time %e prec %e alpha %e\n", p_best.mesh, p_best.cao, p_best.rcut, time, error, p_best.alpha );)         
-	}
       } else {
+	break;
+      }
+
+      if( min_error > precision )
+	break;
+
+      TUNE_TRACE(puts("Starting timing..."););
+
+      m->Influence_function( s, &it, d );
+
+      time = MPI_Wtime();
+      m->Kspace_force( s, &it, d, f );
+      time = MPI_Wtime() - time;
+
+      TUNE_TRACE(printf("\n mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time, error, it.alpha ););
+	
+      if( time < best_time ) {
+	p_best = it;
+	p_best.precision = error;
+	best_time = time;
+	TUNE_TRACE(printf("New best. mesh %d cao %d rcut %e time %e prec %e alpha %e\n", p_best.mesh, p_best.cao, p_best.rcut, time, error, p_best.alpha );)         ;
+      }
+      else {
 	// If we didn't get the precision here, there is no point going to lower cao.
 	break;
-	} */
+      } 
     }
-    if( time > 1.2*best_time ) {
+    if( time > 1.1*best_time ) {
       // No further gain expected with bigger mesh;
       break;
     }

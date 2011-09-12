@@ -155,18 +155,7 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
 
     //  Dipol(s, p);
 
-#ifdef DETAILED_TIMINGS
-    if(__detailed_timings)
-      t = MPI_Wtime();
-#endif
-
     m->Kspace_force ( s, p, d, f );
-
-#ifdef DETAILED_TIMINGS
-    if(__detailed_timings)
-      printf(" %e", MPI_Wtime() - t);
-#endif
-
 
     //#pragma omp parallel for private( i )
     for ( j=0; j < 3; j++ ) {
@@ -199,3 +188,10 @@ void Calculate_reference_forces ( system_t *s, parameters_t *p ) {
     Free_data(d);
     Free_forces(f);
 }
+
+double my_power( double base, int exponent ) {
+  while(exponent-- > 0)
+    base*= base;
+
+  return base;
+  }

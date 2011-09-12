@@ -61,9 +61,9 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
                 tmp1 = tmp0 * d->LadInt[i1][arg[1]];
                 for (i2=0; i2<p->cao; i2++) {
 		  k = wrap_mesh_index(base[2] + i2, d->mesh);
-                    cur_ca_frac_val = tmp1 * d->LadInt[i2][arg[2]];
-                    d->cf[ii][cf_cnt++] = cur_ca_frac_val ;
-                    d->Qmesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
+		  cur_ca_frac_val = tmp1 * d->LadInt[i2][arg[2]];
+		  d->cf[ii][cf_cnt++] = cur_ca_frac_val ;
+		  d->Qmesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
                 }
             }
         }

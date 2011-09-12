@@ -215,7 +215,13 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 // Functions for error estimate.
 
 FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
-  return sqrt( SQR( Realspace_error( s, p ) ) + SQR( p3m_k_space_error_ik( 1.0, s, p) ) );
+  FLOAT_TYPE real;
+  FLOAT_TYPE recp;
+
+  real = Realspace_error( s, p );
+  recp = p3m_k_space_error_ik( 1.0, s, p);
+
+  return sqrt( SQR( real ) + SQR( recp ) );
 }
 
 FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
@@ -240,6 +246,7 @@ FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const pa
             }
         }
     }
+    he_q = fabs(he_q);
     return 2.0*s->q2*sqrt ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
 }
 

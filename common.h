@@ -5,6 +5,8 @@
 
 #include "types.h"
 
+double my_power( double, int );
+
 system_t *Init_system(int);
 void *Init_array(int, size_t);
 vector_array_t *Init_vector_array(int);

@@ -7,7 +7,7 @@
 
 #define MESH_MIN 8
 #define MESH_MAX 256
-#define MESH_STEP 4
+#define MESH_STEP 2
 
 #define ALPHA_STEP_MIN 1e-4
 #define ALPHA_STEP 0.1

@@ -18,10 +18,6 @@
 
 #include "generate_system.h"
 
-#ifdef DETAILED_TIMINGS
-int __detailed_timings=0;
-#endif
-
 int main( void ) {
 
   int particles, i, j;
@@ -32,7 +28,7 @@ int main( void ) {
 
   forces_t *f[4];
 
-  parameters_t *p[4], op;
+  parameters_t *p[4];
 
   data_t *d[4];
 
@@ -40,19 +36,22 @@ int main( void ) {
 
   FLOAT_TYPE time[4];
 
+  FILE *fout = fopen("timings.d.dat", "w");
+  //  FUKW *ferror = fropen("error.d.dat", "w");
+
   // weak scaling
 
-  for(particles = 10000; particles <= 15000; particles += 1000) {
+  for(particles = 1000; particles <= 1000; particles += 1000) {
+    fprintf(stderr, "Init system with %d particles", particles);
 
-    s = generate_system( FORM_FACTOR_RANDOM, particles, pow(particles / 1000, 1.0/3.0) * 20.0, 1.0 );
+    s = generate_system( FORM_FACTOR_RANDOM, particles, pow(particles / 1000, 1.0/3.0) * 10.0, 1.0 );
  
-    op.rcut = 0.49*s->length;
-
-    Calculate_reference_forces( s, &op );
-
+    fprintf(stderr, ".\n");
+     
 #pragma omp barrier
     fprintf( stderr, "starting...\n" );
-    printf("%d", particles);
+
+    fprintf(fout, "%d ", particles);
 
     // methods are independent of each other
 #pragma omp parallel for private(j)
@@ -60,7 +59,7 @@ int main( void ) {
 
       f[i] = Init_forces( s->nparticles );
 
-      p[i] = Tune ( m[i], s, 1e-4, 2.0 );
+      p[i] = Tune ( m[i], s, 1e-4, 3.0 );
       
       fprintf(stderr, "tuned...\n");
 
@@ -68,29 +67,29 @@ int main( void ) {
 
       m[i]->Influence_function( s, p[i], d[i] );
 
-      Init_neighborlist( s, p[i], d[i] );
-
-      __detailed_timings = 1;
+      //      Init_neighborlist( s, p[i], d[i] );
 
       time[i] = MPI_Wtime();      
-	Calculate_forces ( m[i], s, p[i], d[i], f[i] );
+      m[i]-> Kspace_force( s, p[i], d[i], f[i] );
+      //	Calculate_forces ( m[i], s, p[i], d[i], f[i] );
 
-      printf(" %e", MPI_Wtime() - time[i]);
-
-      __detailed_timings = 0;
+      fprintf( fout, " %e", MPI_Wtime() - time[i]);
 
       e[i] = Calculate_errors( s, f[i] );
 
-      Free_neighborlist(d[i]);
+      //      Free_neighborlist(d[i]);
 
       Free_data(d[i]);
       Free_forces(f[i]);
       fftw_free(p[i]);
 
       fprintf(stderr, "done...\n");
-      fflush(stdin);
+
+      fflush(stderr);
+      fflush(fout);
+      //  fflush(ferror);
     }
-    printf("\n");
+    fprintf(fout, "\n");
     #pragma omp barrier
 
     Free_system(s);
