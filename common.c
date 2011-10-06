@@ -189,9 +189,3 @@ void Calculate_reference_forces ( system_t *s, parameters_t *p ) {
     Free_forces(f);
 }
 
-double my_power( double base, int exponent ) {
-  while(exponent-- > 0)
-    base*= base;
-
-  return base;
-  }

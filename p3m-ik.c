@@ -271,13 +271,15 @@ void p3m_tune_aliasing_sums_ik ( int nx, int ny, int nz,
         for ( my=-P3M_BRILLOUIN_TUNING; my<=P3M_BRILLOUIN_TUNING; my++ ) {
             fnmy = meshi * ( nmy = ny + my*mesh );
             for ( mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++ ) {
+
+
                 fnmz = meshi * ( nmz = nz + mz*mesh );
 
                 nm2 = SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz );
                 ex = exp ( -factor1*nm2 );
                 ex2 = SQR ( ex );
 
-                U2 = pow ( sinc ( fnmx ) *sinc ( fnmy ) *sinc ( fnmz ), 2.0*p->cao );
+                U2 = my_power ( sinc ( fnmx ) *sinc ( fnmy ) *sinc ( fnmz ), 2*p->cao );
 
                 *alias1 += ex2 / nm2;
                 *alias2 += U2 * ex * ( nx*nmx + ny*nmy + nz*nmz ) / nm2;

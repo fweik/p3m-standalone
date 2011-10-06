@@ -43,7 +43,8 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision, FLOAT_
   for(it.mesh = MESH_MIN; it.mesh <= MESH_MAX; it.mesh+=MESH_STEP ) {
       // If we were already successful with a smaller mesh
       // we can start at fastest cao so far.
-      cao_start = ( best_time < 1e200 ) ? p_best.cao - 1 : CAO_MAX;
+    cao_start = ( best_time < 1e200 ) ? p_best.cao - 1 : CAO_MAX;
+
     for(it.cao = cao_start; it.cao >= 2; it.cao--) {
 
       it.cao3 = it.cao * it.cao * it.cao;
@@ -110,7 +111,7 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision, FLOAT_
 	break;
       } 
     }
-    if( time > 1.1*best_time ) {
+    if( ( time > 1.1*best_time ) || ( it.mesh > 2*p_best.mesh ) ) {
       // No further gain expected with bigger mesh;
       break;
     }

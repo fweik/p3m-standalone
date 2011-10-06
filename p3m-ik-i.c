@@ -74,13 +74,13 @@ void Aliasing_sums_ik_i( system_t *s, parameters_t *p, data_t *d, int NX, int NY
   
   for ( MX = -P3M_BRILLOUIN; MX <= P3M_BRILLOUIN; MX++ ) {
     NMX = d->nshift[NX] + Mesh*MX;
-    S1  = pow( sinc(fak1*NMX), 2*p->cao );
+    S1  = my_power( sinc(fak1*NMX), 2*p->cao );
     for ( MY = -P3M_BRILLOUIN; MY <= P3M_BRILLOUIN; MY++ ) {
       NMY = d->nshift[NY] + Mesh*MY;
-      S2   = S1 * pow( sinc(fak1*NMY), 2*p->cao );
+      S2   = S1 * my_power( sinc(fak1*NMY), 2*p->cao );
       for ( MZ = -P3M_BRILLOUIN; MZ <= P3M_BRILLOUIN; MZ++ ) {
 	NMZ = d->nshift[NZ] + Mesh*MZ;
-	S3  = S2*pow( sinc(fak1*NMZ), 2*p->cao );
+	S3  = S2*my_power( sinc(fak1*NMZ), 2*p->cao );
 	
 	NM2 = SQR ( NMX*Leni ) + SQR ( NMY*Leni ) + SQR ( NMZ*Leni );
 	*Nenner1 += S3;
@@ -213,6 +213,7 @@ void P3M_ik_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     return;
 }
 
+
 void p3m_tune_aliasing_sums_ik_i (int nx, int ny, int nz, 
 					   system_t *s, parameters_t *p, 
 					   double *alias1, double *alias2)
@@ -235,22 +236,26 @@ void p3m_tune_aliasing_sums_ik_i (int nx, int ny, int nz,
       fnmy = mesh_i * (nmy = ny + my*mesh);
       for (mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++) {
       
-       if (((mx+my+mz)%2)==0) {					//consider only even terms!
+       if (((mx+my+mz)%2)==0) {		//consider only even terms!
+
 	fnmz = mesh_i * (nmz = nz + mz*mesh);
 	
 	nm2 = SQR(nmx) + SQR(nmy) + SQR(nmz);
 	ex = exp(-factor1*nm2);
 	ex2 = SQR( ex );
 	
-	U2 = pow(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*p->cao);
+	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
 	
 	*alias1 += ex2 / nm2;
-	*alias2 += U2 * ex * (nx*nmx + ny*nmy + nz*nmz) / nm2;
+	*alias2 +=  U2 * ex * (nx*nmx + ny*nmy + nz*nmz) / nm2;
+	//*alias2 += U2 * U2;
+
        }
       }
     }
   }
 }
+
 
 FLOAT_TYPE p3m_k_space_error_ik_i ( system_t *s, parameters_t *p ) {
     int  nx, ny, nz;
@@ -277,6 +282,93 @@ FLOAT_TYPE p3m_k_space_error_ik_i ( system_t *s, parameters_t *p ) {
     he_q = fabs(he_q);
     return 2.0*s->q2*sqrt ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
 }
+
+/*
+double p3m_k_space_error_ik_i ( system_t *s, parameters_t *p )
+{
+  int    NX,NY,NZ, N2;
+  FLOAT_TYPE Dnx,Dny,Dnz;
+  FLOAT_TYPE dMesh,dMeshi;
+  FLOAT_TYPE Zaehler[3]={0.0,0.0,0.0},Nenner1=0.0, Nenner2=0.0;
+  FLOAT_TYPE zwi;
+  FLOAT_TYPE G_hat;
+  FLOAT_TYPE alias1, alias2;
+  FLOAT_TYPE he_q=0.0;
+  FLOAT_TYPE fact =  p->mesh*p->mesh*p->mesh*2.0/(s->length*s->length);
+  FLOAT_TYPE ctan_x, ctan_y, cs; 
+  FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
+
+  data_t d;
+  
+  int Mesh = p->mesh;
+  FLOAT_TYPE Leni = 1.0/s->length;
+  FLOAT_TYPE Aik = 1.0;
+
+  d.nshift = Init_array( p->mesh, sizeof(FLOAT_TYPE) );
+  d.Dn = Init_array ( p->mesh, sizeof(FLOAT_TYPE) );
+  d.mesh = p->mesh;
+
+  Init_nshift( &d );
+  Init_differential_operator( &d );
+
+  dMesh = (FLOAT_TYPE)Mesh;
+  dMeshi= 1.0/dMesh;
+
+  for (NX=0; NX<Mesh; NX++) {
+    ctan_x = analytic_cotangent_sum ( d.nshift[NX], meshi,p->cao );
+    for (NY=0; NY<Mesh; NY++) {
+      ctan_y = ctan_x * analytic_cotangent_sum ( d.nshift[NY], meshi, p->cao );   
+      for (NZ=0; NZ<Mesh; NZ++) {
+	      
+	if ((NX!=0) || (NY!=0) || (NZ!=0)) {
+	  if ((NX%(Mesh/2) == 0) && (NY%(Mesh/2) == 0) && (NZ%(Mesh/2) == 0)) {
+	    G_hat=0.0;
+	    Aik = 1.0;
+	  }
+	  else {
+	    Aliasing_sums_ik_i( s, p, &d, NX, NY, NZ, Zaehler, &Nenner1,  &Nenner2);
+
+	    Dnx = d.Dn[NX];
+	    Dny = d.Dn[NY];
+	    Dnz = d.Dn[NZ];
+	    
+	    zwi  = Dnx*Zaehler[0] + Dny*Zaehler[1] + Dnz*Zaehler[2];
+	    zwi /= ( SQR(Dnx) + SQR(Dny) + SQR(Dnz) );
+
+	    Aik = 0.5*(SQR(Nenner1) + SQR(Nenner2));
+
+	    zwi /= Aik;
+	  
+	    G_hat = zwi;
+	  
+	  }
+
+
+	  p3m_tune_aliasing_sums_ik_i( d.nshift[NX], d.nshift[NY], d.nshift[NZ], s, p, &alias1, &alias2 );
+	  
+	  cs = ctan_y * analytic_cotangent_sum( d.nshift[NZ], meshi, p->cao );
+	  
+	  
+	  N2 = SQR( d.nshift[NX] ) + SQR ( d.nshift[NY] ) + SQR ( d.nshift[NZ] );
+		
+	  // Neelov 2010, Eq. (B14)
+	  //          he_q += (alias1  + SQR(cs)*N2*SQR(G_hat)/(fact*fact) -2.0*alias2*G_hat/fact);
+          he_q += ( alias1  -  SQR ( alias2/cs ) / n2 );
+	  //he_q += (alias1  + SQR(cs)*SQR(G_hat) - 2.0*alias2*G_hat );
+	  //he_q += alias1 + SQR(G_hat) * ( Aik - N2*SQR(Leni*PI*2.0)*alias2 );
+	  //	  printf("%d %d %d %e %e %e alias1 %e alias2 %e G_hat %e cs %e he_q %e fact %e\n", NX, NY, NZ, d.nshift[NX], d.nshift[NY], d.nshift[NZ], alias1, alias2, G_hat, cs, he_q, fact);
+	}
+      }
+    }
+  }
+  fftw_free( d.nshift );
+  fftw_free( d.Dn );
+
+  he_q = fabs(he_q);                                                                                                                                                                                                                       
+  return 2.0*s->q2*sqrt ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );  
+}
+*/
+
 
 FLOAT_TYPE Error_ik_i( system_t *s, parameters_t *p) {
   return sqrt( SQR( Realspace_error( s, p ) ) + SQR( p3m_k_space_error_ik_i( s, p) ) );

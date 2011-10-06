@@ -8,6 +8,7 @@
 #include "types.h"
 #include "charge-assign.h"
 #include "p3m-ad.h"
+#include "common.h"
 
 #include "realpart.h"
 
@@ -61,13 +62,13 @@ void Aliasing_sums_ad(int NX, int NY, int NZ, system_t *s, parameters_t *p, data
 
   for (MX = -P3M_BRILLOUIN; MX <= P3M_BRILLOUIN; MX++) {
     NMX = d->nshift[NX] + Mesh*MX;
-    S1   = pow(sinc(fak1*NMX), 2.0*p->cao); 
+    S1   = my_power(sinc(fak1*NMX), 2*p->cao); 
     for (MY = -P3M_BRILLOUIN; MY <= P3M_BRILLOUIN; MY++) {
       NMY = d->nshift[NY] + Mesh*MY;
-      S2   = S1*pow(sinc(fak1*NMY), 2.0*p->cao);
+      S2   = S1*my_power(sinc(fak1*NMY), 2*p->cao);
       for (MZ = -P3M_BRILLOUIN; MZ <= P3M_BRILLOUIN; MZ++) {
 	NMZ = d->nshift[NZ] + Mesh*MZ;
-	S3   = S2*pow(sinc(fak1*NMZ), 2.0*p->cao);
+	S3   = S2*my_power(sinc(fak1*NMZ), 2*p->cao);
 
 	NM2 = SQR(NMX*Leni) + SQR(NMY*Leni) + SQR(NMZ*Leni);
 	*Nenner1 += S3;
@@ -185,7 +186,7 @@ void p3m_tune_aliasing_sums_ad(int nx, int ny, int nz,
         ex = exp(-factor1*nm2);
 	ex2 = SQR( ex );
 	
-	U2 = pow(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*p->cao);
+	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*p->cao);
 	
 	*alias1 += ex2 / nm2;
 	*alias2 += U2 * ex;

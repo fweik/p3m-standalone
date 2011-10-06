@@ -20,10 +20,6 @@
 
 #include "interpol.c"
 
-// Error estimates for p3m
-
-#include "p3m-error.h"
-
 // Utils and IO
 
 #include "io.h"
@@ -92,7 +88,8 @@ int main ( int argc, char **argv ) {
     methodnr = atoi ( argv[6] );
 
 
-    Exakte_Werte_einlesen( system, argv[2] );
+    //Exakte_Werte_einlesen( system, argv[2] );
+    Calculate_reference_forces( system, &parameters );
 
 
     if ( methodnr == method_ewald.method_id )

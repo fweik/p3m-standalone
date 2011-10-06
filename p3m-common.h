@@ -14,8 +14,8 @@
 FLOAT_TYPE sinc(FLOAT_TYPE);
 FLOAT_TYPE analytic_cotangent_sum(int n, FLOAT_TYPE mesh_i, int cao);
 
-void Differenzenoperator_berechnen(parameters_t *, data_t *);
-void nshift_ausrechnen(data_t *);
+void Init_differential_operator( data_t * );
+void Init_nshift(data_t *);
 data_t *Init_data(const method_t *, system_t *s, parameters_t *); 
 void Free_data(data_t *);
 #endif

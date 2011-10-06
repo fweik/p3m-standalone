@@ -42,10 +42,10 @@ int main( void ) {
 
   // weak scaling
 
-  for(particles = 10000; particles <= 100000; particles += 10000) {
+  for(particles = 1000; particles <= 1000; particles += 1000) {
     printf("Init system with %d particles.\n", particles);
 
-    s = generate_system( FORM_FACTOR_RANDOM, particles, pow(particles / 10000, 1.0/3.0) * 20.0, 1.0 );
+    s = generate_system( FORM_FACTOR_RANDOM, particles, my_power(particles / 10000, 1.0/3.0) * 20.0, 1.0 );
  
     //op.rcut = 0.49*s->length;
 
