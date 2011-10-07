@@ -21,6 +21,8 @@ const method_t method_p3m_ik_i = { METHOD_P3M_ik_i, "P3M with ik differentiation
                                    &Init_ik_i, &Influence_ik_i, &P3M_ik_i, &Error_ik_i
                                  };
 
+// Forward declaration of local functions
+
 static void forward_fft( data_t * );
 static void backward_fft( data_t * );
 
@@ -62,9 +64,6 @@ void Aliasing_sums_ik_i( system_t *s, parameters_t *p, data_t *d, int NX, int NY
   
   FLOAT_TYPE expo, TE;
   int Mesh = d->mesh;
-    
-  
-  
   
   FLOAT_TYPE Leni = 1.0/s->length;
   fak1 = 1.0/(FLOAT_TYPE)Mesh;

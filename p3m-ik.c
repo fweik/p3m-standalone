@@ -103,21 +103,16 @@ void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY,
     }
 }
 
+/* Calculate influence function */
 void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d ) {
 
   int    NX,NY,NZ;
   FLOAT_TYPE Dnx,Dny,Dnz;
-  FLOAT_TYPE dMesh,dMeshi;
   FLOAT_TYPE Zaehler[3]={0.0,0.0,0.0},Nenner=0.0;
   FLOAT_TYPE zwi;
   int ind = 0;
   int Mesh = p->mesh;
   FLOAT_TYPE Leni = 1.0/s->length;
-  dMesh = ( FLOAT_TYPE ) Mesh;
-  dMeshi= 1.0/dMesh;
-
-  if(Mesh > 512) 
-    exit(-23);
 
   for ( NX=0; NX<Mesh; NX++ ) {
     for ( NY=0; NY<Mesh; NY++ ) {
@@ -129,7 +124,7 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
 	else if ( ( NX% ( Mesh/2 ) == 0 ) && ( NY% ( Mesh/2 ) == 0 ) && ( NZ% ( Mesh/2 ) == 0 ) )
 	  d->G_hat[ind]=0.0;
 	else {
-	  Aliasing_sums_ik ( s, p, d, NX,NY,NZ,Zaehler,&Nenner );
+	  Aliasing_sums_ik ( s, p, d, NX, NY, NZ, Zaehler, &Nenner );
 		  
 	  Dnx = d->Dn[NX];
 	  Dny = d->Dn[NY];
@@ -149,27 +144,19 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
  */
 
 void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
-    /* Zaehlvariablen: */
+    /* Loop counters */
     int i, j, k, l;
-    /* Hilfsvariablen */
-    FLOAT_TYPE H,Hi,dMesh,MI2;
-    /* charge-assignment beschleunigen */
+    /* helper variables */
     FLOAT_TYPE T1;
-    /* Soweit links vom Referenzpunkt gehts beim Ladungsver-
-       teilen los (implementiert ist noch ein Summand Mesh!): */
-    FLOAT_TYPE dTeilchenzahli;
+    FLOAT_TYPE dop;
+
+    // One over boxlength
     FLOAT_TYPE Leni = 1.0/s->length;
-    double dop;
+
     int Mesh = p->mesh;
     int c_index;
 
-    dMesh = ( FLOAT_TYPE ) Mesh;
-    H = s->length/dMesh;
-    Hi = 1.0/H;
-    MI2 = 2.0* ( FLOAT_TYPE ) MaxInterpol;
-    dTeilchenzahli = 1.0/ ( FLOAT_TYPE ) s->nparticles;
-
-    /* Initialisieren von Qmesh */
+    /* Setting charge mesh to zero */
     memset ( d->Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof ( FLOAT_TYPE ) );
 
     /* chargeassignment */
@@ -178,6 +165,7 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     /* Forward Fast Fourier Transform */
     forward_fft(d);
 
+    /* Concolution */
     for ( i=0; i<Mesh; i++ )
         for ( j=0; j<Mesh; j++ )
             for ( k=0; k<Mesh; k++ ) {
@@ -188,6 +176,7 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
                 d->Qmesh[c_index+1] *= T1;
  
                 for ( l=0;l<3;l++ ) {
+		  /* choose the right component of k */
                     switch ( l ) {
                     case 0:
                         dop = d->Dn[i];
@@ -204,12 +193,11 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
                 }
             }
 
-    /* Durchfuehren der Fourier-Rueck-Transformation: */
+    /* Backward Fast Fourier Transformation */
     backward_fft(d);
 
     /* Force assignment */
     assign_forces ( 1.0/ ( 2.0*s->length*s->length*s->length ),s,p,d,f,0 );
-    return;
 }
 
 // Functions for error estimate.
@@ -225,8 +213,11 @@ FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
 }
 
 FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
+  // Mesh loop counters 
     int  nx, ny, nz;
+    // The pair force error Q
     FLOAT_TYPE he_q = 0.0;
+    // Helper variables
     FLOAT_TYPE alias1, alias2, n2, cs;
     FLOAT_TYPE ctan_x, ctan_y;
     int mesh = p->mesh;
