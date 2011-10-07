@@ -20,10 +20,6 @@
 
 #include "interpol.c"
 
-// Error estimates for p3m
-
-#include "p3m-error.h"
-
 // Utils and IO
 
 #include "io.h"
@@ -92,9 +88,8 @@ int main ( int argc, char **argv ) {
     methodnr = atoi ( argv[6] );
 
 
-
-    //Calculate_reference_forces( system, &parameters );
-    Exakte_Werte_einlesen( system, argv[2] );
+    //Exakte_Werte_einlesen( system, argv[2] );
+    Calculate_reference_forces( system, &parameters );
 
 
     if ( methodnr == method_ewald.method_id )
@@ -134,6 +129,7 @@ int main ( int argc, char **argv ) {
     fout = fopen ( "out.dat","w" );
 
     printf ( "Init" );
+    fflush(stdout);
     data = method.Init ( system, &parameters );
     printf ( ".\n" );
 
@@ -151,9 +147,9 @@ int main ( int argc, char **argv ) {
 
         if ( method.Error != NULL ) {
             double estimate =  method.Error ( system, &parameters );
-            printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", parameters.alpha, error.f / system->nparticles , estimate,
+            printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", parameters.alpha, error.f / sqrt(system->nparticles) , estimate,
                      error.f_r, error.f_k );
-            fprintf ( fout,"% lf\t% e\t% e\n",parameters.alpha,error.f / system->nparticles , estimate );
+            fprintf ( fout,"% lf\t% e\t% e\n",parameters.alpha,error.f / sqrt(system->nparticles) , estimate );
         } else {
             printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", parameters.alpha,error.f / system->nparticles , error.f_r, error.f_k );
             fprintf ( fout,"% lf\t% e\t na\n",parameters.alpha,error.f / system->nparticles );

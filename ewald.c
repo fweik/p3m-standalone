@@ -155,7 +155,7 @@ FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_TYPE alp
   FLOAT_TYPE res, Leni = 1.0/s->length;
 
   /* Kolafa Perram, eq. 31 */
-/*   res = Q2 * alpha * pow(PI, -2.0) * pow(kmax, -1.5)  */
+/*   res = Q2 * alpha * my_power(PI, -2.0) * my_power(kmax, -1.5)  */
 /*     * exp(-SQR(PI*kmax/(alpha*L))); */
 
   /* Petersen 1995, eq. 11 */

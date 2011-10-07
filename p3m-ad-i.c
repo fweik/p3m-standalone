@@ -11,6 +11,8 @@
 
 #include "charge-assign.h"
 
+#include "common.h"
+
 #include "realpart.h"
 
 const method_t method_p3m_ad_i = { METHOD_P3M_ad_i, "P3M with analytic differentiation, intelaced.", 
@@ -64,13 +66,13 @@ void Aliasing_sums_ad_i(int NX, int NY, int NZ, system_t *s, parameters_t *p, da
 
   for (MX = -P3M_BRILLOUIN; MX <= P3M_BRILLOUIN; MX++) {
     NMX = d->nshift[NX] + Mesh*MX;
-    S1   = pow(sinc(fak1*NMX), 2*p->cao); 
+    S1   = my_power(sinc(fak1*NMX), 2*p->cao); 
     for (MY = -P3M_BRILLOUIN; MY <= P3M_BRILLOUIN; MY++) {
       NMY = d->nshift[NY] + Mesh*MY;
-      S2   = S1*pow(sinc(fak1*NMY), 2*p->cao);
+      S2   = S1*my_power(sinc(fak1*NMY), 2*p->cao);
       for (MZ = -P3M_BRILLOUIN; MZ <= P3M_BRILLOUIN; MZ++) {
 	NMZ = d->nshift[NZ] + Mesh*MZ;
-	S3   = S2*pow(sinc(fak1*NMZ), 2*p->cao);
+	S3   = S2*my_power(sinc(fak1*NMZ), 2*p->cao);
 
 	NM2 = SQR(NMX*Leni) + SQR(NMY*Leni) + SQR(NMZ*Leni);
 
@@ -198,7 +200,7 @@ void P3M_tune_aliasing_sums_AD_interlaced(int nx, int ny, int nz,
 	nm2 = SQR(nmx) + SQR(nmy) + SQR(nmz);
 	ex = exp(-factor1*nm2);
 	ex2 = SQR( ex );
-	U2 = pow(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
+	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
 
 	*alias1 += ex2 / nm2;
 	*alias2 += U2 * ex;
@@ -240,6 +242,7 @@ FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
 	}
       }
   }
+  he_q = fabs(he_q);
   return 2.0*s->q2*sqrt(he_q/(FLOAT_TYPE)s->nparticles) / SQR(s->length);
 }
 

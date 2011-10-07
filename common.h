@@ -5,9 +5,20 @@
 
 #include "types.h"
 
+static inline FLOAT_TYPE my_power( FLOAT_TYPE base, int exponent ) {
+  FLOAT_TYPE ret = 1.0;
+
+  while( exponent-- > 0 ) {
+    ret *= base;
+  }
+
+  return ret;
+}
+
+
+
 system_t *Init_system(int);
-void *Init_array(int, size_t);
-vector_array_t *Init_vector_array(int);
+void *Init_array(int, size_t);vector_array_t *Init_vector_array(int);
 forces_t *Init_forces(int);
 void Free_system(system_t *);
 void Free_forces(forces_t *);

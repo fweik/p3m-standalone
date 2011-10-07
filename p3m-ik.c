@@ -215,7 +215,13 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 // Functions for error estimate.
 
 FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
-  return sqrt( SQR( Realspace_error( s, p ) ) + SQR( p3m_k_space_error_ik( 1.0, s, p) ) );
+  FLOAT_TYPE real;
+  FLOAT_TYPE recp;
+
+  real = Realspace_error( s, p );
+  recp = p3m_k_space_error_ik( 1.0, s, p);
+
+  return sqrt( SQR( real ) + SQR( recp ) );
 }
 
 FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
@@ -240,6 +246,7 @@ FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const pa
             }
         }
     }
+    he_q = fabs(he_q);
     return 2.0*s->q2*sqrt ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
 }
 
@@ -264,13 +271,15 @@ void p3m_tune_aliasing_sums_ik ( int nx, int ny, int nz,
         for ( my=-P3M_BRILLOUIN_TUNING; my<=P3M_BRILLOUIN_TUNING; my++ ) {
             fnmy = meshi * ( nmy = ny + my*mesh );
             for ( mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++ ) {
+
+
                 fnmz = meshi * ( nmz = nz + mz*mesh );
 
                 nm2 = SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz );
                 ex = exp ( -factor1*nm2 );
                 ex2 = SQR ( ex );
 
-                U2 = pow ( sinc ( fnmx ) *sinc ( fnmy ) *sinc ( fnmz ), 2.0*p->cao );
+                U2 = my_power ( sinc ( fnmx ) *sinc ( fnmy ) *sinc ( fnmz ), 2*p->cao );
 
                 *alias1 += ex2 / nm2;
                 *alias2 += U2 * ex * ( nx*nmx + ny*nmy + nz*nmz ) / nm2;

@@ -32,58 +32,68 @@ int main( void ) {
 
   data_t *d[4];
 
-  error_t e[4];
-
   FLOAT_TYPE time[4];
 
-  FILE *fout = fopen("timings.d.dat", "w");
-  FILE *fmesh = fopen("timings.d.mesh", "w");
+  FILE *fout = fopen("scaling.d.dat", "w");
+
+  int incr = 100;
+
+  //  FUKW *ferror = fropen("error.d.dat", "w");
 
   // weak scaling
 
-  for(particles = 1000; particles <= 5000; particles += 1000) {
+  for(particles = 100; particles <= 10000; particles += incr) {
     fprintf(stderr, "Init system with %d particles", particles);
+
+    if(particles >= 1000)
+      incr = 1000;
+    if(particles >= 10000)
+      incr = 10000;
+    if(particles >= 100000)
+      incr = 100000;
 
     s = generate_system( FORM_FACTOR_RANDOM, particles, pow (particles / 1000.0, 1.0/3.0) * 10.0, 1.0 );
  
     fprintf(stderr, ".\n");
+
+
      
 #pragma omp barrier
     fprintf( stderr, "starting...\n" );
 
     fprintf(fout, "%d ", particles);
-    fprintf(fmesh, "%d ", particles);
+
 
     // methods are independent of each other
 #pragma omp parallel for private(j)
     for(i=0;i<4;i++) {
-
-      fprintf( stderr, "Method '%s'\n", m[i]->method_name);
+      int mesh;
 
       f[i] = Init_forces( s->nparticles );
 
-      p[i] = Tune ( m[i], s, 1e-6, 3.0 );
+      p[i] = Init_array( 1, sizeof ( parameters_t ) );
 
-      fprintf(fmesh, " %d", p[i]->mesh);
+      fprintf( stderr, "Method '%s'\n", m[i]->method_name);
 
-      fprintf(stderr, "tuned (precision %e) ...\n", p[i]->precision );
+      mesh = (int) pow( particles, 1.0 / 3.0 );
+
+      mesh = ( mesh >= 8 ) ? mesh : 8;
+
+      p[i]->mesh = mesh;
+      p[i]->alpha = 1.0;
+      p[i]->cao = 7;
+      p[i]->cao3 = 7*7*7;
+      p[i]->ip = 6;
+      p[i]->rcut = 3.0;
 
       d[i] = m[i]->Init( s, p[i] );
 
       m[i]->Influence_function( s, p[i], d[i] );
 
-      //      Init_neighborlist( s, p[i], d[i] );
-
       time[i] = MPI_Wtime();      
       m[i]-> Kspace_force( s, p[i], d[i], f[i] );
-      //	Calculate_forces ( m[i], s, p[i], d[i], f[i] );
-
       fprintf( fout, " %e", MPI_Wtime() - time[i]);
       
-      e[i] = Calculate_errors( s, f[i] );
-
-      //      Free_neighborlist(d[i]);
-
       Free_data(d[i]);
       Free_forces(f[i]);
       fftw_free(p[i]);
@@ -92,17 +102,14 @@ int main( void ) {
 
       fflush(stderr);
       fflush(fout);
-      fflush(fmesh);
       //  fflush(ferror);
     }
     fprintf(fout, "\n");
-    fprintf(fmesh, "\n");
     #pragma omp barrier
 
     Free_system(s);
   }
   fclose(fout);
-  fclose(fmesh);
   return 0;
 }
 
