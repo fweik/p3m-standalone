@@ -19,16 +19,13 @@
   #define TUNE_TRACE(A) 
 #endif
 
-parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision, FLOAT_TYPE rcut ) {
-  parameters_t *p = Init_array( 1, sizeof( parameters_t ) );
+int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision ) {
   //Parameter iteraters, best parameter set
   parameters_t it, p_best;
   // Array to store forces
   forces_t *f = Init_forces(s->nparticles);
 
   data_t *d = NULL;
-
-  it.rcut = rcut;
 
   FLOAT_TYPE best_time=1e250, time=1e240;
 
@@ -38,14 +35,36 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision, FLOAT_
   int direction=1, over_min=0, success=0, cao_start;
   FLOAT_TYPE last_error = 0.0;
 
-  TUNE_TRACE(printf("Starting tuning for '%s' with prec '%e'\n", m->method_name, precision);)
+  int mesh_min, mesh_max;
+  int cao_min, cao_max;
 
-  for(it.mesh = MESH_MIN; it.mesh <= MESH_MAX; it.mesh+=MESH_STEP ) {
+  if( p->mesh != 0) {
+    mesh_min = mesh_max = p->mesh;
+  } else {
+    mesh_min = MESH_MIN;
+    mesh_max = MESH_MAX;
+  }
+
+  if( p->cao != 0 ) {
+    cao_min = cao_max = p->cao;
+  } else {
+    cao_min = CAO_MIN;
+    cao_max = CAO_MAX;
+  }
+  cao_start = CAO_MAX;
+
+  TUNE_TRACE(printf("Starting tuning for '%s' with prec '%e'\n", m->method_name, precision);)
+    TUNE_TRACE(printf("cao_min %d cao_max %d mesh_min %d mesh_max %d\n", cao_min, cao_max, mesh_min, mesh_max);)
+
+  for(it.mesh = mesh_min; it.mesh <= mesh_max; it.mesh+=MESH_STEP ) {
       // If we were already successful with a smaller mesh
       // we can start at fastest cao so far.
-    cao_start = ( best_time < 1e200 ) ? p_best.cao - 1 : CAO_MAX;
+    if( best_time < 1e200 ) 
+      cao_start = (p_best.cao <= cao_min) ? cao_min : p_best.cao - 1;
+    else
+      cao_start = cao_max;
 
-    for(it.cao = cao_start; it.cao >= 2; it.cao--) {
+    for(it.cao = cao_start; (it.cao >= 2) && ( it.cao >= cao_min ); it.cao--) {
 
       it.cao3 = it.cao * it.cao * it.cao;
       it.ip = it.cao - 1;
@@ -59,6 +78,12 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision, FLOAT_
       min_error = 1e110;
 
       for( it.alpha = 0.2; alpha_step >= 0.01; it.alpha += direction*alpha_step ) {
+	if( p->rcut != 0.0 ) {
+	  it.rcut = p->rcut;
+	} else {
+
+	}
+
 	error = m->Error( s, &it );
 
 	if( error <= precision && error < min_error ) {
@@ -122,15 +147,14 @@ parameters_t *Tune( const method_t *m, system_t *s, FLOAT_TYPE precision, FLOAT_
   Free_forces(f);
 
   if( success == 0 )
-    return NULL;
+    return -1;
 
   *p = p_best;
   p->ip = p->cao - 1;
   p->cao3 = p->cao * p->cao * p->cao;
 
   TUNE_TRACE(printf("Using mesh %d cao %d rcut %e alpha %e with precision %e\n", p->mesh, p->cao, p->rcut, p->alpha, p->precision);)
-
-  return p;
+    return 0;
 }  
 
 

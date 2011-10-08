@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <mpi.h>
 #include <math.h>
+#include <string.h>
 
 #include "types.h"
 #include "common.h"
@@ -42,15 +43,21 @@ int main( void ) {
 
   // weak scaling
 
-  for(particles = 1000; particles <= 1000; particles += 1000) {
+  for(i=0;i<4;i++) {
+    p[i] = Init_array( 1, sizeof(parameters_t) );
+    memset( p[i], 0, sizeof(parameters_t) );
+    p[i]->rcut = 3.0;
+  }
+
+  for(particles = 100; particles <= 1000; particles += 100) {
     printf("Init system with %d particles.\n", particles);
 
-    s = generate_system( FORM_FACTOR_RANDOM, particles, my_power(particles / 10000, 1.0/3.0) * 20.0, 1.0 );
+    s = generate_system( FORM_FACTOR_RANDOM, particles, my_power(particles / 100, 1.0/3.0) * 20.0, 1.0 );
  
-    //op.rcut = 0.49*s->length;
+    op.rcut = 0.49*s->length;
 
-    //    puts("Calc reference.");
-    //Calculate_reference_forces( s, &op );
+        puts("Calc reference.");
+    Calculate_reference_forces( s, &op );
 
     // methods are independent of each other
 
@@ -58,7 +65,7 @@ int main( void ) {
       puts("Init.");
       f[i] = Init_forces( s->nparticles );
       puts("Tune");
-      p[i] = Tune ( m[i], s, 1e-4 );
+      Tune ( m[i], s, p[i], 1e-4 );
       
       puts("Method init.");
       d[i] = m[i]->Init( s, p[i] );

@@ -141,7 +141,7 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   int Mesh = p->mesh;
   FLOAT_TYPE Leni = 1.0 / s->length;
 
-  /* Initialisieren von Qmesh */
+  /* Set Qmesh to zero */
   memset(d->Qmesh, 0, 2*Mesh*Mesh*Mesh * sizeof(FLOAT_TYPE));
 
   /* chargeassignment */
@@ -162,7 +162,7 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 	  d->Qmesh[c_index+1] *= T1;
 	}
 
-  /* Durchfuehren der Fourier-Rueck-Transformation: */
+  /* Backward FFT */
 
   backward_fft(d);
 

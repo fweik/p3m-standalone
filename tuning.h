@@ -15,9 +15,9 @@
 #define RCUT_STEP 0.02
 #define RCUT_STEP_MIN 0.001
 
-#define CAO_MIN 1
+#define CAO_MIN 2
 #define CAO_MAX 7
 
-parameters_t *Tune( const method_t *, system_t *, FLOAT_TYPE, FLOAT_TYPE );
+int Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
 
 #endif
