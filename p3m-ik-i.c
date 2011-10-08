@@ -215,7 +215,7 @@ void P3M_ik_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 
 void p3m_tune_aliasing_sums_ik_i (int nx, int ny, int nz, 
 					   system_t *s, parameters_t *p, 
-					   double *alias1, double *alias2)
+				  double *alias1, double *alias2, double *alias3, double *alias4)
 {
 
   int    mx,my,mz;
@@ -228,14 +228,14 @@ void p3m_tune_aliasing_sums_ik_i (int nx, int ny, int nz,
 
   factor1 = SQR(PI / ( p->alpha * s->length ) );
 
-  *alias1 = *alias2 = 0.0;
+  *alias1 = *alias2 = *alias3 = *alias4 = 0.0;
   for (mx=-P3M_BRILLOUIN_TUNING; mx<=P3M_BRILLOUIN_TUNING; mx++) {
     fnmx = mesh_i * (nmx = nx + mx*mesh);
     for (my=-P3M_BRILLOUIN_TUNING; my<=P3M_BRILLOUIN_TUNING; my++) {
       fnmy = mesh_i * (nmy = ny + my*mesh);
       for (mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++) {
       
-       if (((mx+my+mz)%2)==0) {		//consider only even terms!
+
 
 	fnmz = mesh_i * (nmz = nz + mz*mesh);
 	
@@ -247,8 +247,12 @@ void p3m_tune_aliasing_sums_ik_i (int nx, int ny, int nz,
 	
 	*alias1 += ex2 / nm2;
 	*alias2 +=  U2 * ex * (nx*nmx + ny*nmy + nz*nmz) / nm2;
-	//*alias2 += U2 * U2;
+	*alias3 += U2;
 
+       if (((mx+my+mz)%2)==0) {		//consider only even terms!
+	 *alias4 += U2;
+       } else {
+	 *alias4 -= U2;
        }
       }
     }
@@ -256,24 +260,21 @@ void p3m_tune_aliasing_sums_ik_i (int nx, int ny, int nz,
 }
 
 
+
 FLOAT_TYPE p3m_k_space_error_ik_i ( system_t *s, parameters_t *p ) {
     int  nx, ny, nz;
     FLOAT_TYPE he_q = 0.0;
-    FLOAT_TYPE alias1, alias2, n2, cs;
-    FLOAT_TYPE ctan_x, ctan_y;
+    FLOAT_TYPE alias1, alias2, alias3, alias4, n2;
     int mesh = p->mesh;
-    FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
 
     for ( nx=-mesh/2; nx<mesh/2; nx++ ) {
-        ctan_x = analytic_cotangent_sum ( nx, meshi,p->cao );
         for ( ny=-mesh/2; ny<mesh/2; ny++ ) {
-            ctan_y = ctan_x * analytic_cotangent_sum ( ny, meshi, p->cao );
             for ( nz=-mesh/2; nz<mesh/2; nz++ ) {
                 if ( ( nx!=0 ) || ( ny!=0 ) || ( nz!=0 ) ) {
                     n2 = SQR ( nx ) + SQR ( ny ) + SQR ( nz );
-                    cs = analytic_cotangent_sum ( nz, meshi ,p->cao ) *ctan_y;
-                    p3m_tune_aliasing_sums_ik_i ( nx,ny,nz, s, p, &alias1,&alias2 );
-                    he_q += ( alias1  -  SQR ( alias2/cs ) / n2 );
+
+                    p3m_tune_aliasing_sums_ik_i ( nx,ny,nz, s, p, &alias1,&alias2,&alias3, &alias4 );
+                    he_q +=  alias1  -  SQR ( alias2 ) / (0.5*n2*(SQR(alias3)+SQR(alias4)) );
                 }
             }
         }

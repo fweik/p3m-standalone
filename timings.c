@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include <mpi/mpi.h>
+#include <mpi.h>
 
 #define MAX_TIMERS 10
 

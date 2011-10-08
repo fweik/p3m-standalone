@@ -122,9 +122,9 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
 void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 {
   
-  /* Zaehlvariablen: */
+  /* Loop counters */
   int i, j, k, c_index; 
-  /* Hilfsvariablen */
+  /* Helper variables */
   FLOAT_TYPE T1;
   FLOAT_TYPE Leni = 1.0/s->length;
   int Mesh = p->mesh;
@@ -148,8 +148,7 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 	  d->Qmesh[c_index+1] *= T1;
 	}
 
-  /* Durchfuehren der Fourier-Rueck-Transformation: */
-
+  /* Backward FFT */
   backward_fft(d);
 
   /* Force assignment */
@@ -219,7 +218,7 @@ FLOAT_TYPE p3m_k_space_error_ad( system_t *s, parameters_t *p )
 
 	  if(alias3 == 0.0)
 	    continue;
-	  he_q += (alias1  -  SQR(alias2) / (alias3*cs));
+	  he_q += (alias1  -  SQR(alias2) / (alias3*alias4));
 	}
       }
     }

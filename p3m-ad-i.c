@@ -237,7 +237,7 @@ FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
 	    cs = ctan_y * analytic_cotangent_sum ( nz, mesh_i, p->cao );
 	    n2 = SQR(nx) + SQR(ny) + SQR(nz);
 	    P3M_tune_aliasing_sums_AD_interlaced(nx,ny,nz,s,p,&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
-	    he_q += (alias1  -  SQR(alias2) / (0.5*(alias3*cs + alias5*alias6)));
+	    he_q += (alias1  -  SQR(alias2) / (0.5*(alias3*alias4 + alias5*alias6)));
 	  }
 	}
       }

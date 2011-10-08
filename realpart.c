@@ -208,5 +208,5 @@ void Free_neighborlist(data_t *d) {
 
 FLOAT_TYPE Realspace_error( const system_t *s, const parameters_t *p )
 {
-  return (2.0*s->q2*exp(-SQR(p->rcut * p->alpha))) / (sqrt((double)s->nparticles* p->rcut ));
+  return (2.0*s->q2*exp(-SQR(p->rcut * p->alpha))) / (sqrt((double)s->nparticles* p->rcut*s->length*s->length*s->length ));
 }

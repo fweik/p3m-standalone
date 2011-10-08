@@ -10,6 +10,7 @@ extern int __detailed_timings;
 #endif
 
 #define DOUBLE_PREC
+//#define QUAD_PREC
 
 #ifdef SINGLE_PREC
 #define FLOAT_FORMAT "%.8f"
