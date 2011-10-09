@@ -128,14 +128,9 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 
       time = MPI_Wtime();
 
-      Init_neighborlist( s, &it, d );
-
-      for(j=0;j<5;j++)
-	Calculate_forces ( m, s, &it, d, f );
+      m->Kspace_force( s, &it, d, f );
 
       time = MPI_Wtime() - time;
-
-      Free_neighborlist(d);
 
       TUNE_TRACE(printf("\n mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time, error, it.alpha ););
 	
