@@ -78,7 +78,7 @@ int main ( int argc, char **argv ) {
     }
 
     // Inits the system and reads particle data and parameters from file.
-    system = Daten_einlesen ( &parameters, argv[1] );
+    system = Read_system ( &parameters, argv[1] );
     forces = Init_forces(system->nparticles);
 
     alphamin = atof ( argv[3] );
@@ -88,7 +88,7 @@ int main ( int argc, char **argv ) {
     methodnr = atoi ( argv[6] );
 
 
-    Exakte_Werte_einlesen( system, argv[2] );
+    Read_exact_forces( system, argv[2] );
     //Calculate_reference_forces( system, &parameters );
 
 

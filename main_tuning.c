@@ -22,13 +22,22 @@
 int main( void ) {
 
   int particles, i, j;
+  char filename[] = "det.dat";
+
+  const method_t *m[4] = { &method_p3m_ik, &method_p3m_ik_i, &method_p3m_ad, &method_p3m_ad_i };
 
   FILE *fout = fopen( "timings.dat" , "w" );
   FILE *fmesh = fopen( "mesh.dat", "w" );
   FILE *falpha = fopen( "alpha.dat", "w" );
   FILE *fcao = fopen( "cao.dat", "w" );
-  //  FILE *fprec = fopen( "precisions.dat", "w" );
-  const method_t *m[4] = { &method_p3m_ik, &method_p3m_ik_i, &method_p3m_ad, &method_p3m_ad_i };
+#ifdef __detailed_timings
+  FILE *timings[4];
+  for(i=0;i<4;i++) {
+    filename[0] = 48 + m[i]->method_id;
+    timings[i] = fopen( filename, "w");
+  }
+#endif
+
 
   fprintf(fout, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
   fprintf(fmesh, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
@@ -85,17 +94,18 @@ int main( void ) {
       d[i] = m[i]->Init( s, p[i] );
       puts("Influence function.");
       m[i]->Influence_function( s, p[i], d[i] );
-      puts("Init neighborlist");
-      Init_neighborlist( s, p[i], d[i] );
 
       puts("Calc...");
 
       time[i] = MPI_Wtime();      
-      for(j=0;j<50;j++)
-	Calculate_forces ( m[i], s, p[i], d[i], f[i] );
+      m[i]->Kspace_force( s, p[i], d[i], f[i] );
       time[i] = MPI_Wtime() - time[i];
 
-      Free_neighborlist(d[i]);
+#ifdef __detailed_timings
+      fprintf(timings[i], "%d %e %e %e %e\n", particles, t_charge_assignment[i], t_force_assignment[i], t_convolution[i], t_fft[i]);
+      fflush(timings[i]);	      
+#endif
+
 
       puts("Free...");
       Free_data(d[i]);

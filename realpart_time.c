@@ -7,6 +7,8 @@
 
 #include "generate_system.h"
 
+#include "ewald.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +19,7 @@ int main(void) {
   forces_t *f;
   parameters_t p;
   data_t d;
+  double error;
   
   p.rcut = 1.0;
   
@@ -33,12 +36,14 @@ int main(void) {
     start_timer();
     Realpart_neighborlist( s, &p, &d, f );
     time_nlist = stop_timer();
-    
+
+    error = method_ewald.Error( s, &p );
+
     //   start_timer();
     //Realteil( s, &p, f );
     //time_n2 = stop_timer();
     
-    printf("%d %lf\n", i, time_nlist);
+    printf("%d %lf %lf\n", i, time_nlist);
     
     free(d.neighbor_list);
     Free_forces(f);
