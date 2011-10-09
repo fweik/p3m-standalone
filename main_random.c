@@ -51,7 +51,7 @@
 
 
 void usage ( char *name ) {
-    fprintf ( stderr, "usage: %s <alpha_min> <alpha_max> <alpha_step> <method>\n", name );
+    fprintf ( stderr, "usage: %s <alpha_min> <alpha_max> <alpha_step> <method> <nparticles> <box_length> <cao> <mesh> <rcut>\n", name );
 }
 
 
@@ -72,7 +72,7 @@ int main ( int argc, char **argv ) {
 
     error_t error;
 
-    if ( argc != 5 ) {
+    if ( argc != 10 ) {
         usage ( argv[0] );
         return 128;
     }
@@ -80,12 +80,12 @@ int main ( int argc, char **argv ) {
     // Inits the system and reads particle data and parameters from file.
     // system = Daten_einlesen ( &parameters, argv[1] );
 
-    system = generate_system( FORM_FACTOR_RANDOM, 100, 10.0, 1.0 );
-    parameters.rcut = 4.9;
-    parameters.cao = 7;
-    parameters.ip = 6;
-    parameters.cao3 = 7*7*7;
-    parameters.mesh = 32;
+    system = generate_system( FORM_FACTOR_RANDOM, atoi(argv[5]), atof(argv[6]), 1.0 );
+    parameters.rcut = atof(argv[9]);
+    parameters.cao = atoi(argv[7]);
+    parameters.ip = parameters.cao - 1;
+    parameters.cao3 =  parameters.cao* parameters.cao* parameters.cao;
+    parameters.mesh = atoi(argv[8]);
 
     forces = Init_forces(system->nparticles);
 
@@ -117,10 +117,6 @@ int main ( int argc, char **argv ) {
 #ifdef P3M_AD_I_H
     else if ( methodnr == method_p3m_ad_i.method_id )
         method = method_p3m_ad_i;
-#endif
-#ifdef GREENS_IK_H
-    else if ( methodnr == method_greens_ik.method_id )
-        method = method_greens_ik;
 #endif
     else {
         fprintf ( stderr, "Method %d not know.", methodnr );

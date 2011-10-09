@@ -22,8 +22,8 @@ int main(void) {
   
   double time_nlist, time_n2;
   
-  for(i = 1000;i <= 30000;i+=1000) {
-    s = generate_system( FORM_FACTOR_RANDOM, i, 10.0*my_power( i, 1.0/3.0), 1.0);
+  for(i = 1000;i <= 100000;i+=1000) {
+    s = generate_system( FORM_FACTOR_RANDOM, i, 10.0*pow( i, 1.0/3.0), 1.0);
     f = Init_forces(i);
     
     d.neighbor_list = malloc(i*sizeof(neighbor_list_t));
@@ -34,11 +34,11 @@ int main(void) {
     Realpart_neighborlist( s, &p, &d, f );
     time_nlist = stop_timer();
     
-    start_timer();
-    Realteil( s, &p, f );
-    time_n2 = stop_timer();
+    //   start_timer();
+    //Realteil( s, &p, f );
+    //time_n2 = stop_timer();
     
-    printf("%d %lf %lf\n", i, time_nlist, time_n2);
+    printf("%d %lf\n", i, time_nlist);
     
     free(d.neighbor_list);
     Free_forces(f);

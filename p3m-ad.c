@@ -12,6 +12,11 @@
 
 #include "realpart.h"
 
+#ifdef __detailed_timings
+#include <mpi.h>
+#endif
+
+
 const method_t method_p3m_ad = { METHOD_P3M_ad, "P3M with analytic differentiation, not intelaced.", 
 				 METHOD_FLAG_P3M | METHOD_FLAG_ad, 
 				 &Init_ad, &Influence_function_berechnen_ad, &P3M_ad, &Error_ad };
@@ -130,13 +135,30 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   int Mesh = p->mesh;
   
   memset(d->Qmesh, 0, 2*Mesh*Mesh*Mesh * sizeof(FLOAT_TYPE));
+
+  #ifdef __detailed_timings
+  timer = MPI_Wtime();
+  #endif
   
   /* chargeassignment */
   assign_charge_and_derivatives( s, p, d, 0, 1 );
+
+  #ifdef __detailed_timings
+  timer = MPI_Wtime() - timer;
+  t_charge_assignment[2] = timer;
+  timer = MPI_Wtime();
+  #endif
   
   /* Forward Fast Fourier Transform */
   forward_fft(d);
+
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_fft[2] = timer;
+   timer = MPI_Wtime();
+  #endif
  
+
   for (i=0; i<Mesh; i++)
     for (j=0; j<Mesh; j++)
       for (k=0; k<Mesh; k++)
@@ -148,11 +170,30 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 	  d->Qmesh[c_index+1] *= T1;
 	}
 
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_convolution[2] = timer;
+   timer = MPI_Wtime();
+  #endif
+
+
   /* Backward FFT */
   backward_fft(d);
 
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_fft[2] += timer;
+   timer = MPI_Wtime();
+  #endif
+
+
   /* Force assignment */
   assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0 );
+
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_force_assignment[2] = timer;
+  #endif
 
   return;
 }

@@ -41,7 +41,7 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 
     for (id=0;id<s->nparticles;id++) {
         cf_cnt = id*p->cao3;
-
+	/* Shift for odd charge assignment order */
         pos_shift = (double)((p->cao-1)/2);
         /* particle position in mesh coordinates */
         for (dim=0;dim<3;dim++) {

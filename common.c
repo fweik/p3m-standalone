@@ -15,6 +15,17 @@
 #include "ewald.h"
 #include "p3m-common.h"
 
+#ifdef __detailed_timings
+double t_charge_assignment[4];
+double t_force_assignment[4];
+double t_real_part[4];
+double t_k_part[4];
+double t_convolution[4];
+double t_fft[4];
+double timer;
+#endif
+
+
 void *Init_array(int size, size_t field_size) {
     void *a;
 

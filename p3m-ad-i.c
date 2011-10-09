@@ -15,6 +15,10 @@
 
 #include "realpart.h"
 
+#ifdef __detailed_timings
+#include <mpi.h>
+#endif
+
 const method_t method_p3m_ad_i = { METHOD_P3M_ad_i, "P3M with analytic differentiation, intelaced.", 
 				   METHOD_FLAG_P3M | METHOD_FLAG_ad | METHOD_FLAG_interlaced, 
 				   &Init_ad_i, &Influence_function_ad_i, &P3M_ad_i, &Error_ad_i };
@@ -144,12 +148,27 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   /* Set Qmesh to zero */
   memset(d->Qmesh, 0, 2*Mesh*Mesh*Mesh * sizeof(FLOAT_TYPE));
 
+  #ifdef __detailed_timings
+  timer = MPI_Wtime();
+  #endif
+
   /* chargeassignment */
   assign_charge_and_derivatives( s, p, d, 0, 1 );
   assign_charge_and_derivatives( s, p, d, 1, 1 );
 
+  #ifdef __detailed_timings
+  timer = MPI_Wtime() - timer;
+  t_charge_assignment[3] = timer;
+  timer = MPI_Wtime();
+  #endif
   /* Forward Fast Fourier Transform */
   forward_fft(d);
+
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_fft[3] = timer;
+   timer = MPI_Wtime();
+  #endif
  
   for (i=0; i<Mesh; i++)
     for (j=0; j<Mesh; j++)
@@ -162,14 +181,29 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 	  d->Qmesh[c_index+1] *= T1;
 	}
 
-  /* Backward FFT */
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_convolution[3] = timer;
+   timer = MPI_Wtime();
+  #endif
 
+  /* Backward FFT */
   backward_fft(d);
+
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_fft[3] += timer;
+   timer = MPI_Wtime();
+  #endif
 
   /* Force assignment */
   assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0);
   assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 1);
 
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_force_assignment[3] = timer;
+  #endif
 }
 
 void P3M_tune_aliasing_sums_AD_interlaced(int nx, int ny, int nz, 

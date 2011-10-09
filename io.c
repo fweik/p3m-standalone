@@ -6,7 +6,7 @@
 #include "io.h"
 #include "common.h"
 
-void Exakte_Werte_einlesen(system_t *s, char *filename)
+void Read_exact_forces(system_t *s, char *filename)
 {
     FILE *fp;
     int i, ret_val;
@@ -32,7 +32,7 @@ void Exakte_Werte_einlesen(system_t *s, char *filename)
     fclose(fp);
 }
 
-system_t *Daten_einlesen(parameters_t *p, char *filename)
+system_t *Read_system(parameters_t *p, char *filename)
 {
     /* Opens file 'filename' for reanding and reads system parameters,
      particle positions and charges. */

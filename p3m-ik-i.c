@@ -14,6 +14,11 @@
 
 #include "realpart.h"
 
+#ifdef __detailed_timings
+#include <mpi.h>
+#endif
+
+
 // declaration of the method
 
 const method_t method_p3m_ik_i = { METHOD_P3M_ik_i, "P3M with ik differentiation, interlaced.",
@@ -167,12 +172,31 @@ void P3M_ik_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     /* Initialisieren von Qmesh */
     memset ( d->Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof ( FLOAT_TYPE ) );
 
+  #ifdef __detailed_timings
+  timer = MPI_Wtime();
+  #endif
+
+
     /* chargeassignment */
     assign_charge( s, p, d, 0 );
     assign_charge( s, p, d, 1 );
 
+  #ifdef __detailed_timings
+  timer = MPI_Wtime() - timer;
+  t_charge_assignment[1] = timer;
+  timer = MPI_Wtime();
+  #endif
+
+
     /* Durchfuehren der Fourier-Hin-Transformationen: */
     forward_fft(d);
+
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_fft[1] = timer;
+   timer = MPI_Wtime();
+  #endif
+
 
     for (i=0; i<Mesh; i++)
         for (j=0; j<Mesh; j++)
@@ -202,12 +226,30 @@ void P3M_ik_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 
             }
 
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_convolution[1] = timer;
+   timer = MPI_Wtime();
+  #endif
+
     /* Durchfuehren der Fourier-Rueck-Transformation: */
     backward_fft(d);
+
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_fft[1] += timer;
+   timer = MPI_Wtime();
+  #endif
+
 
     /* force assignment */
     assign_forces ( 1.0 / ( 2.0*s->length*s->length*s->length ), s, p, d, f, 0 );
     assign_forces ( 1.0 / ( 2.0*s->length*s->length*s->length ), s, p, d, f, 1 );
+
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_force_assignment[1] = timer;
+  #endif
 
     return;
 }

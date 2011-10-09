@@ -17,6 +17,10 @@
 
 #include "p3m-ik.h"
 
+#ifdef __detailed_timings
+#include <mpi.h>
+#endif
+
 
 // declaration of the method
 
@@ -81,13 +85,13 @@ void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY,
 
     for ( MX = -P3M_BRILLOUIN; MX <= P3M_BRILLOUIN; MX++ ) {
         NMX = d->nshift[NX] + Mesh*MX;
-        S1 = pow ( sinc ( fak1*NMX ), 2*p->cao );
+        S1 = my_power ( sinc ( fak1*NMX ), 2*p->cao );
         for ( MY = -P3M_BRILLOUIN; MY <= P3M_BRILLOUIN; MY++ ) {
             NMY = d->nshift[NY] + Mesh*MY;
-            S2   = S1*pow ( sinc ( fak1*NMY ), 2*p->cao );
+            S2   = S1*my_power ( sinc ( fak1*NMY ), 2*p->cao );
             for ( MZ = -P3M_BRILLOUIN; MZ <= P3M_BRILLOUIN; MZ++ ) {
                 NMZ = d->nshift[NZ] + Mesh*MZ;
-                S3   = S2*pow ( sinc ( fak1*NMZ ), 2*p->cao );
+                S3   = S2*my_power ( sinc ( fak1*NMZ ), 2*p->cao );
 
                 NM2 = SQR ( NMX*Leni ) + SQR ( NMY*Leni ) + SQR ( NMZ*Leni );
                 *Nenner += S3;
@@ -159,11 +163,29 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     /* Setting charge mesh to zero */
     memset ( d->Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof ( FLOAT_TYPE ) );
 
+  #ifdef __detailed_timings
+  timer = MPI_Wtime();
+  #endif
+
+
     /* chargeassignment */
     assign_charge ( s, p, d, 0 );
 
+  #ifdef __detailed_timings
+  timer = MPI_Wtime() - timer;
+  t_charge_assignment[0] = timer;
+  timer = MPI_Wtime();
+  #endif
+
     /* Forward Fast Fourier Transform */
     forward_fft(d);
+
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_fft[0] = timer;
+   timer = MPI_Wtime();
+  #endif
+
 
     /* Concolution */
     for ( i=0; i<Mesh; i++ )
@@ -193,11 +215,28 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
                 }
             }
 
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_convolution[0] = timer;
+   timer = MPI_Wtime();
+  #endif
+
     /* Backward Fast Fourier Transformation */
     backward_fft(d);
 
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_fft[0] += timer;
+   timer = MPI_Wtime();
+  #endif
+
     /* Force assignment */
     assign_forces ( 1.0/ ( 2.0*s->length*s->length*s->length ),s,p,d,f,0 );
+
+  #ifdef __detailed_timings
+    timer = MPI_Wtime() - timer;
+    t_force_assignment[0] = timer;
+  #endif
 }
 
 // Functions for error estimate.

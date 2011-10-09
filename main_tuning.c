@@ -24,10 +24,16 @@ int main( void ) {
   int particles, i, j;
 
   FILE *fout = fopen( "timings.dat" , "w" );
+  FILE *fmesh = fopen( "mesh.dat", "w" );
+  FILE *falpha = fopen( "alpha.dat", "w" );
+  FILE *fcao = fopen( "cao.dat", "w" );
   //  FILE *fprec = fopen( "precisions.dat", "w" );
   const method_t *m[4] = { &method_p3m_ik, &method_p3m_ik_i, &method_p3m_ad, &method_p3m_ad_i };
 
   fprintf(fout, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
+  fprintf(fmesh, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
+  fprintf(falpha, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
+  fprintf(fcao, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
 
   system_t *s;
 
@@ -41,6 +47,8 @@ int main( void ) {
 
   FLOAT_TYPE time[4];
 
+  double boxl;
+
   // weak scaling
 
   for(i=0;i<4;i++) {
@@ -49,15 +57,17 @@ int main( void ) {
     p[i]->rcut = 3.0;
   }
 
-  for(particles = 100; particles <= 1000; particles += 100) {
+  for(particles = 100; particles <= 10000; particles += 100) {
+    boxl = pow(particles / 100.0, 1.0/3.0)*20.0;
     printf("Init system with %d particles.\n", particles);
+    printf("box %e\n", boxl);
 
-    s = generate_system( FORM_FACTOR_RANDOM, particles, my_power(particles / 100, 1.0/3.0) * 20.0, 1.0 );
+    s = generate_system( FORM_FACTOR_RANDOM, particles, boxl, 1.0 );
  
-    op.rcut = 0.49*s->length;
+    //    op.rcut = 0.49*s->length;
 
-        puts("Calc reference.");
-    Calculate_reference_forces( s, &op );
+    //        puts("Calc reference.");
+    //Calculate_reference_forces( s, &op );
 
     // methods are independent of each other
 
@@ -65,6 +75,10 @@ int main( void ) {
       puts("Init.");
       f[i] = Init_forces( s->nparticles );
       puts("Tune");
+
+      memset( p[i], 0, sizeof(parameters_t) );
+      p[i]->rcut = 3.0;
+
       Tune ( m[i], s, p[i], 1e-4 );
       
       puts("Method init.");
@@ -81,21 +95,26 @@ int main( void ) {
 	Calculate_forces ( m[i], s, p[i], d[i], f[i] );
       time[i] = MPI_Wtime() - time[i];
 
-      //e[i] = Calculate_errors( s, f[i] );
-
       Free_neighborlist(d[i]);
 
       puts("Free...");
       Free_data(d[i]);
       Free_forces(f[i]);
-      fftw_free(p[i]);
     }
 
     puts("Free systems...");
     Free_system(s);
     fprintf(fout, "%d %e %e %e %e\n", particles, time[0], time[1], time[2], time[3] );
+    fprintf(fmesh, "%d %d %d %d %d\n", particles, p[0]->mesh, p[1]->mesh, p[2]->mesh, p[3]->mesh );
+    fprintf(falpha, "%d %e %e %e %e\n", particles, p[0]->alpha, p[1]->alpha, p[2]->alpha, p[3]->alpha );
+    fprintf(fcao, "%d %d %d %d %d\n", particles, p[0]->cao, p[1]->cao, p[2]->cao, p[3]->cao );
+
     //    fprintf(fprec, "%d %e %e %e %e\n", particles, e[0].f / particles, e[1].f / particles, e[2].f / particles, e[2].f / particles );
     fflush(fout);
+    fflush(fmesh);
+    fflush(falpha);
+    fflush(fcao);
+
     //fflush(fprec);
   }
   fclose(fout);

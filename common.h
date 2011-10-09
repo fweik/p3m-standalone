@@ -15,7 +15,17 @@ static inline FLOAT_TYPE my_power( FLOAT_TYPE base, int exponent ) {
   return ret;
 }
 
+#define __detailed_timings
 
+#ifdef __detailed_timings
+extern double t_charge_assignment[4];
+extern double t_force_assignment[4];
+extern double t_real_part[4];
+extern double t_k_part[4];
+extern double t_convolution[4];
+extern double t_fft[4];
+extern double timer;
+#endif
 
 system_t *Init_system(int);
 void *Init_array(int, size_t);vector_array_t *Init_vector_array(int);

@@ -33,10 +33,12 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
   FLOAT_TYPE alpha_step = 0.1;
   FLOAT_TYPE alpha_min_error = 0.0;
   int direction=1, over_min=0, success=0, cao_start;
-  FLOAT_TYPE last_error = 0.0;
-
-  int mesh_min, mesh_max;
-  int cao_min, cao_max;
+  FLOAT_TYPE last_error = 1e100;
+  int j;
+  int mesh_min, mesh_max, mesh_step=MESH_STEP, mesh_dir=1;
+  int success_once = 0;
+  int start_cao_run = 0;
+  int cao_min, cao_max, cao_limit, cao_last;
 
   if( p->mesh != 0) {
     mesh_min = mesh_max = p->mesh;
@@ -46,26 +48,37 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
   }
 
   if( p->cao != 0 ) {
-    cao_min = cao_max = p->cao;
+    cao_last = cao_min = cao_max = p->cao;
   } else {
     cao_min = CAO_MIN;
     cao_max = CAO_MAX;
+    cao_last = CAO_MAX;
   }
   cao_start = CAO_MAX;
+
+  it.rcut = p->rcut;
 
   TUNE_TRACE(printf("Starting tuning for '%s' with prec '%e'\n", m->method_name, precision);)
     TUNE_TRACE(printf("cao_min %d cao_max %d mesh_min %d mesh_max %d\n", cao_min, cao_max, mesh_min, mesh_max);)
 
-  for(it.mesh = mesh_min; it.mesh <= mesh_max; it.mesh+=MESH_STEP ) {
+    for(it.mesh = mesh_min; (it.mesh <= mesh_max) && (mesh_step >= 2); it.mesh+=mesh_dir*mesh_step ) {
       // If we were already successful with a smaller mesh
       // we can start at fastest cao so far.
     if( best_time < 1e200 ) 
-      cao_start = (p_best.cao <= cao_min) ? cao_min : p_best.cao - 1;
+      cao_start = (cao_last <= cao_min) ? cao_min : cao_last - 1;
     else
       cao_start = cao_max;
 
-    for(it.cao = cao_start; (it.cao >= 2) && ( it.cao >= cao_min ); it.cao--) {
+    cao_limit = cao_min;
 
+    if(start_cao_run == 0) {
+      cao_start = cao_max;
+      cao_limit = cao_max;
+    }
+
+    success = 0;
+    printf("cao_start %d cao_limit %d\n", cao_start, cao_limit);
+    for(it.cao = cao_start; (it.cao >= 2) && ( it.cao >= cao_limit ); it.cao--) {
       it.cao3 = it.cao * it.cao * it.cao;
       it.ip = it.cao - 1;
 
@@ -75,38 +88,32 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
       // reinit alpha loop
       direction = 1;
       alpha_step = ALPHA_STEP;
-      min_error = 1e110;
+      last_error = min_error = 1e110;
+      over_min = 0;
 
-      for( it.alpha = 0.2; alpha_step >= 0.01; it.alpha += direction*alpha_step ) {
-	if( p->rcut != 0.0 ) {
-	  it.rcut = p->rcut;
-	} else {
-
-	}
+      for( it.alpha = 0.1; alpha_step >= 0.01; it.alpha += direction*alpha_step ) {
 
 	error = m->Error( s, &it );
-
+	//	TUNE_TRACE(printf("mesh %d cao %d rcut %e prec %e alpha %e dir %d overmin %d\n", it.mesh, it.cao, it.rcut, error, it.alpha, direction,over_min ););
 	if( error <= precision && error < min_error ) {
 	  min_error = error;
 	  alpha_min_error = it.alpha;
 	}
-	if( (last_error - error) >= 0.0 ) {
-	  last_error = error;
-	  continue;
-	}
+
 	if( (last_error - error) <= 0.0 ) {
-	  last_error=error;
 	  direction = -direction;
           over_min = 1;
 	}
+	last_error=error;
 	if( over_min == 1 )
 	  alpha_step /= 2.0;
       }
 
-      TUNE_TRACE(printf("mesh %d cao %d rcut %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, error, it.alpha ););
+       TUNE_TRACE(printf("fini mesh %d cao %d rcut %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, error, it.alpha ););
       
       if( min_error <= precision ) {
 	it.alpha = alpha_min_error;   
+	cao_last = it.cao;
 	success = 1;
       } else {
 	break;
@@ -120,8 +127,15 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
       m->Influence_function( s, &it, d );
 
       time = MPI_Wtime();
-      m->Kspace_force( s, &it, d, f );
+
+      Init_neighborlist( s, &it, d );
+
+      for(j=0;j<5;j++)
+	Calculate_forces ( m, s, &it, d, f );
+
       time = MPI_Wtime() - time;
+
+      Free_neighborlist(d);
 
       TUNE_TRACE(printf("\n mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time, error, it.alpha ););
 	
@@ -136,10 +150,35 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 	break;
       } 
     }
-    if( ( time > 1.1*best_time ) || ( it.mesh > 2*p_best.mesh ) ) {
+    if((success == 1) && (start_cao_run == 0)) {
+      //if we were successfull, reduce step and go back to see if 
+      //accuracy can be matched with smaler mesh
+      mesh_dir = -1;
+      success_once = 1;
+      mesh_step /= 2;
+      if(mesh_step < 2)
+	mesh_step = 2;
+    } else {
+      if( mesh_dir == -1) {
+	start_cao_run = 1;
+	mesh_dir = 1;
+	mesh_step /= 2;
+	cao_last = cao_max+1;
+      if(mesh_step < 2)
+	mesh_step = 2;
+      }else {
+	mesh_dir = 1;
+	if(start_cao_run == 1) {
+	  mesh_step = 2;		       
+	}
+	else
+	  mesh_step = MESH_STEP;
+      }
+    }
+    if( ( success == 1 ) && ( time > 2.0*best_time ) ) {
       // No further gain expected with bigger mesh;
       break;
-    }
+      } 
   }
   if(d != NULL)
     Free_data(d);
