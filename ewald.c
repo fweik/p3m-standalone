@@ -17,7 +17,7 @@
 /* Maximal k-vector allowed in Ewald_k_space. 
    Defines the size of the influence function array.
 */
-#define kmax 30
+#define kmax 50
 
 /* Square of the maximal k-vector used for the computation of the
    Kolafa-Perram diagonal term. */
@@ -114,17 +114,13 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
 	  rhohat_im = 0.0;
           ghat = d->G_hat[r_ind(abs(nx), abs(ny), abs(nz))];          
           
-#pragma omp parallel for private(kr) reduction( + : rhohat_re) reduction( + : rhohat_im)
 	  for (i=0; i<s->nparticles; i++) {
             kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
 	    rhohat_re += s->q[i] * cos(kr);
 	    rhohat_im += s->q[i] * -sin(kr);
           }
 
-
-
 	  /* compute forces */
-#pragma omp parallel for private(kr, force_factor)
 	  for (i=0; i<s->nparticles; i++) {
 	    kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
 	     
@@ -134,11 +130,8 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
             f->f_k->x[i] += nx * force_factor;
             f->f_k->y[i] += ny * force_factor;
             f->f_k->z[i] += nz * force_factor;
-	    
 	  }
 	}
-
-  return;
 }
 
 FLOAT_TYPE compute_error_estimate_r(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {

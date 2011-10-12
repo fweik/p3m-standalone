@@ -66,7 +66,7 @@ int main( void ) {
     p[i]->rcut = 3.0;
   }
 
-  for(particles = 100; particles <= 10000; particles += 100) {
+  for(particles = 10; particles <= 90; particles += 10) {
     boxl = pow(particles / 100.0, 1.0/3.0)*20.0;
     printf("Init system with %d particles.\n", particles);
     printf("box %e\n", boxl);

@@ -40,6 +40,8 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
   int start_cao_run = 0;
   int cao_min, cao_max, cao_limit, cao_last;
 
+  p_best.mesh = MESH_MAX;
+
   if( p->mesh != 0) {
     mesh_min = mesh_max = p->mesh;
   } else {
@@ -174,13 +176,15 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
       // No further gain expected with bigger mesh;
       break;
       } 
+    if( it.mesh > 1.5*p_best.mesh )
+      break;
   }
   if(d != NULL)
     Free_data(d);
 
   Free_forces(f);
 
-  if( success == 0 )
+  if( success_once == 0 )
     return -1;
 
   *p = p_best;
