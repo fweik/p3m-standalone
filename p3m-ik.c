@@ -292,7 +292,7 @@ void p3m_tune_aliasing_sums_ik ( int nx, int ny, int nz,
     FLOAT_TYPE ex,ex2,nm2,U2,factor1;
     int mesh = p->mesh;
     FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
-
+  
     factor1 = SQR ( PI / ( p->alpha * s->length ) );
 
     *alias1 = *alias2 = 0.0;

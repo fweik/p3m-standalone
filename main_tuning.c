@@ -19,7 +19,7 @@
 
 #include "generate_system.h"
 
-int main( void ) {
+int main( int argc, char *argv[] ) {
 
   int particles, i, j;
   char filename[] = "det.dat";
@@ -55,8 +55,10 @@ int main( void ) {
   //  error_t e[4];
 
   FLOAT_TYPE time[4];
-
+  FLOAT_TYPE precision=1e-4;
   double boxl;
+
+  int part_min, part_max, part_step;
 
   // weak scaling
 
@@ -66,7 +68,20 @@ int main( void ) {
     p[i]->rcut = 3.0;
   }
 
-  for(particles = 100; particles <= 10000; particles += 100) {
+  if(argc == 5) {
+    part_min = atoi(argv[1]);
+    part_max = atoi(argv[2]);
+    part_step = atoi(argv[3]);
+    precision = atof(argv[4]);
+  } else {
+    part_min = 1000;
+    part_max = 10000;
+    part_step = 1000;
+  }
+
+  printf("Timing for %d to %d particles in increments of %d.\n", part_min, part_max, part_step);
+
+  for(particles = part_min; particles <= part_max; particles += part_step) {
     boxl = pow(particles / 100.0, 1.0/3.0)*20.0;
     printf("Init system with %d particles.\n", particles);
     printf("box %e\n", boxl);
@@ -85,10 +100,19 @@ int main( void ) {
       f[i] = Init_forces( s->nparticles );
       puts("Tune");
 
+      P3M_BRILLOUIN = 0;
+      P3M_BRILLOUIN_TUNING = 0;
+      if(m[i]->flags & METHOD_FLAG_interlaced) {
+	puts("Interlaced method.");
+	P3M_BRILLOUIN = 1;
+	P3M_BRILLOUIN_TUNING = 1;
+      }
+
       memset( p[i], 0, sizeof(parameters_t) );
       p[i]->rcut = 3.0;
 
-      Tune ( m[i], s, p[i], 1e-4 );
+      if( Tune ( m[i], s, p[i], precision ) != 0)
+	continue;
       
       puts("Method init.");
       d[i] = m[i]->Init( s, p[i] );

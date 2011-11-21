@@ -40,6 +40,8 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
   int start_cao_run = 0;
   int cao_min, cao_max, cao_limit, cao_last;
 
+  p_best.mesh = MESH_MAX;
+
   if( p->mesh != 0) {
     mesh_min = mesh_max = p->mesh;
   } else {
@@ -67,7 +69,7 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
     if( best_time < 1e200 ) 
       cao_start = (cao_last <= cao_min) ? cao_min : cao_last - 1;
     else
-      cao_start = cao_max;
+      cao_last = cao_start = cao_max;
 
     cao_limit = cao_min;
 
@@ -128,16 +130,11 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 
       time = MPI_Wtime();
 
-      Init_neighborlist( s, &it, d );
-
-      for(j=0;j<5;j++)
-	Calculate_forces ( m, s, &it, d, f );
+ 	m->Kspace_force( s, &it, d, f );
 
       time = MPI_Wtime() - time;
 
-      Free_neighborlist(d);
-
-      TUNE_TRACE(printf("\n mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time, error, it.alpha ););
+         TUNE_TRACE(printf("\n mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time, error, it.alpha ););
 	
       if( time < best_time ) {
 	p_best = it;
@@ -153,11 +150,19 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
     if((success == 1) && (start_cao_run == 0)) {
       //if we were successfull, reduce step and go back to see if 
       //accuracy can be matched with smaler mesh
-      mesh_dir = -1;
-      success_once = 1;
-      mesh_step /= 2;
-      if(mesh_step < 2)
-	mesh_step = 2;
+      if( it.mesh > MESH_MIN ) {
+	mesh_dir = -1;
+	success_once = 1;
+	mesh_step /= 2;
+	if(mesh_step < 2)
+	  mesh_step = 2;
+      } else {
+	start_cao_run = 1;
+	mesh_dir = 1;
+	mesh_step = MESH_STEP;
+	cao_last = cao_max + 1;
+      }
+      
     } else {
       if( mesh_dir == -1) {
 	start_cao_run = 1;
@@ -166,6 +171,9 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 	cao_last = cao_max+1;
       if(mesh_step < 2)
 	mesh_step = 2;
+      if((it.mesh - mesh_step) <= mesh_step) {
+	mesh_dir=1;
+      }
       }else {
 	mesh_dir = 1;
 	if(start_cao_run == 1) {
@@ -175,25 +183,27 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 	  mesh_step = MESH_STEP;
       }
     }
-    if( ( success == 1 ) && ( time > 2.0*best_time ) ) {
+    if( ( success == 1 ) && ( time > 1.5*best_time ) ) {
       // No further gain expected with bigger mesh;
       break;
       } 
+    if( it.mesh > 1.5*p_best.mesh )
+      break;
   }
   if(d != NULL)
     Free_data(d);
 
   Free_forces(f);
 
-  if( success == 0 )
-    return -1;
-
   *p = p_best;
   p->ip = p->cao - 1;
   p->cao3 = p->cao * p->cao * p->cao;
 
   TUNE_TRACE(printf("Using mesh %d cao %d rcut %e alpha %e with precision %e\n", p->mesh, p->cao, p->rcut, p->alpha, p->precision);)
-    return 0;
+    if( best_time < 1e100 )
+      return 0;
+    else
+      return -1;
 }  
 
 

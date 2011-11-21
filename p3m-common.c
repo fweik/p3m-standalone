@@ -8,6 +8,8 @@
 #include "common.h"
 #include "interpol.h"
 
+int P3M_BRILLOUIN = 1;
+int P3M_BRILLOUIN_TUNING = 1;
 
 #define FREE_TRACE(A) 
 

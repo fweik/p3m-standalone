@@ -3,8 +3,8 @@
 
 #include "types.h"
 
-#define P3M_BRILLOUIN_TUNING 1
-#define P3M_BRILLOUIN 1
+extern int P3M_BRILLOUIN_TUNING;
+extern int P3M_BRILLOUIN;
 
 #define PI 3.14159265358979323846264
 
