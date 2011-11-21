@@ -130,7 +130,7 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 
       time = MPI_Wtime();
 
- 	m->Kspace_force( s, &it, d, f );
+      m->Kspace_force( s, &it, d, f );
 
       time = MPI_Wtime() - time;
 
@@ -195,6 +195,12 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 
   Free_forces(f);
 
+<<<<<<< HEAD
+=======
+  if( success_once == 0 )
+    return -1;
+
+>>>>>>> b7944396ecc72170a59c39a616505b74c023fa2d
   *p = p_best;
   p->ip = p->cao - 1;
   p->cao3 = p->cao * p->cao * p->cao;

@@ -51,7 +51,7 @@
 
 
 void usage ( char *name ) {
-    fprintf ( stderr, "usage: %s <alpha_min> <alpha_max> <alpha_step> <method> <nparticles> <box_length> <cao> <mesh> <rcut>\n", name );
+    fprintf ( stderr, "usage: %s <alpha_min> <alpha_max> <alpha_step> <method> <nparticles> <box_length> <cao> <mesh> <rcut> <aliasing_max>\n", name );
 }
 
 
@@ -72,7 +72,7 @@ int main ( int argc, char **argv ) {
 
     error_t error;
 
-    if ( argc != 10 ) {
+    if ( argc != 11 ) {
         usage ( argv[0] );
         return 128;
     }
@@ -95,6 +95,7 @@ int main ( int argc, char **argv ) {
 
     methodnr = atoi ( argv[4] );
 
+    P3M_BRILLOUIN = atoi(argv[10]);
 
     //Exakte_Werte_einlesen( system, argv[2] );
     Calculate_reference_forces( system, &parameters );
