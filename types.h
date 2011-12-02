@@ -46,7 +46,7 @@ enum {
 // Container type for arrays of 3d-vectors
 // each component holds a pointer to an array
 // of the values for that direction.
-// Fields contains the same pointsers as array
+// Fields contains the same pointers as array
 // for convinience.
 
 typedef struct {
