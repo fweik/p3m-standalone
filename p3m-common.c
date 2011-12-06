@@ -14,10 +14,6 @@ int P3M_BRILLOUIN_TUNING = 1;
 #define FREE_TRACE(A) 
 
 
-int P3M_BRILLOUIN_TUNING=1;
-int P3M_BRILLOUIN=1;
-
-
 FLOAT_TYPE sinc(FLOAT_TYPE d)
 {
 #define epsi 0.1
