@@ -40,9 +40,9 @@ data_t *Init_ad ( system_t *s, parameters_t *p ) {
     d->forward_plans = 1;
     d->backward_plans = 1;
 
-    d->forward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_ESTIMATE );
+    d->forward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_PATIENT );
 
-    d->backward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Qmesh ), ( fftw_complex * ) ( d->Qmesh ), FFTW_BACKWARD, FFTW_ESTIMATE );
+    d->backward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Qmesh ), ( fftw_complex * ) ( d->Qmesh ), FFTW_BACKWARD, FFTW_PATIENT );
 
     return d;
 }
@@ -226,7 +226,7 @@ void p3m_tune_aliasing_sums_ad(int nx, int ny, int nz,
         ex = exp(-factor1*nm2);
 	ex2 = SQR( ex );
 	
-	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*p->cao);
+	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
 	
 	*alias1 += ex2 / nm2;
 	*alias2 += U2 * ex;
@@ -269,5 +269,9 @@ FLOAT_TYPE p3m_k_space_error_ad( system_t *s, parameters_t *p )
 }
 
 FLOAT_TYPE Error_ad( system_t *s, parameters_t *p ) {
-  return sqrt( SQR ( Realspace_error( s, p) ) + SQR ( p3m_k_space_error_ad( s, p ) ) );
+  FLOAT_TYPE real = Realspace_error( s, p);
+  FLOAT_TYPE recp = p3m_k_space_error_ad( s, p );
+  //  printf("p3m ad error for mesh %d rcut %lf cao %d alpha %lf : real %e recp %e\n", p->mesh, p->rcut, p->cao, p->alpha, real, recp);
+  //  printf("system size %d box %lf\n", s->nparticles, s->length);
+  return sqrt( SQR ( real ) + SQR ( recp ) );
 }

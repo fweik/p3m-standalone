@@ -24,12 +24,15 @@ int main( int argc, char *argv[] ) {
   int particles, i, j;
   char filename[] = "det.dat";
 
-  const method_t *m[4] = { &method_p3m_ik, &method_p3m_ik_i, &method_p3m_ad, &method_p3m_ad_i };
+  const FLOAT_TYPE rcut = 3.0;
+
+  const method_t *m[4] = { &method_p3m_ik, &method_p3m_ad, &method_p3m_ik_i, &method_p3m_ad_i };
 
   FILE *fout = fopen( "timings.dat" , "w" );
   FILE *fmesh = fopen( "mesh.dat", "w" );
   FILE *falpha = fopen( "alpha.dat", "w" );
   FILE *fcao = fopen( "cao.dat", "w" );
+  FILE *fprec = fopen( "prec.dat", "w" );
 #ifdef __detailed_timings
   FILE *timings[4];
   for(i=0;i<4;i++) {
@@ -38,11 +41,16 @@ int main( int argc, char *argv[] ) {
   }
 #endif
 
-
+  fprintf(fout, "# rcut %e\n", rcut);
   fprintf(fout, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
+  fprintf(fmesh, "# rcut %e\n", rcut);
   fprintf(fmesh, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
+  fprintf(falpha, "# rcut %e\n", rcut);
   fprintf(falpha, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
+  fprintf(fcao, "# rcut %e\n", rcut);
   fprintf(fcao, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
+  fprintf(fprec, "# rcut %e\n", rcut);
+  fprintf(fprec, "# particles\t %s\t %s\t %s\t %s\n", m[0]->method_name, m[1]->method_name, m[2]->method_name, m[3]->method_name);
 
   system_t *s;
 
@@ -65,7 +73,7 @@ int main( int argc, char *argv[] ) {
   for(i=0;i<4;i++) {
     p[i] = Init_array( 1, sizeof(parameters_t) );
     memset( p[i], 0, sizeof(parameters_t) );
-    p[i]->rcut = 3.0;
+    p[i]->rcut = rcut;
   }
 
   if(argc == 5) {
@@ -102,6 +110,9 @@ int main( int argc, char *argv[] ) {
 
       P3M_BRILLOUIN = 0;
       P3M_BRILLOUIN_TUNING = 0;
+      if(m[i]->flags & METHOD_FLAG_ad)
+	P3M_BRILLOUIN_TUNING = 1;
+
       if(m[i]->flags & METHOD_FLAG_interlaced) {
 	puts("Interlaced method.");
 	P3M_BRILLOUIN = 1;

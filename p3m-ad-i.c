@@ -42,9 +42,9 @@ data_t *Init_ad_i ( system_t *s, parameters_t *p ) {
     d->forward_plans = 1;
     d->backward_plans = 1;
 
-    d->forward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_ESTIMATE );
+    d->forward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_PATIENT );
 
-    d->backward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Qmesh ), ( fftw_complex * ) ( d->Qmesh ), FFTW_BACKWARD, FFTW_ESTIMATE );
+    d->backward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Qmesh ), ( fftw_complex * ) ( d->Qmesh ), FFTW_BACKWARD, FFTW_PATIENT );
 
     return d;
 }
@@ -281,5 +281,8 @@ FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
 }
 
 FLOAT_TYPE Error_ad_i( system_t *s, parameters_t *p ) {
-  return sqrt( SQR ( Realspace_error( s, p) ) + SQR ( p3m_k_space_error_ad_i( s, p ) ) );
+  FLOAT_TYPE real = Realspace_error( s, p);
+  FLOAT_TYPE recp = p3m_k_space_error_ad_i( s, p );
+
+  return sqrt( SQR ( real ) + SQR ( recp ) );
 }

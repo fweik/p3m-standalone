@@ -116,3 +116,39 @@ void Write_exact_forces(system_t *s, char *forces_file) {
 
     fclose(fin);
 }
+
+void Write_system(system_t *s, char *filename)
+{
+    /* Opens file 'filename' for reanding and reads system parameters,
+     particle positions and charges. */
+
+    FILE *fp;
+    int i;
+
+    assert(filename != NULL);
+
+    fp=fopen(filename, "w");
+
+    if ((fp == NULL) || feof(fp)) {
+        fprintf(stderr, "Could not open '%s' for writing.\n", filename);
+        exit(127);
+    }
+
+    //read system parameters
+    fprintf(fp,"# Teilchenzahl: %d\n", s->nparticles);
+    fprintf(fp,"# Len: %lf\n", s->length);
+
+    //read p3m/ewal parameters
+    fprintf(fp,"# Mesh: %d\n", 1);
+    fprintf(fp,"# alpha: %lf\n", 1.0);
+    fprintf(fp,"# ip: %d\n", 5);
+    fprintf(fp,"# rcut: %lf\n", 1.0);
+    fprintf(fp,"# Temp: %lf\n", 1.0);
+    fprintf(fp,"# Bjerrum: %lf\n", 1.0);
+
+    /* Teilchenkoordinaten und -ladungen: */
+    for (i=0; i<s->nparticles; i++) {
+        fprintf(fp,"%lf\t%lf\t%lf\t%lf\n",(s->p->x[i]), (s->p->y[i]), (s->p->z[i]), (s->q[i]));
+    }
+    fclose(fp);
+}

@@ -10,6 +10,11 @@
 #include "interpol.h"
 #include "realpart.h"
 
+const int smooth_numbers[] = {1, 2, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128, 130, 132, 140, 144, 150, 154, 156, 160, 162, 168, 176, 180, 182, 192, 196, 198, 200, 208, 210, 216, 220, 224, 234, 240, 242, 250, 252, 256, 260, 264, 270, 280, 288, 294, 300};
+
+const int smooth_numbers_n = 122;
+
+
 #define TUNE_DEBUG
 
 #ifdef TUNE_DEBUG
@@ -27,6 +32,8 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 
   data_t *d = NULL;
 
+  it.prefactor = 1.0;
+
   FLOAT_TYPE best_time=1e250, time=1e240;
 
   FLOAT_TYPE min_error=1e110, error = -1.0;
@@ -35,7 +42,7 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
   int direction=1, over_min=0, success=0, cao_start;
   FLOAT_TYPE last_error = 1e100;
   int j;
-  int mesh_min, mesh_max, mesh_step=MESH_STEP, mesh_dir=1;
+  int mesh_min, mesh_max, mesh_step=MESH_STEP, mesh_dir=1, mesh_it=0;
   int success_once = 0;
   int start_cao_run = 0;
   int cao_min, cao_max, cao_limit, cao_last;
@@ -61,9 +68,12 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
   it.rcut = p->rcut;
 
   TUNE_TRACE(printf("Starting tuning for '%s' with prec '%e'\n", m->method_name, precision);)
-    TUNE_TRACE(printf("cao_min %d cao_max %d mesh_min %d mesh_max %d\n", cao_min, cao_max, mesh_min, mesh_max);)
+  TUNE_TRACE(printf("cao_min %d cao_max %d mesh_min %d mesh_max %d\n", cao_min, cao_max, mesh_min, mesh_max);)
 
-    for(it.mesh = mesh_min; (it.mesh <= mesh_max) && (mesh_step >= 2); it.mesh+=mesh_dir*mesh_step ) {
+    it.mesh = smooth_numbers[mesh_min];
+
+    for(mesh_it = mesh_min; (it.mesh <= mesh_max) && (mesh_step >= 1); mesh_it+=mesh_dir*mesh_step ) {
+      it.mesh = smooth_numbers[mesh_it];
       // If we were already successful with a smaller mesh
       // we can start at fastest cao so far.
     if( best_time < 1e200 ) 
@@ -149,13 +159,13 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
     }
     if((success == 1) && (start_cao_run == 0)) {
       //if we were successfull, reduce step and go back to see if 
-      //accuracy can be matched with smaler mesh
+      //accuracy can be matched with smaller mesh
       if( it.mesh > MESH_MIN ) {
 	mesh_dir = -1;
 	success_once = 1;
 	mesh_step /= 2;
-	if(mesh_step < 2)
-	  mesh_step = 2;
+	if(mesh_step < 1)
+	  mesh_step = 1;
       } else {
 	start_cao_run = 1;
 	mesh_dir = 1;
@@ -169,15 +179,15 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 	mesh_dir = 1;
 	mesh_step /= 2;
 	cao_last = cao_max+1;
-      if(mesh_step < 2)
-	mesh_step = 2;
-      if((it.mesh - mesh_step) <= mesh_step) {
+      if(mesh_step < 1)
+	mesh_step = 1;
+      if((it.mesh - mesh_step) <= MESH_MIN) {
 	mesh_dir=1;
       }
       }else {
 	mesh_dir = 1;
 	if(start_cao_run == 1) {
-	  mesh_step = 2;		       
+	  mesh_step = 1;		       
 	}
 	else
 	  mesh_step = MESH_STEP;

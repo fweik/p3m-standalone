@@ -58,10 +58,10 @@ data_t *Init_ik ( system_t *s, parameters_t *p ) {
     d->forward_plans = 1;
     d->backward_plans = 3;
 
-    d->forward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_ESTIMATE );
+    d->forward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_PATIENT );
 
     for ( l=0;l<3;l++ ) {
-        d->backward_plan[l] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Fmesh->fields[l] ), ( fftw_complex * ) ( d->Fmesh->fields[l] ), FFTW_BACKWARD, FFTW_ESTIMATE );
+        d->backward_plan[l] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Fmesh->fields[l] ), ( fftw_complex * ) ( d->Fmesh->fields[l] ), FFTW_BACKWARD, FFTW_PATIENT );
     }
     return d;
 }
@@ -247,6 +247,10 @@ FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
 
   real = Realspace_error( s, p );
   recp = p3m_k_space_error_ik( 1.0, s, p);
+
+  //  printf("p3m ik error for mesh %d rcut %lf cao %d alpha %lf : real %e recp %e\n", p->mesh, p->rcut, p->cao, p->alpha, real, recp);
+  //printf("system size %d box %lf\n", s->nparticles, s->length);
+
 
   return sqrt( SQR( real ) + SQR( recp ) );
 }

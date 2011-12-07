@@ -55,7 +55,9 @@ system_t *generate_random_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge
   s = Init_system(size);
   s->length = box;
   s->q2 = 0.0;
-  
+
+  drand48();  
+
   for(i=0;i<size;i++) {
     for(j=0;j<3;j++) {
       s->p->fields[j][i] = box*drand48();

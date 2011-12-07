@@ -5,12 +5,14 @@
 
 // @TODO: Make this more elegant
 
-#define MESH_MIN 16
+// Mesh sizes suitable for FFT, these are the 13-smooth numbers, excluding those which have prime factors 11 and 13.
+
+#define MESH_MIN 7
 #define MESH_MAX 256
-#define MESH_STEP 16
+#define MESH_STEP 4
 
 #define ALPHA_STEP_MIN 1e-4
-#define ALPHA_STEP 0.1
+#define ALPHA_STEP 0.4
 
 #define CAO_MIN 2
 #define CAO_MAX 7
