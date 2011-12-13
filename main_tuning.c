@@ -90,7 +90,7 @@ int main( int argc, char *argv[] ) {
   printf("Timing for %d to %d particles in increments of %d.\n", part_min, part_max, part_step);
 
   for(particles = part_min; particles <= part_max; particles += part_step) {
-    boxl = pow(particles / 100.0, 1.0/3.0)*20.0;
+    boxl = pow(particles / 1000.0, 1.0/3.0)*20.0;
     printf("Init system with %d particles.\n", particles);
     printf("box %e\n", boxl);
 

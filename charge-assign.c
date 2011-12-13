@@ -35,14 +35,14 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
     FLOAT_TYPE Hi = (double)d->mesh/(double)s->length;
 
     // Make sure parameter-set and data-set are compatible
-    assert( p->mesh == d->mesh );
 
     double pos_shift;
 
+    /* Shift for odd charge assignment order */
+    pos_shift = (double)((p->cao-1)/2);
+
     for (id=0;id<s->nparticles;id++) {
         cf_cnt = id*p->cao3;
-	/* Shift for odd charge assignment order */
-        pos_shift = (double)((p->cao-1)/2);
         /* particle position in mesh coordinates */
         for (dim=0;dim<3;dim++) {
             pos    = s->p->fields[dim][id]*Hi - pos_shift + 0.5*ii;
@@ -71,36 +71,39 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 
 // assign the forces obtained from k-space
 void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii) {
-    int i,i0,i1,i2, dim;
+    int i,i0,i1,i2;
     int cf_cnt=0;
     int *base;
     int j,k,l;
-    FLOAT_TYPE A,B;
+    FLOAT_TYPE B;
+    
+    cf_cnt=0;
+    
+    for (i=0; i<s->nparticles; i++) {
+      base = d->ca_ind[ii] + 3*i;
+      for (i0=0; i0<p->cao; i0++) {
+	j = wrap_mesh_index(base[0] + i0, d->mesh);
+	for (i1=0; i1<p->cao; i1++) {
+	  k = wrap_mesh_index(base[1] + i1, d->mesh);
+	  for (i2=0; i2<p->cao; i2++) {
+	    l = wrap_mesh_index(base[2] + i2, d->mesh);
+	    B = force_prefac*d->cf[ii][cf_cnt];
+	    f->f_k->fields[0][i] -= d->Fmesh->fields[0][c_ind(j,k,l)+ii]*B;
+	    f->f_k->fields[1][i] -= d->Fmesh->fields[1][c_ind(j,k,l)+ii]*B;
+	    f->f_k->fields[2][i] -= d->Fmesh->fields[2][c_ind(j,k,l)+ii]*B;
 
-    for (dim=0;dim<3;dim++) {
-        cf_cnt=0;
-
-        for (i=0; i<s->nparticles; i++) {
-            base = d->ca_ind[ii] + 3*i;
-            for (i0=0; i0<p->cao; i0++) {
-	      j = wrap_mesh_index(base[0] + i0, d->mesh);
-                for (i1=0; i1<p->cao; i1++) {
-		  k = wrap_mesh_index(base[1] + i1, d->mesh);
-                    for (i2=0; i2<p->cao; i2++) {
-		      l = wrap_mesh_index(base[2] + i2, d->mesh);
-                        A = d->cf[ii][cf_cnt];
-                        B = d->Fmesh->fields[dim][c_ind(j,k,l)+ii];
-
-                        f->f_k->fields[dim][i] -= force_prefac*A*B;
-                        cf_cnt++;
-                    }
-                }
-            }
-            if (ii==1)
-                f->f_k->fields[dim][i] *= 0.5;
-        }
+	    cf_cnt++;
+	  }
+	}
+      }
+      if (ii==1) {
+	f->f_k->fields[0][i] *= 0.5;
+	f->f_k->fields[1][i] *= 0.5;
+	f->f_k->fields[2][i] *= 0.5;
+      }
     }
 }
+
 
 void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int ii, int derivatives)
 {
@@ -187,17 +190,18 @@ void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t 
 	      k = wrap_mesh_index(base[1] + i1, d->mesh);
                 for (i2=0; i2<p->cao; i2++) {
 		  l = wrap_mesh_index(base[2] + i2, d->mesh);
-                    B = d->Qmesh[c_ind(j,k,l)+ii];
-                    f->f_k->x[i] -= force_prefac*B*d->dQdx[ii][cf_cnt];
-                    f->f_k->y[i] -= force_prefac*B*d->dQdy[ii][cf_cnt];
-                    f->f_k->z[i] -= force_prefac*B*d->dQdz[ii][cf_cnt];
+                    B = force_prefac*d->Qmesh[c_ind(j,k,l)+ii];
+                    f->f_k->x[i] -= B*d->dQdx[ii][cf_cnt];
+                    f->f_k->y[i] -= B*d->dQdy[ii][cf_cnt];
+                    f->f_k->z[i] -= B*d->dQdz[ii][cf_cnt];
                     cf_cnt++;
                 }
             }
         }
         if (ii==1) {
-            for (dim=0;dim<3;dim++)
-                f->f_k->fields[dim][i] *= 0.5;
+	  f->f_k->fields[0][i] *= 0.5;
+	  f->f_k->fields[1][i] *= 0.5;
+	  f->f_k->fields[2][i] *= 0.5;
         }
     }
 }
