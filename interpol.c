@@ -35,10 +35,14 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
       {
 	x=i/(2.0*dInterpol);
 	ret->interpol[j][i+MaxInterpol] = caf_bspline(j, x, ip+1);
+	if(derivatives)
+	  ret->interpol_d[j][i+MaxInterpol] = caf_bspline_d(j, x, ip+1);
       }
+  ret->U_hat = caf_bspline_k;
   return ret;
 }
 
+//@TODO: remove memleak
 void Free_interpolation(interpolation_t *i) {
   fftw_free(i);
 }

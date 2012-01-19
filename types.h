@@ -123,7 +123,7 @@ typedef struct {
   // Interpolation of the derivative
   FLOAT_TYPE **interpol_d;
   // array function pointers to the FT of the CA-function
-  FLOAT_TYPE (*W_hat)(int, FLOAT_TYPE);
+  FLOAT_TYPE (*U_hat)(int, FLOAT_TYPE);
 } interpolation_t;
 
 // Struct holding method data.

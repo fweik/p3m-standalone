@@ -77,6 +77,7 @@ void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY,
     FLOAT_TYPE expo, TE;
     int Mesh = d->mesh;
     FLOAT_TYPE Leni = 1.0/s->length;
+    FLOAT_TYPE (*U_hat)(int, FLOAT_TYPE) = d->inter->U_hat;
 
     fak1 = 1.0/ ( FLOAT_TYPE ) Mesh;
     fak2 = SQR ( PI/ ( p->alpha ) );
@@ -85,13 +86,13 @@ void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY,
 
     for ( MX = -P3M_BRILLOUIN; MX <= P3M_BRILLOUIN; MX++ ) {
         NMX = d->nshift[NX] + Mesh*MX;
-        S1 = my_power ( sinc ( fak1*NMX ), 2*p->cao );
+        S1 = my_power ( U_hat ( p->cao, fak1*NMX ), 2 );
         for ( MY = -P3M_BRILLOUIN; MY <= P3M_BRILLOUIN; MY++ ) {
             NMY = d->nshift[NY] + Mesh*MY;
-            S2   = S1*my_power ( sinc ( fak1*NMY ), 2*p->cao );
+            S2   = S1*my_power ( U_hat ( p->cao, fak1*NMY ), 2 );
             for ( MZ = -P3M_BRILLOUIN; MZ <= P3M_BRILLOUIN; MZ++ ) {
                 NMZ = d->nshift[NZ] + Mesh*MZ;
-                S3   = S2*my_power ( sinc ( fak1*NMZ ), 2*p->cao );
+                S3   = S2*my_power ( U_hat ( p->cao, fak1*NMZ ), 2 );
 
                 NM2 = SQR ( NMX*Leni ) + SQR ( NMY*Leni ) + SQR ( NMZ*Leni );
                 *Nenner += S3;

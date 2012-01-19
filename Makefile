@@ -1,6 +1,6 @@
 CC=mpicc
-CFLAGS=-Wall
-LFLAGS=-lfftw3 -lm
+CFLAGS=-Wall -g
+LFLAGS=-lgsl -lgslcblas -lfftw3 -lm
 
 all: p3mstandalone
 

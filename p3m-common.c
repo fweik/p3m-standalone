@@ -130,13 +130,6 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
       Init_nshift(d);
     }
 
-    if ( m->flags & METHOD_FLAG_G_hat) {
-        d->G_hat = Init_array(mesh3, sizeof(FLOAT_TYPE));
-        m->Influence_function( s, p, d );   
-    }
-    else
-        d->G_hat = NULL;    
-
     d->dQdx[0] = d->dQdy[0] = d->dQdz[0] = NULL;
     d->dQdx[1] = d->dQdy[1] = d->dQdz[1] = NULL;
 
@@ -173,6 +166,14 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
       d->ca_ind[1] = NULL;
       d->inter = NULL;
     }
+
+    if ( m->flags & METHOD_FLAG_G_hat) {
+        d->G_hat = Init_array(mesh3, sizeof(FLOAT_TYPE));
+        m->Influence_function( s, p, d );   
+    }
+    else
+        d->G_hat = NULL;    
+
 
     d->forward_plans = 0;
     d->backward_plans = 0;
