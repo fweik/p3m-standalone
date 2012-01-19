@@ -115,6 +115,17 @@ typedef struct {
     FLOAT_TYPE precision;
 } parameters_t;
 
+typedef struct {
+  // cao order of the interpolation
+  int cao;
+  // Actual interpolation data
+  FLOAT_TYPE **interpol;
+  // Interpolation of the derivative
+  FLOAT_TYPE **interpol_d;
+  // array function pointers to the FT of the CA-function
+  FLOAT_TYPE (*W_hat)(int, FLOAT_TYPE);
+} interpolation_t;
+
 // Struct holding method data.
 
 typedef struct {
@@ -135,9 +146,8 @@ typedef struct {
     // Cache for charge assignment
     int *ca_ind[2];
     FLOAT_TYPE *cf[2];
-    // Array for interpolated charge assignment function
-    FLOAT_TYPE **LadInt;
-    FLOAT_TYPE **LadInt_;
+    // Struct for interpolated charge assignment function
+    interpolation_t *inter;
     // fftw plans
     //number of plans
     int forward_plans;

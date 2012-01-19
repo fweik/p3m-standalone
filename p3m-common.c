@@ -163,7 +163,7 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
 	d->ca_ind[i] = Init_array( 3*s->nparticles, sizeof(int));
       }
 	
-      Init_interpolation( p->ip, d );
+      d->inter = Init_interpolation( p->ip, m->flags & METHOD_FLAG_ad );
 	
     }
     else {
@@ -171,8 +171,7 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
       d->ca_ind[0] = NULL;
       d->cf[1] = NULL;
       d->ca_ind[1] = NULL;
-      d->LadInt = NULL;
-      d->LadInt_ = NULL;
+      d->inter = NULL;
     }
 
     d->forward_plans = 0;
@@ -214,16 +213,9 @@ void Free_data(data_t *d) {
             fftw_free(d->dQdz[i]);
     }
 
-    if(d->LadInt != NULL ) {
-      for(i=0;d->LadInt[i] != NULL; i++)
-	fftw_free(d->LadInt[i]);
-      fftw_free(d->LadInt);
-    }
-
-    if(d->LadInt_ != NULL ) {
-      for(i=0;d->LadInt_[i] != NULL; i++)
-	fftw_free(d->LadInt_[i]);
-      fftw_free(d->LadInt_);
+    if(d->inter != NULL ) {
+      Free_interpolation(d->inter);
+      d->inter = NULL;
     }
 
     for (i=0;i<2;i++) {

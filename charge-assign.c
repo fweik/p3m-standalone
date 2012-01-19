@@ -54,13 +54,13 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 
         for (i0=0; i0<p->cao; i0++) {
 	  i = wrap_mesh_index(base[0] + i0, d->mesh);
-            tmp0 = s->q[id] * d->LadInt[i0][arg[0]];
+            tmp0 = s->q[id] * d->inter->interpol[i0][arg[0]];
             for (i1=0; i1<p->cao; i1++) {
 	      j = wrap_mesh_index(base[1] + i1, d->mesh);
-                tmp1 = tmp0 * d->LadInt[i1][arg[1]];
+                tmp1 = tmp0 * d->inter->interpol[i1][arg[1]];
                 for (i2=0; i2<p->cao; i2++) {
 		  k = wrap_mesh_index(base[2] + i2, d->mesh);
-		  cur_ca_frac_val = tmp1 * d->LadInt[i2][arg[2]];
+		  cur_ca_frac_val = tmp1 * d->inter->interpol[i2][arg[2]];
 		  d->cf[ii][cf_cnt++] = cur_ca_frac_val ;
 		  d->Qmesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
                 }
@@ -146,16 +146,16 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
 
         for (i0=0; i0<p->cao; i0++) {
 	  i = wrap_mesh_index(base[0] + i0, d->mesh);
-	  tmp0 = d->LadInt[i0][arg[0]];
-	  tmp0_x = d->LadInt_[i0][arg[0]];
+	  tmp0 = d->inter->interpol[i0][arg[0]];
+	  tmp0_x = d->inter->interpol_d[i0][arg[0]];
 	  for (i1=0; i1<p->cao; i1++) {
 	    j = wrap_mesh_index(base[1] + i1, d->mesh);
-	    tmp1 = d->LadInt[i1][arg[1]];
-	    tmp1_y = d->LadInt_[i1][arg[1]];
+	    tmp1 = d->inter->interpol[i1][arg[1]];
+	    tmp1_y = d->inter->interpol_d[i1][arg[1]];
 	    for (i2=0; i2<p->cao; i2++) {
 	      k = wrap_mesh_index(base[2] + i2, d->mesh);
-	      tmp2 = d->LadInt[i2][arg[2]];
-	      tmp2_z = d->LadInt_[i2][arg[2]];
+	      tmp2 = d->inter->interpol[i2][arg[2]];
+	      tmp2_z = d->inter->interpol_d[i2][arg[2]];
 	      cur_ca_frac_val = s->q[id] * tmp0 * tmp1 * tmp2;
 	      d->cf[ii][cf_cnt] = cur_ca_frac_val ;
 	      if (derivatives) {
