@@ -12,11 +12,11 @@ error_t Calculate_errors(system_t *system, forces_t *f ) {
         for (j=0;j<3;j++) {
             e.f_v[j] += SQR(system->reference->f->fields[j][i] - f->f->fields[j][i]);
 
-            e.f_k += SQR(system->reference->f_k->fields[j][i] - f->f_k->fields[j][i]);
+            e.f_k += SQR(  f->f->fields[j][i] - system->reference->f_k->fields[j][i] );
 
-            e.f_r += SQR(system->reference->f_r->fields[j][i] - f->f_r->fields[j][i]);
+            e.f_r += SQR(  f->f->fields[j][i] - system->reference->f_r->fields[j][i] );
 
-            e.f += SQR(f->f->fields[j][i] - system->reference->f->fields[j][i]);
+            e.f   += SQR(  f->f->fields[j][i] - system->reference->f->fields[j][i] );
         }
     }
     for (j=0;j<3;j++) {

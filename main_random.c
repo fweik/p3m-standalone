@@ -18,7 +18,7 @@
 
 #include "ewald.h"
 
-#include "interpol.c"
+#include "interpol.h"
 
 // Utils and IO
 
@@ -60,7 +60,7 @@ void usage ( char *name ) {
 int main ( int argc, char **argv ) {
     int methodnr;
 
-    FLOAT_TYPE alphamin,alphamax,alphastep;
+    FLOAT_TYPE alphamin,alphamax,alphastep, ref_prec;
 
     FILE* fout;
 
@@ -98,7 +98,7 @@ int main ( int argc, char **argv ) {
     P3M_BRILLOUIN = atoi(argv[10]);
 
     //Exakte_Werte_einlesen( system, argv[2] );
-    Calculate_reference_forces( system, &parameters );
+    ref_prec = Calculate_reference_forces( system, &parameters );
 
 
     if ( methodnr == method_ewald.method_id )
@@ -153,8 +153,10 @@ int main ( int argc, char **argv ) {
         if ( method.Error != NULL ) {
             double estimate =  method.Error ( system, &parameters );
             printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", parameters.alpha, error.f / sqrt(system->nparticles) , estimate,
-                     error.f_r, error.f_k );
-            fprintf ( fout,"% lf\t% e\t% e\n",parameters.alpha,error.f / sqrt(system->nparticles) , estimate );
+                     error.f_r / sqrt(system->nparticles), error.f_k / sqrt(system->nparticles));
+	    if ( estimate < ref_prec )
+	      fprintf ( stderr, "warning: estimated precision '%g' exeeds precision of the reference data '%g'.\n", estimate, ref_prec );
+            fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\n",parameters.alpha,error.f / sqrt(system->nparticles) , estimate, error.f_r / sqrt(system->nparticles), error.f_k / sqrt(system->nparticles) );
         } else {
             printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", parameters.alpha,error.f / system->nparticles , error.f_r, error.f_k );
             fprintf ( fout,"% lf\t% e\t na\n",parameters.alpha,error.f / system->nparticles );

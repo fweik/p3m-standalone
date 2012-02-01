@@ -35,6 +35,6 @@ void Free_forces(forces_t *);
 void Free_vector_array(vector_array_t *);
 
 void Calculate_forces ( const method_t *, system_t *, parameters_t *, data_t *, forces_t * );
-void Calculate_reference_forces ( system_t *, parameters_t * );
+FLOAT_TYPE Calculate_reference_forces ( system_t *, parameters_t * );
 
 #endif

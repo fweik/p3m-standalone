@@ -11,7 +11,7 @@
 
 #include "ewald.h"
 
-#include "interpol.c"
+#include "interpol.h"
 
 // Utils and IO
 

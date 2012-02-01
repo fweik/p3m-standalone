@@ -176,7 +176,7 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
     }
 }
 
-void Calculate_reference_forces ( system_t *s, parameters_t *p ) {
+FLOAT_TYPE Calculate_reference_forces ( system_t *s, parameters_t *p ) {
 
     data_t *d;
 
@@ -198,5 +198,7 @@ void Calculate_reference_forces ( system_t *s, parameters_t *p ) {
 
     Free_data(d);
     Free_forces(f);
+
+    return method_ewald.Error( s, &op );
 }
 

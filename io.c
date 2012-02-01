@@ -24,7 +24,7 @@ void Read_exact_forces(system_t *s, char *filename)
                &E_Coulomb,
                &s->reference->f->x[i], &s->reference->f->y[i], &s->reference->f->z[i],
                &s->reference->f_k->x[i], &s->reference->f_k->y[i], &s->reference->f_k->z[i]);
-	if(ret_val != 7) {
+	if((ret_val != 7) && (ret_val != 4)) {
           fprintf(stderr, "Error while reading file '%s'\n", filename);
           exit(-1);
         }
