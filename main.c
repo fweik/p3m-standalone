@@ -87,7 +87,6 @@ int main ( int argc, char **argv ) {
 
     methodnr = atoi ( argv[6] );
 
-
     Read_exact_forces( system, argv[2] );
     //Calculate_reference_forces( system, &parameters );
 
