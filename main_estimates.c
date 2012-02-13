@@ -20,27 +20,15 @@
 
 #include "interpol.h"
 
-// Utils and IO
-
-#include "io.h"
-
 // Real space part
 
 #include "realpart.h"
-
-// Dipol correction
-
-#include "dipol.h"
 
 // Error calculation
 
 #include "error.h"
 
 // Helper functions for timings
-
-#include "timings.h"
-
-#include "generate_system.h"
 
 // #define WRITE_FORCES
 
@@ -64,11 +52,9 @@ int main ( int argc, char **argv ) {
 
     FILE* fout;
 
-    system_t *system;
+    system_t system;
     method_t method;
     parameters_t parameters;
-    data_t *data;
-    forces_t *forces;
 
     error_t error;
 
@@ -77,17 +63,15 @@ int main ( int argc, char **argv ) {
         return 128;
     }
 
-    // Inits the system and reads particle data and parameters from file.
-    // system = Daten_einlesen ( &parameters, argv[1] );
+    system.nparticles = atoi( argv[5] );
+    system.length = atof ( argv[6] );
+    system.q2 = system.nparticles;
 
-    system = generate_system( FORM_FACTOR_RANDOM, atoi(argv[5]), atof(argv[6]), 1.0 );
     parameters.rcut = atof(argv[9]);
     parameters.cao = atoi(argv[7]);
     parameters.ip = parameters.cao - 1;
     parameters.cao3 =  parameters.cao* parameters.cao* parameters.cao;
     parameters.mesh = atoi(argv[8]);
-
-    forces = Init_forces(system->nparticles);
 
     alphamin = atof ( argv[1] );
     alphamax = atof ( argv[2] );
@@ -95,11 +79,8 @@ int main ( int argc, char **argv ) {
 
     methodnr = atoi ( argv[4] );
 
-    P3M_BRILLOUIN_TUNING = P3M_BRILLOUIN = atoi(argv[10]);
-
-    //Exakte_Werte_einlesen( system, argv[2] );
-    ref_prec = Calculate_reference_forces( system, &parameters );
-
+    P3M_BRILLOUIN = atoi(argv[10]);
+    P3M_BRILLOUIN_TUNING = P3M_BRILLOUIN;
 
     if ( methodnr == method_ewald.method_id )
         method = method_ewald;
@@ -130,40 +111,17 @@ int main ( int argc, char **argv ) {
     }
 
     fprintf ( stderr, "Using %s.\n", method.method_name );
+    fprintf ( stderr, "System of size %d with box_l %lf.\n", system.nparticles, system.length);
 
     fout = fopen ( "out.dat","w" );
 
-    printf ( "Init" );
-    fflush(stdout);
-    data = method.Init ( system, &parameters );
-    printf ( ".\n" );
-
-    printf ( "Init neighborlist" );
-    Init_neighborlist ( system, &parameters, data );
-    printf ( ".\n" );
-
-    printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error", "K-Error" );
+    printf ( "# %8s\t%8s\n", "alpha", "Estimate" );
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
-        method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
-
-        Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
-
-        error = Calculate_errors ( system, forces );
-
         if ( method.Error != NULL ) {
-            double estimate =  method.Error ( system, &parameters );
-            printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", parameters.alpha, error.f / sqrt(system->nparticles) , estimate,
-                     error.f_r / sqrt(system->nparticles), error.f_k / sqrt(system->nparticles));
-	    if ( estimate < ref_prec )
-	      fprintf ( stderr, "warning: estimated precision '%g' exeeds precision of the reference data '%g'.\n", estimate, ref_prec );
-            fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\n",parameters.alpha,error.f / sqrt(system->nparticles) , estimate, error.f_r / sqrt(system->nparticles), error.f_k / sqrt(system->nparticles) );
-        } else {
-            printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", parameters.alpha,error.f / system->nparticles , error.f_r, error.f_k );
-            fprintf ( fout,"% lf\t% e\t na\n",parameters.alpha,error.f / system->nparticles );
-        }
-#ifdef FORCE_DEBUG
-        fprintf ( stderr, "%lf rms %e %e %e\n", parameters.alpha, error.f_v[0], error.f_v[1], error.f_v[2] );
-#endif
+            double estimate =  method.Error ( &system, &parameters );
+            printf ( "%8lf\t%8e\n", parameters.alpha, estimate);
+            fprintf ( fout,"% lf\t% e\n",parameters.alpha, estimate );
+	}
         fflush ( stdout );
         fflush ( fout );
     }

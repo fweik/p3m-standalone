@@ -47,9 +47,6 @@
 // #define FORCE_DEBUG
 // #define CA_DEBUG
 
-
-
-
 void usage ( char *name ) {
     fprintf ( stderr, "usage: %s <positions> <forces> <alpha_min> <alpha_max> <alpha_step> <method>\n", name );
 }
@@ -71,6 +68,15 @@ int main ( int argc, char **argv ) {
     forces_t *forces;
 
     error_t error;
+
+    cmd_parameters_t params = { NULL, 0, NULL, 0 };
+
+    add_param( "rcut", ARG_TYPE_FLOAT, ARG_REQUIRED, &(parameters.rcut), &params );
+    add_param( "alphamin", ARG_TYPE_FLOAT, ARG_REQUIRED, &alphamin, &params );
+    add_param( "alphamax", ARG_TYPE_FLOAT, ARG_REQUIRED, &alphamax, &params );
+    add_param( "alphastep", ARG_TYPE_FLOAT, ARG_REQUIRED, &alphastep, &params );
+
+    parse_parameters( argc - 1, argv + 1, params );
 
     if ( argc != 7 ) {
         usage ( argv[0] );

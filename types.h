@@ -157,6 +157,8 @@ typedef struct {
     fftw_plan backward_plan[3];
     // neighbor list for real space calculation
     neighbor_list_t *neighbor_list;
+    // Self forces corrections
+    FLOAT_TYPE *self_force_corrections;
 } data_t;
 
 // Flags for method_t
@@ -170,6 +172,7 @@ enum {
     METHOD_FLAG_G_hat = 16, // Method uses influence function
     METHOD_FLAG_Qmesh = 32, // Method needs charge mesh
     METHOD_FLAG_ca = 64, // Method uses charge assignment
+    METHOD_FLAG_self_force_correction = 128, // Method need self force correction
 };
 
 // Common flags for all p3m methods for convinience

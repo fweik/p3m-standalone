@@ -114,6 +114,7 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
 	  rhohat_im = 0.0;
           ghat = d->G_hat[r_ind(abs(nx), abs(ny), abs(nz))];          
           
+#pragma omp parallel for private(kr) reduction( + : rhohat_re ) reduction( + : rhohat_im )
 	  for (i=0; i<s->nparticles; i++) {
             kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
 	    rhohat_re += s->q[i] * cos(kr);
@@ -121,6 +122,7 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
           }
 
 	  /* compute forces */
+#pragma omp parallel for private(kr)
 	  for (i=0; i<s->nparticles; i++) {
 	    kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
 	     

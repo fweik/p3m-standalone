@@ -1,10 +1,111 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #include "types.h"
 #include "io.h"
 #include "common.h"
+
+static void usage(cmd_parameter_t **required, cmd_parameter_t **optinal) {
+  
+}
+
+int cmd_parameter_t_cmp ( cmd_parameter_t **a, cmd_parameter_t **b ) {
+  return strcmp((*a)->parameter, (*b)->parameter);
+}
+
+void add_param( char *name, int type, int reqopt, void *value, cmd_parameters_t *params) {
+  cmd_parameter_t **list;
+  int n;
+  cmd_parameter_t *new_param;
+  
+  if(reqopt == ARG_OPTIONAL) {
+    n = params->n_opt;
+    params->optional = realloc(params->optional, ++n * sizeof(cmd_parameter_t *));
+    list = params->optional;
+    params->n_opt = n;
+  }
+  else if(reqopt == ARG_REQUIRED) {
+    n = params->n_req;
+    params->required = realloc(params->required, ++n * sizeof(cmd_parameter_t *));
+    list = params->required;
+    params->n_req = n;
+  }
+
+  new_param = malloc(sizeof(cmd_parameter_t));
+  list[n-1] = new_param;
+  new_param->parameter = name;
+  new_param->is_set = 0;
+  new_param->type = type;
+
+  switch(type) {
+    case ARG_TYPE_INT:
+      new_param->value.i = (int *)value;
+      break;
+    case ARG_TYPE_FLOAT:
+      new_param->value.f = (FLOAT_TYPE *)value;
+      break;
+    case ARG_TYPE_STRING:
+      new_param->value.c = (char *)value;
+      break;
+  }
+
+}
+
+void parse_parameters( int argc, char **argv, cmd_parameters_t params) {
+  int i;
+  cmd_parameter_t **it, *s;
+  cmd_parameter_t search_term;
+  s = &search_term;
+
+  printf("Parsing for %d required and %d optional parameters.\n", params.n_req, params.n_opt);
+  if((params.n_req == 0) && (params.n_opt == 0)) //nothing to parse
+    return;
+
+  //  if(params.n_req > argc) {
+  // usage(params.required, params.optional);
+  //  exit(23);
+  // }
+
+  if(params.n_req > 0)
+    qsort(params.required, params.n_req, sizeof(cmd_parameter_t *), (__compar_fn_t)cmd_parameter_t_cmp);
+  if(params.n_opt > 0)
+    qsort(params.optional, params.n_opt, sizeof(cmd_parameter_t *), (__compar_fn_t)cmd_parameter_t_cmp);
+  
+  for(i=0;i<params.n_req;i++)
+    printf("%s\n", params.required[i]->parameter);
+
+  while(argc > 0) {
+    printf("Parsing '%s'.\n", *argv);
+    search_term.parameter = *argv;
+    it = bsearch(&s, params.required, params.n_req, sizeof(cmd_parameter_t *), (__compar_fn_t)cmd_parameter_t_cmp);
+
+    if(it != NULL) {
+      printf("Found '%s', value '%s'\n", (*it)->parameter, *(argv + 1));
+      switch((*it)->type) {
+        case ARG_TYPE_INT:
+	  *((*it)->value.i) = atoi(*(++argv));
+	  (*it)->is_set = 1;
+	  argc--;
+	  break;
+        case ARG_TYPE_FLOAT:
+	  *((*it)->value.f) = atof(*(++argv));
+	  (*it)->is_set = 1;	       
+	  printf("Value %lf\n", *((*it)->value.f));
+	  break;
+        case ARG_TYPE_STRING:
+	  (*it)->value.c = *(++argv);
+	  (*it)->is_set = 1;
+	  argc--;
+	  break;
+      }      
+    }
+
+    argv++;
+    argc--;
+  }
+}
 
 void Read_exact_forces(system_t *s, char *filename)
 {
