@@ -17,7 +17,7 @@
 /* Maximal k-vector allowed in Ewald_k_space. 
    Defines the size of the influence function array.
 */
-#define kmax 50
+#define kmax 30
 
 /* Square of the maximal k-vector used for the computation of the
    Kolafa-Perram diagonal term. */
@@ -145,7 +145,7 @@ FLOAT_TYPE compute_error_estimate_r(system_t *s, parameters_t *p, FLOAT_TYPE alp
   return res;
 }
 
-FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {
+static FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {
   /* compute the k space part of the error estimate */
   FLOAT_TYPE res, Leni = 1.0/s->length;
 

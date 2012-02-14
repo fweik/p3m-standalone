@@ -155,14 +155,14 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
     if(__detailed_timings)
       t = MPI_Wtime();
 #endif
-    //    Realpart_neighborlist ( s, p, d, f );
+    //Realpart_neighborlist ( s, p, d, f );
 #ifdef DETAILED_TIMINGS
     if(__detailed_timings)
       printf(" %e", MPI_Wtime() - t);
 #endif
 
 
-     Realteil( s, p, f );
+    Realteil( s, p, f );
 
     //  Dipol(s, p);
 

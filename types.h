@@ -15,16 +15,19 @@ extern int __detailed_timings;
 #ifdef SINGLE_PREC
 #define FLOAT_FORMAT "%.8f"
 #define FLOAT_TYPE float
+#define FLOAT_CAST (double)
 #endif
 
 #ifdef DOUBLE_PREC
 #define FLOAT_FORMAT "%.15f"
 #define FLOAT_TYPE double
+#define FLOAT_CAST
 #endif
 
 #ifdef QUAD_PREC
 #define FLOAT_TYPE __float128
 #define FLOAT_FORMAT "%.35q"
+#define FLOAT_CAST (double)
 #endif
 
 // !3
@@ -186,7 +189,7 @@ typedef struct {
     data_t * ( *Init ) ( system_t *, parameters_t * );
     void ( *Influence_function ) ( system_t *, parameters_t *, data_t * );
     void ( *Kspace_force ) ( system_t *, parameters_t *, data_t *, forces_t * );
-    double ( *Error ) ( system_t *, parameters_t * );
+    FLOAT_TYPE ( *Error ) ( system_t *, parameters_t * );
 } method_t;
 
 

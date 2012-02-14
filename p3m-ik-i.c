@@ -257,14 +257,14 @@ void P3M_ik_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 
 void p3m_tune_aliasing_sums_ik_i (int nx, int ny, int nz, 
 					   system_t *s, parameters_t *p, 
-				  double *alias1, double *alias2, double *alias3, double *alias4)
+				  FLOAT_TYPE *alias1, FLOAT_TYPE *alias2, FLOAT_TYPE *alias3, FLOAT_TYPE *alias4)
 {
 
   int    mx,my,mz;
-  double nmx,nmy,nmz;
-  double fnmx,fnmy,fnmz;
+  FLOAT_TYPE nmx,nmy,nmz;
+  FLOAT_TYPE fnmx,fnmy,fnmz;
 
-  double ex,ex2,nm2,U2,factor1;
+  FLOAT_TYPE ex,ex2,nm2,U2,factor1;
   int mesh = p->mesh;
   FLOAT_TYPE mesh_i = 1.0 / mesh;
 
@@ -326,7 +326,7 @@ FLOAT_TYPE p3m_k_space_error_ik_i ( system_t *s, parameters_t *p ) {
 }
 
 /*
-double p3m_k_space_error_ik_i ( system_t *s, parameters_t *p )
+FLOAT_TYPE p3m_k_space_error_ik_i ( system_t *s, parameters_t *p )
 {
   int    NX,NY,NZ, N2;
   FLOAT_TYPE Dnx,Dny,Dnz;

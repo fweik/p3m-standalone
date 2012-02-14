@@ -35,9 +35,7 @@ static void forward_fft ( data_t * );
 static void backward_fft ( data_t * );
 static void p3m_tune_aliasing_sums_ik ( int, int, int,
                                         const system_t *, const parameters_t *,
-                                        double *, double * );
-
-static FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE, const system_t *, const parameters_t * );
+                                        FLOAT_TYPE *, FLOAT_TYPE * );
 
 inline void forward_fft ( data_t *d ) {
     fftw_execute ( d->forward_plan[0] );
@@ -98,7 +96,7 @@ void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY,
                 *Nenner += S3;
 
                 expo = fak2*NM2;
-                TE = ( expo < 30.0 ) ? exp ( -expo ) : 0.0;
+                TE = exp ( -expo );
                 zwi  = S3 * TE/NM2;
                 Zaehler[0] += NMX*zwi*Leni;
                 Zaehler[1] += NMY*zwi*Leni;

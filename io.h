@@ -13,7 +13,7 @@ typedef struct {
   union {
     int *i;
     FLOAT_TYPE *f;
-    char *c;
+    char **c;
   } value;    
 } cmd_parameter_t;
 
