@@ -28,8 +28,6 @@ const method_t method_p3m_ik_i = { METHOD_P3M_ik_i, "P3M with ik differentiation
 
 // Forward declaration of local functions
 
-FLOAT_TYPE p3m_k_space_error_ik_i ( system_t *s, parameters_t *p );
-
 static void forward_fft( data_t * );
 static void backward_fft( data_t * );
 
@@ -92,7 +90,7 @@ void Aliasing_sums_ik_i( system_t *s, parameters_t *p, data_t *d, int NX, int NY
 	*Nenner1 += S3;
 	
 	expo = fak2*NM2;
-	TE = ( expo < 30.0 ) ? exp ( -expo ) : 0.0;
+	TE = exp ( -expo );
 	zwi  = S3 * TE/NM2;
 	Zaehler[0] += NMX*zwi*Leni;
 	Zaehler[1] += NMY*zwi*Leni;
