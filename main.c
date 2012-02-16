@@ -97,7 +97,7 @@ int main ( int argc, char **argv ) {
     add_param( "alphamax", ARG_TYPE_FLOAT, ARG_REQUIRED, &alphamax, &params );
     add_param( "alphastep", ARG_TYPE_FLOAT, ARG_REQUIRED, &alphastep, &params );
     add_param( "positions", ARG_TYPE_STRING, ARG_REQUIRED, &pos_file, &params );
-    add_param( "forces", ARG_TYPE_STRING, ARG_REQUIRED, &force_file, &params );
+    add_param( "forces", ARG_TYPE_STRING, ARG_OPTIONAL, &force_file, &params );
     add_param( "mesh", ARG_TYPE_INT, ARG_REQUIRED, &(parameters.mesh), &params );
     add_param( "cao", ARG_TYPE_INT, ARG_REQUIRED, &(parameters.cao), &params );
     add_param( "method", ARG_TYPE_INT, ARG_REQUIRED, &methodnr, &params );
@@ -118,7 +118,10 @@ int main ( int argc, char **argv ) {
     forces = Init_forces(system->nparticles);
     forces_ewald = Init_forces(system->nparticles);
 
-    Read_exact_forces( system, force_file );
+    puts("Calculating reference forces.");
+    Calculate_reference_forces( system, &parameters );
+    //    Read_exact_forces( system, force_file );
+    puts("Done.");
 
     if ( methodnr == method_ewald.method_id )
         method = method_ewald;
@@ -178,7 +181,7 @@ int main ( int argc, char **argv ) {
       Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 
       for(i=0;i<3;i++) {
-        memset ( forces_ewald->f_r->fields[i], 0, system->nparticles*sizeof ( FLOAT_TYPE ) );
+        memset ( forces_ewald->f_k->fields[i], 0, system->nparticles*sizeof ( FLOAT_TYPE ) );
       }
       method_ewald.Kspace_force( system, &parameters_ewald, data_ewald, forces_ewald );
 
