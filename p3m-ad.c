@@ -19,7 +19,7 @@
 
 const method_t method_p3m_ad = { METHOD_P3M_ad, "P3M with analytic differentiation, not intelaced.", 
 				 METHOD_FLAG_P3M | METHOD_FLAG_ad | METHOD_FLAG_self_force_correction, 
-				 &Init_ad, &Influence_function_berechnen_ad, &P3M_ad, &Error_ad };
+				 &Init_ad, &Influence_function_berechnen_ad, &P3M_ad, &Error_ad, &p3m_k_space_error_ad };
 
 static void forward_fft( data_t *d );
 static void backward_fft( data_t *d );

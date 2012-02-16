@@ -27,7 +27,7 @@ void print_parameter(cmd_parameter_t *it) {
           printf("'%s' is set", it->parameter);
       }      
   else
-    printf("'%s' = notset", it->parameter);
+    printf("'%s' = not set", it->parameter);
 }
 
 int cmd_parameter_t_cmp ( cmd_parameter_t **a, cmd_parameter_t **b ) {
@@ -145,8 +145,9 @@ void parse_parameters( int argc, char **argv, cmd_parameters_t params) {
       print_parameter(params.required[i]); printf(", ");
     }
   for(i=0;i<params.n_opt;i++)
-    if(!params.optional[i]->is_set)
+    if(!params.optional[i]->is_set) {
       print_parameter(params.optional[i]); printf(", ");
+    }
   printf("\n");
 }
 

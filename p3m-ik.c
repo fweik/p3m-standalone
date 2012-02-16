@@ -26,7 +26,7 @@
 
 const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.",
                                  METHOD_FLAG_P3M | METHOD_FLAG_ik,
-                                 &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, &Error_ik
+                                 &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, &Error_ik, &Error_ik_k,
                                };
 
 // Forward declaration of local functions
@@ -37,6 +37,8 @@ static void p3m_tune_aliasing_sums_ik ( int, int, int,
                                         const system_t *, const parameters_t *,
                                         FLOAT_TYPE *, FLOAT_TYPE * );
 
+FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p );
+
 inline void forward_fft ( data_t *d ) {
     fftw_execute ( d->forward_plan[0] );
 }
@@ -45,6 +47,10 @@ inline void backward_fft ( data_t *d ) {
     int i;
     for ( i=0;i<3;i++ )
         fftw_execute ( d->backward_plan[i] );
+}
+
+FLOAT_TYPE Error_ik_k( system_t *s, parameters_t *p ) {
+  return p3m_k_space_error_ik( 1.0, s, p );
 }
 
 data_t *Init_ik ( system_t *s, parameters_t *p ) {
@@ -304,8 +310,6 @@ void p3m_tune_aliasing_sums_ik ( int nx, int ny, int nz,
         for ( my=-P3M_BRILLOUIN_TUNING; my<=P3M_BRILLOUIN_TUNING; my++ ) {
             fnmy = meshi * ( nmy = ny + my*mesh );
             for ( mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++ ) {
-
-
                 fnmz = meshi * ( nmz = nz + mz*mesh );
 
                 nm2 = SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz );

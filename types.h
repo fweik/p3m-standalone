@@ -190,6 +190,7 @@ typedef struct {
     void ( *Influence_function ) ( system_t *, parameters_t *, data_t * );
     void ( *Kspace_force ) ( system_t *, parameters_t *, data_t *, forces_t * );
     FLOAT_TYPE ( *Error ) ( system_t *, parameters_t * );
+    FLOAT_TYPE ( *Error_k ) ( system_t *, parameters_t * );
 } method_t;
 
 

@@ -21,7 +21,7 @@
 
 const method_t method_p3m_ad_i = { METHOD_P3M_ad_i, "P3M with analytic differentiation, intelaced.", 
 				   METHOD_FLAG_P3M | METHOD_FLAG_ad | METHOD_FLAG_interlaced, 
-				   &Init_ad_i, &Influence_function_ad_i, &P3M_ad_i, &Error_ad_i };
+				   &Init_ad_i, &Influence_function_ad_i, &P3M_ad_i, &Error_ad_i, &p3m_k_space_error_ad_i };
 
 static void forward_fft( data_t *d );
 static void backward_fft( data_t *d );

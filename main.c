@@ -87,8 +87,8 @@ int main ( int argc, char **argv ) {
     char *pos_file = NULL, *force_file = NULL;
     error_t error;
 
-    FLOAT_TYPE error_k=0.0, ewald_error_k_est;
-    int i,j, calc_k_error;
+    FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est;
+    int i,j, calc_k_error, calc_est;
 
     cmd_parameters_t params = { NULL, 0, NULL, 0 };
 
@@ -104,10 +104,12 @@ int main ( int argc, char **argv ) {
     add_param( "mc", ARG_TYPE_INT, ARG_OPTIONAL, &P3M_BRILLOUIN, &params );
     add_param( "mc_est", ARG_TYPE_INT, ARG_OPTIONAL, &P3M_BRILLOUIN_TUNING, &params );
     add_param( "error_k", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
+    add_param( "no_estimate", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
 
     parse_parameters( argc - 1, argv + 1, params );
 
     calc_k_error = param_isset( "error_k", params );
+    calc_est = param_isset( "estimate", params );
 
     parameters.cao3 = parameters.cao*parameters.cao*parameters.cao;
     parameters.ip = parameters.cao - 1;
@@ -179,8 +181,6 @@ int main ( int argc, char **argv ) {
       parameters_ewald.alpha = parameters.alpha;
 
       method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
-      if(calc_k_error == 1)
-	method_ewald.Influence_function ( system, &parameters_ewald, data_ewald );
 
       Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 
@@ -189,25 +189,31 @@ int main ( int argc, char **argv ) {
 	for(i=0;i<3;i++) {
 	  memset ( forces_ewald->f_k->fields[i], 0, system->nparticles*sizeof ( FLOAT_TYPE ) );
 	}
+	method_ewald.Influence_function ( system, &parameters_ewald, data_ewald );
 	method_ewald.Kspace_force( system, &parameters_ewald, data_ewald, forces_ewald );
 
-      error_k =0.0;
-      for (i=0; i<system->nparticles; i++) {
-	for (j=0;j<3;j++) {            
-	  error_k   += SQR( forces->f_k->fields[j][i] - forces_ewald->f_k->fields[j][i] );
+	error_k =0.0;
+	for (i=0; i<system->nparticles; i++) {
+	  for (j=0;j<3;j++) {            
+	    error_k   += SQR( forces->f_k->fields[j][i] - forces_ewald->f_k->fields[j][i] );
+	  }
 	}
-      }
-      error_k = sqrt(error_k) / sqrt(system->nparticles);
+	error_k = sqrt(error_k) / sqrt(system->nparticles);
       }
 
       ewald_error_k_est = compute_error_estimate_k( system, &parameters_ewald, parameters_ewald.alpha);
       error = Calculate_errors ( system, forces );
 
       if ( method.Error != NULL ) {
-            double estimate =  method.Error ( system, &parameters );
-            printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / sqrt(system->nparticles) , FLOAT_CAST estimate,
-                     FLOAT_CAST Realspace_error( system, &parameters ), FLOAT_CAST p3m_k_space_error_ik ( 1.0, system, &parameters) );
-            fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / sqrt(system->nparticles) , FLOAT_CAST estimate, Realspace_error( system, &parameters ), p3m_k_space_error_ik ( 1.0, system, &parameters), error_k, ewald_error_k_est );
+	if( calc_est == 0 )
+	  estimate = method.Error ( system, &parameters );
+	error_k_est = method.Error_k ( system, &parameters);
+	printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / sqrt(system->nparticles) , FLOAT_CAST estimate,
+		 FLOAT_CAST Realspace_error( system, &parameters ), FLOAT_CAST error_k_est );
+	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\n", 
+		  FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / sqrt(system->nparticles) , 
+		  FLOAT_CAST estimate, Realspace_error( system, &parameters ), 
+		  FLOAT_CAST error_k_est, error_k, ewald_error_k_est );
         } else {
             printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles , FLOAT_CAST error.f_r, FLOAT_CAST error.f_k );
             fprintf ( fout,"% lf\t% e\t na\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles );

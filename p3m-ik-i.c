@@ -23,10 +23,12 @@
 
 const method_t method_p3m_ik_i = { METHOD_P3M_ik_i, "P3M with ik differentiation, interlaced.",
                                    METHOD_FLAG_P3M | METHOD_FLAG_ik | METHOD_FLAG_interlaced,
-                                   &Init_ik_i, &Influence_ik_i, &P3M_ik_i, &Error_ik_i
+                                   &Init_ik_i, &Influence_ik_i, &P3M_ik_i, &Error_ik_i, &p3m_k_space_error_ik_i,
                                  };
 
 // Forward declaration of local functions
+
+FLOAT_TYPE p3m_k_space_error_ik_i ( system_t *s, parameters_t *p );
 
 static void forward_fft( data_t * );
 static void backward_fft( data_t * );
@@ -276,8 +278,6 @@ void p3m_tune_aliasing_sums_ik_i (int nx, int ny, int nz,
     for (my=-P3M_BRILLOUIN_TUNING; my<=P3M_BRILLOUIN_TUNING; my++) {
       fnmy = mesh_i * (nmy = ny + my*mesh);
       for (mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++) {
-      
-
 
 	fnmz = mesh_i * (nmz = nz + mz*mesh);
 	
