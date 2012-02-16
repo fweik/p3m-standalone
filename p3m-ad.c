@@ -80,7 +80,7 @@ void Aliasing_sums_ad(int NX, int NY, int NZ, system_t *s, parameters_t *p, data
 	*Nenner2 += S3 * NM2;
 
 	expo = fak2*NM2;
-	TE = (expo < 30) ? exp(-expo) : 0.0;
+	TE = exp(-expo);
 	zwi  = S3 * TE;
         *Zaehler += zwi;
       }
