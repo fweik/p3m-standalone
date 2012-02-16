@@ -88,7 +88,7 @@ int main ( int argc, char **argv ) {
     error_t error;
 
     FLOAT_TYPE error_k=0.0, ewald_error_k_est;
-    int i,j;
+    int i,j, calc_k_error;
 
     cmd_parameters_t params = { NULL, 0, NULL, 0 };
 
@@ -103,8 +103,11 @@ int main ( int argc, char **argv ) {
     add_param( "method", ARG_TYPE_INT, ARG_REQUIRED, &methodnr, &params );
     add_param( "mc", ARG_TYPE_INT, ARG_OPTIONAL, &P3M_BRILLOUIN, &params );
     add_param( "mc_est", ARG_TYPE_INT, ARG_OPTIONAL, &P3M_BRILLOUIN_TUNING, &params );
+    add_param( "error_k", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
 
     parse_parameters( argc - 1, argv + 1, params );
+
+    calc_k_error = param_isset( "error_k", params );
 
     parameters.cao3 = parameters.cao*parameters.cao*parameters.cao;
     parameters.ip = parameters.cao - 1;
@@ -176,14 +179,17 @@ int main ( int argc, char **argv ) {
       parameters_ewald.alpha = parameters.alpha;
 
       method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
-      method_ewald.Influence_function ( system, &parameters_ewald, data_ewald );
+      if(calc_k_error == 1)
+	method_ewald.Influence_function ( system, &parameters_ewald, data_ewald );
 
       Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 
-      for(i=0;i<3;i++) {
-        memset ( forces_ewald->f_k->fields[i], 0, system->nparticles*sizeof ( FLOAT_TYPE ) );
-      }
-      method_ewald.Kspace_force( system, &parameters_ewald, data_ewald, forces_ewald );
+      error_k =0.0;
+      if(calc_k_error == 1) {
+	for(i=0;i<3;i++) {
+	  memset ( forces_ewald->f_k->fields[i], 0, system->nparticles*sizeof ( FLOAT_TYPE ) );
+	}
+	method_ewald.Kspace_force( system, &parameters_ewald, data_ewald, forces_ewald );
 
       error_k =0.0;
       for (i=0; i<system->nparticles; i++) {
@@ -192,6 +198,8 @@ int main ( int argc, char **argv ) {
 	}
       }
       error_k = sqrt(error_k) / sqrt(system->nparticles);
+      }
+
       ewald_error_k_est = compute_error_estimate_k( system, &parameters_ewald, parameters_ewald.alpha);
       error = Calculate_errors ( system, forces );
 

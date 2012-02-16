@@ -23,10 +23,11 @@ void print_parameter(cmd_parameter_t *it) {
         case ARG_TYPE_STRING:
 	  printf("'%s' = '%s'", it->parameter, *(it->value.c));
 	  break;
+        case ARG_TYPE_NONE:
+          printf("'%s' is set", it->parameter);
       }      
   else
     printf("'%s' = notset", it->parameter);
-  printf("\n");
 }
 
 int cmd_parameter_t_cmp ( cmd_parameter_t **a, cmd_parameter_t **b ) {
@@ -71,6 +72,20 @@ void add_param( char *name, int type, int reqopt, void *value, cmd_parameters_t 
 
 }
 
+int param_isset(char *c, cmd_parameters_t params) {
+  cmd_parameter_t **it, *s;
+  cmd_parameter_t search_term;
+
+  search_term.parameter = c;
+  s = &search_term;
+  it = bsearch( &s, params.optional, params.n_opt, sizeof(cmd_parameter_t *), (__compar_fn_t)cmd_parameter_t_cmp);
+
+  if(it == NULL)
+    return 0;
+
+  return (*it)->is_set;
+}
+
 void parse_parameters( int argc, char **argv, cmd_parameters_t params) {
   int i;
   cmd_parameter_t **it, *s;
@@ -88,7 +103,7 @@ void parse_parameters( int argc, char **argv, cmd_parameters_t params) {
   
   while(argc > 0) {
     search_term.parameter = *argv;
-    printf("Parsing '%s'\n", *argv);
+
     it = bsearch(&s, params.required, params.n_req, sizeof(cmd_parameter_t *), (__compar_fn_t)cmd_parameter_t_cmp);
     if(it == NULL)
           it = bsearch(&s, params.optional, params.n_opt, sizeof(cmd_parameter_t *), (__compar_fn_t)cmd_parameter_t_cmp);
@@ -108,6 +123,9 @@ void parse_parameters( int argc, char **argv, cmd_parameters_t params) {
 	  *((*it)->value.c) = *(++argv);
 	  (*it)->is_set = 1;
 	  argc--;
+	  break;
+        case ARG_TYPE_NONE:
+	  (*it)->is_set = 1;
 	  break;
       }      
     } else {

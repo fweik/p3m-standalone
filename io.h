@@ -26,6 +26,7 @@ typedef struct {
 
 // functions for command line parameter handling
 void add_param( char *name, int type, int reqopt, void *value, cmd_parameters_t *params);
+int param_isset(char *s, cmd_parameters_t params);
 void parse_parameters( int, char **, cmd_parameters_t);
 
 void Read_exact_forces(system_t *s, char *);
