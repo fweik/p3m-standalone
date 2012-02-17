@@ -167,17 +167,13 @@ void Read_exact_forces(system_t *s, char *filename)
     }
 
     for (i=0; i<s->nparticles; i++) {
-        ret_val = fscanf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
-			 &E_Coulomb, buf, buf + 1, buf + 2, buf + 3, buf + 4, buf + 5);
+        ret_val = fscanf(fp,"%lf\t%lf\t%lf\t%lf\n",
+			 &E_Coulomb, buf, buf + 1, buf + 2);
 	s->reference->f->x[i] = buf[0];
 	s->reference->f->y[i] = buf[1];
 	s->reference->f->z[i] = buf[2];
-	s->reference->f_k->x[i] = buf[3];
-	s->reference->f_k->y[i] = buf[4];
-	s->reference->f_k->z[i] = buf[5];
-
 			 
-	if((ret_val != 7) && (ret_val != 4)) {
+	if((ret_val != 4)) {
           fprintf(stderr, "Error while reading file '%s' (%d)\n", filename, ret_val);
           exit(-1);
         }

@@ -57,16 +57,9 @@ static FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_T
   FLOAT_TYPE res, Leni = 1.0/s->length;
   int kmax = p->mesh-1;
 
-
-
   /* Kolafa Perram, eq. 31 */
-/*   res = Q2 * alpha * my_power(PI, -2.0) * my_power(kmax, -1.5)  */
-/*     * exp(-SQR(PI*kmax/(alpha*L))); */
-  /* Petersen 1995, eq. 11 */
   res = 2.0 * s->q2 * alpha * Leni * sqrt(1.0/(PI*kmax*s->nparticles))
     * exp(-SQR(PI*kmax/(alpha*s->length)));
-
-  printf("alpha %lf length %lf Leni %lf kmax %d npart %d q2 %lf PI %lf err %e\n", alpha, s->length, Leni, kmax, s->nparticles, s->q2, PI, res);
 
   return res;
 }
@@ -84,7 +77,7 @@ int main ( int argc, char **argv ) {
     parameters_t parameters, parameters_ewald;
     data_t *data, *data_ewald;
     forces_t *forces, *forces_ewald;
-    char *pos_file = NULL, *force_file = NULL;
+    char *pos_file = NULL, *force_file = NULL, *out_file = NULL;
     error_t error;
 
     FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est;
@@ -105,6 +98,7 @@ int main ( int argc, char **argv ) {
     add_param( "mc_est", ARG_TYPE_INT, ARG_OPTIONAL, &P3M_BRILLOUIN_TUNING, &params );
     add_param( "error_k", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "no_estimate", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
+    add_param( "outfile", ARG_TYPE_STRING, ARG_OPTIONAL, &out_file, &params );
 
     parse_parameters( argc - 1, argv + 1, params );
 
@@ -123,10 +117,15 @@ int main ( int argc, char **argv ) {
     forces = Init_forces(system->nparticles);
     forces_ewald = Init_forces(system->nparticles);
 
-    puts("Calculating reference forces.");
-    Calculate_reference_forces( system, &parameters );
-    //    Read_exact_forces( system, force_file );
-    puts("Done.");
+    if(param_isset("forces", params) == 1) {
+      printf("Reading reference forces from '%s'.\n", force_file);
+      Read_exact_forces( system, force_file );
+      puts("Done.");
+    } else {
+      puts("Calculating reference forces.");
+      Calculate_reference_forces( system, &parameters );
+      puts("Done.");
+    }
 
     if ( methodnr == method_ewald.method_id )
         method = method_ewald;
@@ -162,7 +161,11 @@ int main ( int argc, char **argv ) {
 
     fprintf ( stderr, "Using %s.\n", method.method_name );
 
-    fout = fopen ( "out.dat","w" );
+    if(param_isset("outfile", params) == 1) {
+      fout = fopen ( out_file, "w" );      
+    } else {
+      fout = fopen ( "out.dat","w" );
+    }
 
     printf ( "Init" );
     fflush(stdout);

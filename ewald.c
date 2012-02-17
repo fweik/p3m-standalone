@@ -37,8 +37,13 @@
 
 const method_t method_ewald = { METHOD_EWALD, "Ewald summation.", 
 				METHOD_FLAG_G_hat, 
-				&Ewald_init, &Ewald_compute_influence_function, &Ewald_k_space, &Ewald_estimate_error };
+				&Ewald_init, &Ewald_compute_influence_function, &Ewald_k_space, &Ewald_estimate_error, &Ewald_error_k };
 
+static FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_TYPE alpha);
+
+FLOAT_TYPE Ewald_error_k( system_t *s, parameters_t *p ) {
+  return compute_error_estimate_k(s, p, p->alpha);
+}
 
 /*----------------------------------------------------------------------*/
 /* GLOBAL VARIABLES */
