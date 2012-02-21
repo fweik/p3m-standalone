@@ -7,8 +7,28 @@
 #include "io.h"
 #include "common.h"
 
+#include "tools/visit_writer.h"
+
+
 static void usage(cmd_parameter_t **required, cmd_parameter_t **optinal) {
   
+}
+
+void write_mesh(char *filename, FLOAT_TYPE *data, int *dims, FLOAT_TYPE *spacing, int data_size, const char *var_name) {
+  int i,j,k,index_row,index_col;
+  int centering[] = {1};
+  float *data_col_maj=NULL;
+
+  data_col_maj = malloc(dims[0]*dims[1]*dims[2]*data_size*sizeof(float));
+
+  for(k=0;k<dims[2];k++)
+    for(j=0;j<dims[1];j++)
+      for(i=0;i<dims[0];i++) {
+	index_row = (dims[1]*dims[2]*i + dims[1]*j + k)*data_size;
+	index_col = (dims[1]*dims[2]*k + dims[1]*j + i)*data_size;
+	data_col_maj[index_col] =  data[index_row];
+      }
+  write_regular_mesh( filename, 0, dims, 1, &data_size, centering, &var_name, &data_col_maj);
 }
 
 void print_parameter(cmd_parameter_t *it) {
@@ -217,9 +237,6 @@ system_t *Read_system(parameters_t *p, char *filename)
       exit(-1);
     }
     
-    p->cao = p->ip + 1;
-    p->cao3 = p->cao*p->cao*p->cao;
-
     s = Init_system(n);
     s->length = Length;
 
