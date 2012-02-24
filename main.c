@@ -79,6 +79,8 @@ int main ( int argc, char **argv ) {
     forces_t *forces, *forces_ewald;
     char *pos_file = NULL, *force_file = NULL, *out_file = NULL;
     error_t error;
+    FLOAT_TYPE length;
+    int npart;
 
     FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est;
     int i,j, calc_k_error, calc_est;
@@ -89,7 +91,7 @@ int main ( int argc, char **argv ) {
     add_param( "alphamin", ARG_TYPE_FLOAT, ARG_REQUIRED, &alphamin, &params );
     add_param( "alphamax", ARG_TYPE_FLOAT, ARG_REQUIRED, &alphamax, &params );
     add_param( "alphastep", ARG_TYPE_FLOAT, ARG_REQUIRED, &alphastep, &params );
-    add_param( "positions", ARG_TYPE_STRING, ARG_REQUIRED, &pos_file, &params );
+    add_param( "positions", ARG_TYPE_STRING, ARG_OPTIONAL, &pos_file, &params );
     add_param( "forces", ARG_TYPE_STRING, ARG_OPTIONAL, &force_file, &params );
     add_param( "mesh", ARG_TYPE_INT, ARG_REQUIRED, &(parameters.mesh), &params );
     add_param( "cao", ARG_TYPE_INT, ARG_REQUIRED, &(parameters.cao), &params );
@@ -99,6 +101,8 @@ int main ( int argc, char **argv ) {
     add_param( "error_k", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "no_estimate", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "outfile", ARG_TYPE_STRING, ARG_OPTIONAL, &out_file, &params );
+    add_param( "particles", ARG_TYPE_INT, ARG_OPTIONAL, &npart, &params );
+    add_param( "box", ARG_TYPE_FLOAT, ARG_OPTIONAL, &length, &params );
 
     parse_parameters( argc - 1, argv + 1, params );
 
@@ -110,10 +114,23 @@ int main ( int argc, char **argv ) {
 
     parameters_ewald = parameters;
 
+    if( !(param_isset("positions", params) == 1) &&
+	!((param_isset("box", params) == 1) && (param_isset("particles", params))) ) {
+      puts("Need to provide either 'positions' or 'box' and 'particles'.");
+      exit(1);
+    }
+
+    if( param_isset("positions", params) == 1) {
     // Inits the system and reads particle data and parameters from file.
-    puts("Reading file");
-    system = Read_system ( &parameters, pos_file );
-    puts("Done.");
+      puts("Reading file");
+      system = Read_system ( &parameters, pos_file );
+      puts("Done.");
+    } else {
+      puts("Generating system.");
+      system = generate_system( FORM_FACTOR_RANDOM, npart, length, 1.0);
+      puts("Done.");
+    }
+
     forces = Init_forces(system->nparticles);
     forces_ewald = Init_forces(system->nparticles);
 

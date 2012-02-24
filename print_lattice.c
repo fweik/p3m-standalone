@@ -4,6 +4,7 @@
 #include "charge-assign.h"
 #include "p3m-common.h"
 #include "common.h"
+#include "p3m-ik.c"
 
 int main(int argc, char **argv) {
 
@@ -15,7 +16,7 @@ int main(int argc, char **argv) {
   data_t *data;
   method_t m = { 255, "assign only", METHOD_FLAG_Qmesh | METHOD_FLAG_ca, NULL, NULL, NULL, NULL };
 
-  double *real_data;
+  double *real_data, *F_mesh_real;
   int nm, i;
   int dims[3]; 
   double spacing[3] = { 1.0, 1.0, 1.0 };
@@ -37,6 +38,7 @@ int main(int argc, char **argv) {
 
   nm = parameters.mesh*parameters.mesh*parameters.mesh;
   real_data = Init_array( nm , sizeof(double));
+  F_mesh_real = Init_array( nm, 2*3*sizeof(double));
 
   dims[0] = dims[1] = dims[2] = parameters.mesh;
 
