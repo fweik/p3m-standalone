@@ -6,22 +6,8 @@
 
 FLOAT_TYPE caf_bspline_k(int i, FLOAT_TYPE d)
 {
-#define epsi 0.1
-
-#define c2 -0.1666666666667e-0
-#define c4  0.8333333333333e-2
-#define c6 -0.1984126984127e-3
-#define c8  0.2755731922399e-5
-
-    double PId = PI*d, PId2;
-
-    if (fabs(d)>epsi)
-      return pow(sin(PId)/PId, i);
-    else {
-        PId2 = SQR(PId);
-        return pow(1.0 + PId2*(c2+PId2*(c4+PId2*(c6+PId2*c8))), i);
-    }
-    return 1.0;
+  double PId = PI*d;
+  return pow(sin(PId)/PId, i);
 }
 
 FLOAT_TYPE caf_bspline_d(int i, FLOAT_TYPE x, int cao_value) {

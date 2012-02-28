@@ -79,7 +79,7 @@ int main ( int argc, char **argv ) {
     forces_t *forces, *forces_ewald;
     char *pos_file = NULL, *force_file = NULL, *out_file = NULL;
     error_t error;
-    FLOAT_TYPE length;
+    FLOAT_TYPE length, prec;
     int npart;
 
     FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est;
@@ -103,6 +103,8 @@ int main ( int argc, char **argv ) {
     add_param( "outfile", ARG_TYPE_STRING, ARG_OPTIONAL, &out_file, &params );
     add_param( "particles", ARG_TYPE_INT, ARG_OPTIONAL, &npart, &params );
     add_param( "box", ARG_TYPE_FLOAT, ARG_OPTIONAL, &length, &params );
+    add_param( "tune", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
+    add_param( "prec", ARG_TYPE_FLOAT, ARG_OPTIONAL, &prec, &params );
 
     parse_parameters( argc - 1, argv + 1, params );
 
@@ -111,7 +113,7 @@ int main ( int argc, char **argv ) {
 
     parameters.cao3 = parameters.cao*parameters.cao*parameters.cao;
     parameters.ip = parameters.cao - 1;
-
+    parameters.alpha = 0.0;
     parameters_ewald = parameters;
 
     if( !(param_isset("positions", params) == 1) &&

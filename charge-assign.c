@@ -7,11 +7,16 @@
 // #define CA_DEBUG
 
 inline int wrap_mesh_index(int ind, int mesh) {
+  int ret;
   if(ind < 0)
-    return ind + mesh;
-  if(ind >= mesh)
-    return ind - mesh;
-  return ind;
+    ret = ind + mesh;
+  else if(ind >= mesh)
+    ret = ind - mesh;
+  else 
+    ret = ind;
+  if((ret < 0) || (ret >= mesh))
+    return wrap_mesh_index(ret, mesh);
+  return ret;
 }
 
 void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
@@ -142,6 +147,9 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
 	  base[dim]  = wrap_mesh_index( nmp, d->mesh);
 	  arg[dim] = (int) floor((pos - nmp + 0.5)*MI2);
 	  d->ca_ind[ii][3*id + dim] = base[dim];
+	  //	  if(id == 0)
+	  // printf("id %d dim %d base %d\n", id, dim, base[dim]);
+
         }
 
         for (i0=0; i0<p->cao; i0++) {
@@ -174,8 +182,8 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
 // assign the forces obtained from k-space
 void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii)
 {
-    int i,i0,i1,i2, dim;
-    int cf_cnt=0;
+    int i,i0,i1,i2;
+    int cf_cnt=0, c_index;
     int *base;
     int j,k,l;
     FLOAT_TYPE B;
@@ -190,11 +198,13 @@ void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t 
 	      k = wrap_mesh_index(base[1] + i1, d->mesh);
                 for (i2=0; i2<p->cao; i2++) {
 		  l = wrap_mesh_index(base[2] + i2, d->mesh);
-                    B = force_prefac*d->Qmesh[c_ind(j,k,l)+ii];
-                    f->f_k->x[i] -= B*d->dQdx[ii][cf_cnt];
-                    f->f_k->y[i] -= B*d->dQdy[ii][cf_cnt];
-                    f->f_k->z[i] -= B*d->dQdz[ii][cf_cnt];
-                    cf_cnt++;
+
+		  c_index = c_ind(j,k,l)+ii;
+		  B = force_prefac*d->Qmesh[c_index];
+		  f->f_k->x[i] -= B*d->dQdx[ii][cf_cnt];
+		  f->f_k->y[i] -= B*d->dQdy[ii][cf_cnt];
+		  f->f_k->z[i] -= B*d->dQdz[ii][cf_cnt];
+		  cf_cnt++;
                 }
             }
         }
