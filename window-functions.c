@@ -4,6 +4,24 @@
 #include <math.h>
 #include <gsl/gsl_sf_bessel.h>
 
+FLOAT_TYPE caf_kaiserbessel_k(int i, FLOAT_TYPE d) {
+  FLOAT_TYPE alpha = 1.0;
+  FLOAT_TYPE dd = fabs(2.0*d);
+  return (dd <= i) ? gsl_sf_bessel_I0(PI*alpha*sqrt(1 - SQR(dd/i)))/gsl_sf_bessel_I0(PI*alpha) : 0.0;
+}
+
+FLOAT_TYPE caf_kaiserbessel(int i, FLOAT_TYPE x, int cao) {
+  FLOAT_TYPE alpha = 1.0, z, a;
+  z = -(cao-1)/2 + i + x;
+  if(fabs(z) <= 1.0/cao ) {
+    a = PI*sqrt(alpha*alpha - SQR(cao*(z)));
+    return sinh(a)/ (gsl_sf_bessel_I0(PI*alpha) * a);
+  } else {
+    a = PI*sqrt(-alpha*alpha + SQR(cao*(z)));
+    return sin(a)/ (gsl_sf_bessel_I0(PI*alpha) * a);
+  }
+}
+
 FLOAT_TYPE caf_bspline_k(int i, FLOAT_TYPE d)
 {
   double PId = PI*d;

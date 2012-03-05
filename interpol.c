@@ -38,7 +38,7 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
 	if(derivatives)
 	  ret->interpol_d[j][i+MaxInterpol] = caf_bspline_d(j, x, ip+1);
       }
-  ret->U_hat = caf_bspline_k;
+  ret->U_hat = &caf_bspline_k;
   return ret;
 }
 
