@@ -9,22 +9,26 @@
 #include "stdlib.h"
 
 system_t *generate_madelung(int size, FLOAT_TYPE box) {
-  int i,j;
+  int id=0,i,j,k;
   system_t *s;
-
-  FLOAT_TYPE a = box/size;
+  FLOAT_TYPE off = 0.5;
+  FLOAT_TYPE a = 1.0;
 
   s = Init_system(size);
   s->length = box;
   s->q2 = 0.0;
 
-  for(i=0;i<size;i++) {
-    for(j=0;j<3;j++) {
-      s->p->fields[j][i] = a*i;
-    }
-    s->q[i] = 1.0 - 2.0 * (i%2);
-    s->q2 += s->q[i] * s->q[i];
-  }
+  for(i=0; i<box; i++)
+    for(j=0; j<box; j++)
+      for(k=0; k<box; k++) {
+	s->p->fields[0][id] = a*i + off;
+	s->p->fields[1][id] = a*j + off;
+	s->p->fields[2][id] = a*k + off;
+
+	s->q[id] = 1.0 - 2.0 * ((i+j+k) % 2);
+	s->q2 += s->q[id] * s->q[id];
+	id++;
+      }
   return s;
 }
 

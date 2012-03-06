@@ -27,7 +27,7 @@ void Realteil( system_t *s, parameters_t *p, forces_t *f )
     /* Zwei Teilchennummern: */
     int t1,t2;
     /* Minimum-Image-Abstand: */
-    FLOAT_TYPE dx,dy,dz,r;
+    FLOAT_TYPE dx,dy,dz,r, r2;
     /* Staerke der elegktrostatischen Kraefte */
     FLOAT_TYPE fak;
     /* Zur Approximation der Fehlerfunktion */
@@ -55,12 +55,15 @@ void Realteil( system_t *s, parameters_t *p, forces_t *f )
 	      //t = 1.0 / (1.0 + p*ar);
 	      //erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
 	      erfc_teil = erfc(ar);
+	      r2 = SQR(r);
 	      fak = s->q[t1]*s->q[t2]*
-		(erfc_teil/r+(2.0*p->alpha/wupi)*exp(-ar*ar))/SQR(r);
+		(erfc_teil/r+(2.0*p->alpha/wupi)*exp(-ar*ar))/r2;
 	      
 	      f->f_r->x[t1] += fak*dx;
 	      f->f_r->y[t1] += fak*dy;
 	      f->f_r->z[t1] += fak*dz;
+
+	      s->energy += 0.5 * s->q[t1] * s->q[t2] * erfc_teil / r;
             }
         }
     }

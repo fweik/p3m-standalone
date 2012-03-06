@@ -88,6 +88,8 @@ struct {
     forces_t *reference;
     // dielectric constat of the environment at infinity
     FLOAT_TYPE epsilon;
+    // energy of the system
+    FLOAT_TYPE energy;
 } system_t;
 
 // struct for the neighbor list to speed up the real part calculation

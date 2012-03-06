@@ -45,6 +45,10 @@ FLOAT_TYPE Ewald_error_k( system_t *s, parameters_t *p ) {
   return compute_error_estimate_k(s, p, p->alpha);
 }
 
+FLOAT_TYPE Ewald_self_energy( system_t *s, parameters_t *p ) {
+  return - (p->alpha / sqrt(PI)) * s->q2;
+}
+
 /*----------------------------------------------------------------------*/
 /* GLOBAL VARIABLES */
 /*----------------------------------------------------------------------*/
@@ -105,7 +109,7 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
 {
   int    i;
   int    nx, ny, nz;
-  FLOAT_TYPE kr;
+  FLOAT_TYPE kr, energy=0.0;
   FLOAT_TYPE rhohat_re, rhohat_im, ghat;
   FLOAT_TYPE force_factor;
   FLOAT_TYPE Leni = 1.0/s->length;
@@ -126,6 +130,9 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
 	    rhohat_im += s->q[i] * -sin(kr);
           }
 
+	  /* compute energy */
+	  energy += ghat*(SQR(rhohat_re) + SQR(rhohat_im));
+
 	  /* compute forces */
 #pragma omp parallel for private(kr)
 	  for (i=0; i<s->nparticles; i++) {
@@ -139,6 +146,8 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
             f->f_k->z[i] += nz * force_factor;
 	  }
 	}
+  s->energy +=(0.5*s->length /(2.0*PI)) * energy;
+  s->energy += Ewald_self_energy(s, p);
 }
 
 FLOAT_TYPE compute_error_estimate_r(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {
