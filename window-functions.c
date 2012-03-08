@@ -25,7 +25,7 @@ FLOAT_TYPE caf_kaiserbessel(int i, FLOAT_TYPE x, int cao) {
 FLOAT_TYPE caf_bspline_k(int i, FLOAT_TYPE d)
 {
   double PId = PI*d;
-  return (d == 0.0) ? 1.0 : pow(sin(PId)/PId, i);
+  return (d == 0.0) ? 1.0 : pow(SIN(PId)/PId, i);
 }
 
 FLOAT_TYPE caf_bspline_d(int i, FLOAT_TYPE x, int cao_value) {

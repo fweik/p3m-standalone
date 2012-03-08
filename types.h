@@ -45,6 +45,13 @@ extern int __detailed_timings;
 #define SQRT sqrtl
 #define ERFC erfcl
 #define FLOAT_ABS fabsl
+#define FFTW_FREE fftwl_free
+#define FFTW_MALLOC fftwl_malloc
+#define FFTW_EXECUTE fftwl_execute
+#define FFTW_COMPLEX fftwl_complex
+#define FFTW_PLAN_DFT_3D fftwl_plan_dft_3d
+#define FFTW_PLAN fftwl_plan
+#define FFTW_DESTROY_PLAN fftwl_destroy_plan
 #endif
 
 // !3
@@ -175,8 +182,8 @@ typedef struct {
     int forward_plans;
     int backward_plans;
     // actual plans
-    fftw_plan forward_plan[3];
-    fftw_plan backward_plan[3];
+    FFTW_PLAN forward_plan[3];
+    FFTW_PLAN backward_plan[3];
     // neighbor list for real space calculation
     neighbor_list_t *neighbor_list;
     // Self forces corrections

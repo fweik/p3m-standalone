@@ -16,22 +16,8 @@ int P3M_BRILLOUIN_TUNING = 1;
 
 FLOAT_TYPE sinc(FLOAT_TYPE d)
 {
-#define epsi 0.1
-
-#define c2 -0.1666666666667e-0
-#define c4  0.8333333333333e-2
-#define c6 -0.1984126984127e-3
-#define c8  0.2755731922399e-5
-
-    double PId = PI*d, PId2;
-
-    if (fabs(d)>epsi)
-        return sin(PId)/PId;
-    else {
-        PId2 = SQR(PId);
-        return 1.0 + PId2*(c2+PId2*(c4+PId2*(c6+PId2*c8)));
-    }
-    return 1.0;
+  double PId = PI*d;
+  return (d == 0.0) ? 1.0 : SIN(PId)/PId;
 }
 
 FLOAT_TYPE analytic_cotangent_sum(int n, FLOAT_TYPE mesh_i, int cao)
@@ -189,29 +175,29 @@ void Free_data(data_t *d) {
 
     FREE_TRACE(puts("Free_data(); Free ghat.");)
     if (d->G_hat != NULL)
-        fftw_free(d->G_hat);
+        FFTW_FREE(d->G_hat);
 
     FREE_TRACE(puts("Free qmesh.");)
     if (d->Qmesh != NULL)
-        fftw_free(d->Qmesh);
+        FFTW_FREE(d->Qmesh);
 
     FREE_TRACE(puts("Free Fmesh.");)
     Free_vector_array(d->Fmesh);
 
     FREE_TRACE(puts("Free dshift.");)
     if (d->nshift != NULL)
-        fftw_free(d->nshift);
+        FFTW_FREE(d->nshift);
 
     if (d->Dn != NULL)
-        fftw_free(d->Dn);
+        FFTW_FREE(d->Dn);
 
     for (i=0;i<2;i++) {
         if (d->dQdx[i] != NULL)
-            fftw_free(d->dQdx[i]);
+            FFTW_FREE(d->dQdx[i]);
         if (d->dQdy[i] != NULL)
-            fftw_free(d->dQdy[i]);
+            FFTW_FREE(d->dQdy[i]);
         if (d->dQdz[i] != NULL)
-            fftw_free(d->dQdz[i]);
+            FFTW_FREE(d->dQdz[i]);
     }
 
     if(d->inter != NULL ) {
@@ -221,19 +207,19 @@ void Free_data(data_t *d) {
 
     for (i=0;i<2;i++) {
         if (d->cf[i] != NULL)
-            fftw_free(d->cf[i]);
+            FFTW_FREE(d->cf[i]);
         if (d->ca_ind[i] != NULL)
-            fftw_free(d->ca_ind[i]);
+            FFTW_FREE(d->ca_ind[i]);
     }
 
     for(i=0; i<d->forward_plans; i++) {
-      fftw_destroy_plan(d->forward_plan[i]);
+      FFTW_DESTROY_PLAN(d->forward_plan[i]);
     }
 
     for(i=0; i<d->backward_plans; i++) {
-      fftw_destroy_plan(d->backward_plan[i]);
+      FFTW_DESTROY_PLAN(d->backward_plan[i]);
     }
 
-    fftw_free(d);
+    FFTW_FREE(d);
 
 }

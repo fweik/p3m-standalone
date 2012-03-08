@@ -32,7 +32,7 @@ void *Init_array(int size, size_t field_size) {
     assert(size >= 0);
     assert(field_size > 0);
 
-    a = fftw_malloc(size * field_size);
+    a = FFTW_MALLOC(size * field_size);
 
     assert(a != NULL);
     return a;
@@ -100,9 +100,9 @@ void Free_system(system_t *s) {
   
   Free_forces(s->reference);
   
-  fftw_free(s->q);
+  FFTW_FREE(s->q);
   
-  fftw_free(s);
+  FFTW_FREE(s);
   
 }
 
@@ -114,7 +114,7 @@ void Free_forces(forces_t *f) {
   Free_vector_array(f->f_k);
   Free_vector_array(f->f_r);
  
-  fftw_free(f);
+  FFTW_FREE(f);
 }
 
 void Free_vector_array(vector_array_t *v) {
@@ -123,17 +123,17 @@ void Free_vector_array(vector_array_t *v) {
     if ( v != NULL ) {
         for (i=0;i<3;i++) {
             if (v->fields[i] != NULL) {
-                fftw_free(v->fields[i]);
+                FFTW_FREE(v->fields[i]);
                 v->fields[i] = NULL;
             }
         }
 
-        fftw_free(v->fields);
+        FFTW_FREE(v->fields);
 
         v->x = v->y = v->z = NULL;
         v->fields = NULL;
 
-	fftw_free(v);
+	FFTW_FREE(v);
     }
 }
 

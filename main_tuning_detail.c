@@ -86,7 +86,7 @@ int main( void ) {
 
       Free_data(d[i]);
       Free_forces(f[i]);
-      fftw_free(p[i]);
+      FFTW_FREE(p[i]);
 
       fprintf(stderr, "done...\n");
 

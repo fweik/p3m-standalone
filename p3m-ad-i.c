@@ -27,11 +27,11 @@ static void forward_fft( data_t *d );
 static void backward_fft( data_t *d );
 
 inline void forward_fft ( data_t *d ) {
-  fftw_execute ( d->forward_plan[0] );
+  FFTW_EXECUTE ( d->forward_plan[0] );
 }
 
 inline void backward_fft ( data_t *d ) {
-  fftw_execute ( d->backward_plan[0] );
+  FFTW_EXECUTE ( d->backward_plan[0] );
 }
 
 data_t *Init_ad_i ( system_t *s, parameters_t *p ) {
@@ -42,9 +42,9 @@ data_t *Init_ad_i ( system_t *s, parameters_t *p ) {
     d->forward_plans = 1;
     d->backward_plans = 1;
 
-    d->forward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_PATIENT );
+    d->forward_plan[0] = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) d->Qmesh, ( FFTW_COMPLEX * ) d->Qmesh, FFTW_FORWARD, FFTW_PATIENT );
 
-    d->backward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Qmesh ), ( fftw_complex * ) ( d->Qmesh ), FFTW_BACKWARD, FFTW_PATIENT );
+    d->backward_plan[0] = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) ( d->Qmesh ), ( FFTW_COMPLEX * ) ( d->Qmesh ), FFTW_BACKWARD, FFTW_PATIENT );
 
     return d;
 }

@@ -40,13 +40,13 @@ static void p3m_tune_aliasing_sums_ik ( int, int, int,
 FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p );
 
 inline void forward_fft ( data_t *d ) {
-    fftw_execute ( d->forward_plan[0] );
+    FFTW_EXECUTE ( d->forward_plan[0] );
 }
 
 inline void backward_fft ( data_t *d ) {
     int i;
     for ( i=0;i<3;i++ )
-        fftw_execute ( d->backward_plan[i] );
+        FFTW_EXECUTE ( d->backward_plan[i] );
 }
 
 FLOAT_TYPE Error_ik_k( system_t *s, parameters_t *p ) {
@@ -62,10 +62,10 @@ data_t *Init_ik ( system_t *s, parameters_t *p ) {
     d->forward_plans = 1;
     d->backward_plans = 3;
 
-    d->forward_plan[0] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_PATIENT );
+    d->forward_plan[0] = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) d->Qmesh, ( FFTW_COMPLEX * ) d->Qmesh, FFTW_FORWARD, FFTW_PATIENT );
 
     for ( l=0;l<3;l++ ) {
-        d->backward_plan[l] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Fmesh->fields[l] ), ( fftw_complex * ) ( d->Fmesh->fields[l] ), FFTW_BACKWARD, FFTW_PATIENT );
+        d->backward_plan[l] = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) ( d->Fmesh->fields[l] ), ( FFTW_COMPLEX * ) ( d->Fmesh->fields[l] ), FFTW_BACKWARD, FFTW_PATIENT );
     }
     return d;
 }
@@ -102,7 +102,7 @@ void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY,
                 *Nenner += S3;
 
                 expo = fak2*NM2;
-                TE = exp ( -expo );
+                TE = EXP ( -expo );
                 zwi  = S3 * TE/NM2;
                 Zaehler[0] += NMX*zwi*Leni;
                 Zaehler[1] += NMY*zwi*Leni;
@@ -257,7 +257,7 @@ FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
   //printf("system size %d box %lf\n", s->nparticles, s->length);
 
 
-  return sqrt( SQR( real ) + SQR( recp ) );
+  return SQRT( SQR( real ) + SQR( recp ) );
 }
 
 FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
@@ -286,7 +286,7 @@ FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const pa
         }
     }
     he_q = fabs(he_q);
-    return 2.0*s->q2*sqrt ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
+    return 2.0*s->q2*SQRT ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
 }
 
 
@@ -313,7 +313,7 @@ void p3m_tune_aliasing_sums_ik ( int nx, int ny, int nz,
                 fnmz = meshi * ( nmz = nz + mz*mesh );
 
                 nm2 = SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz );
-                ex = exp ( -factor1*nm2 );
+                ex = EXP ( -factor1*nm2 );
                 ex2 = SQR ( ex );
 
                 U2 = my_power ( sinc ( fnmx ) *sinc ( fnmy ) *sinc ( fnmz ), 2*p->cao );

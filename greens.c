@@ -11,8 +11,8 @@
 #include "charge-assign.h"
 #include "greens.h"
 
-fftw_plan forward_plan;
-fftw_plan backward_plan[3];
+FFTW_PLAN forward_plan;
+FFTW_PLAN backward_plan[3];
 
 // declaration of the method
 
@@ -27,13 +27,13 @@ static void forward_fft ( void );
 static void backward_fft ( void );
 
 inline void forward_fft ( void ) {
-    fftw_execute ( forward_plan );
+    FFTW_EXECUTE ( forward_plan );
 }
 
 inline void backward_fft ( void ) {
     int i;
     for ( i=0;i<3;i++ )
-        fftw_execute ( backward_plan[i] );
+        FFTW_EXECUTE ( backward_plan[i] );
 }
 
 data_t *Init_greens_ik ( system_t *s, parameters_t *p ) {
@@ -42,10 +42,10 @@ data_t *Init_greens_ik ( system_t *s, parameters_t *p ) {
 
     data_t *d = Init_data ( &method_greens_ik, s, p );
 
-    forward_plan = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) d->Qmesh, ( fftw_complex * ) d->Qmesh, FFTW_FORWARD, FFTW_PATIENT );
+    forward_plan = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) d->Qmesh, ( FFTW_COMPLEX * ) d->Qmesh, FFTW_FORWARD, FFTW_PATIENT );
 
     for ( l=0;l<3;l++ ) {
-        backward_plan[l] = fftw_plan_dft_3d ( mesh, mesh, mesh, ( fftw_complex * ) ( d->Fmesh->fields[l] ), ( fftw_complex * ) ( d->Fmesh->fields[l] ), FFTW_BACKWARD, FFTW_PATIENT );
+        backward_plan[l] = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) ( d->Fmesh->fields[l] ), ( FFTW_COMPLEX * ) ( d->Fmesh->fields[l] ), FFTW_BACKWARD, FFTW_PATIENT );
     }
     return d;
 }

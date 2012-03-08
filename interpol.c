@@ -44,5 +44,5 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
 
 //@TODO: remove memleak
 void Free_interpolation(interpolation_t *i) {
-  fftw_free(i);
+  FFTW_FREE(i);
 }
