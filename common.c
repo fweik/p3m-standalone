@@ -171,8 +171,6 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
 
     m->Kspace_force ( s, p, d, f );
 
-    printf("e_r %lf e_k %lf\n", e_r, s->energy - e_r);
-
     //#pragma omp parallel for private( i )
     for ( j=0; j < 3; j++ ) {
         for ( i=0; i<s->nparticles; i++ ) {

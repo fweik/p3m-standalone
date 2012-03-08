@@ -87,7 +87,7 @@ void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
 	if ((nx==0 && ny==0 && nz==0) || n_sqr > kmax2)
 	  d->G_hat[r_ind(nx,ny,nz)] = 0.0;
 	else {
-	  d->G_hat[r_ind(nx,ny,nz)] = fak1/n_sqr * exp(-fak2*n_sqr);
+	  d->G_hat[r_ind(nx,ny,nz)] = fak1/n_sqr * EXP(-fak2*n_sqr);
 	}
       }
 }  
@@ -126,8 +126,8 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
 #pragma omp parallel for private(kr) reduction( + : rhohat_re ) reduction( + : rhohat_im )
 	  for (i=0; i<s->nparticles; i++) {
             kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
-	    rhohat_re += s->q[i] * cos(kr);
-	    rhohat_im += s->q[i] * -sin(kr);
+	    rhohat_re += s->q[i] * COS(kr);
+	    rhohat_im += s->q[i] * -SIN(kr);
           }
 
 	  /* compute energy */
@@ -139,7 +139,7 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
 	    kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
 	     
             force_factor = s->q[i] * ghat 
-              * (rhohat_re*sin(kr) + rhohat_im*cos(kr));
+              * (rhohat_re*SIN(kr) + rhohat_im*COS(kr));
 	      
             f->f_k->x[i] += nx * force_factor;
             f->f_k->y[i] += ny * force_factor;
@@ -154,7 +154,7 @@ FLOAT_TYPE compute_error_estimate_r(system_t *s, parameters_t *p, FLOAT_TYPE alp
   FLOAT_TYPE res;
   FLOAT_TYPE rmax2 = p->rcut*p->rcut;
   /* Kolafa-Perram, eq. 16 */
-  res = s->q2*sqrt(p->rcut/(2.0*s->length*s->length*s->length)) * exp(-SQR(alpha)*rmax2) / (SQR(alpha)*rmax2);
+  res = s->q2*SQRT(p->rcut/(2.0*s->length*s->length*s->length)) * exp(-SQR(alpha)*rmax2) / (SQR(alpha)*rmax2);
   
   return res;
 }
@@ -168,14 +168,14 @@ static FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_T
 /*     * exp(-SQR(PI*kmax/(alpha*L))); */
 
   /* Petersen 1995, eq. 11 */
-  res = 2.0 * s->q2 * alpha * Leni * sqrt(1.0/(PI*kmax*s->nparticles))
-    * exp(-SQR(PI*kmax/(alpha*s->length)));
+  res = 2.0 * s->q2 * alpha * Leni * SQRT(1.0/(PI*kmax*s->nparticles))
+    * EXP(-SQR(PI*kmax/(alpha*s->length)));
 
   return res;
 }
 
 FLOAT_TYPE Ewald_estimate_error(system_t *s, parameters_t *p) {
-  return sqrt(SQR(compute_error_estimate_r(s, p, p->alpha)) + SQR(compute_error_estimate_k(s, p, p->alpha)));
+  return SQRT(SQR(compute_error_estimate_r(s, p, p->alpha)) + SQR(compute_error_estimate_k(s, p, p->alpha)));
 }
 
 FLOAT_TYPE Ewald_compute_optimal_alpha(system_t *s, parameters_t *p) {

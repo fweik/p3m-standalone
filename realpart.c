@@ -48,16 +48,16 @@ void Realteil( system_t *s, parameters_t *p, forces_t *f )
 	  dz = s->p->z[t1] - s->p->z[t2];
 	  dz -= round(dz*lengthi)*s->length;
 	  
-	  r = sqrt(SQR(dx) + SQR(dy) + SQR(dz));
+	  r = SQRT(SQR(dx) + SQR(dy) + SQR(dz));
 	  if (r<=p->rcut)
             {
 	      ar= p->alpha*r;
 	      //t = 1.0 / (1.0 + p*ar);
 	      //erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
-	      erfc_teil = erfc(ar);
+	      erfc_teil = ERFC(ar);
 	      r2 = SQR(r);
 	      fak = s->q[t1]*s->q[t2]*
-		(erfc_teil/r+(2.0*p->alpha/wupi)*exp(-ar*ar))/r2;
+		(erfc_teil/r+(2.0*p->alpha/wupi)*EXP(-ar*ar))/r2;
 	      
 	      f->f_r->x[t1] += fak*dx;
 	      f->f_r->y[t1] += fak*dy;
@@ -211,5 +211,5 @@ void Free_neighborlist(data_t *d) {
 
 FLOAT_TYPE Realspace_error( const system_t *s, const parameters_t *p )
 {
-  return (2.0*s->q2*exp(-SQR(p->rcut * p->alpha))) / (sqrt((double)s->nparticles* p->rcut*s->length*s->length*s->length ));
+  return (2.0*s->q2*EXP(-SQR(p->rcut * p->alpha))) / (SQRT((double)s->nparticles* p->rcut*s->length*s->length*s->length ));
 }

@@ -234,8 +234,8 @@ int main ( int argc, char **argv ) {
 		 FLOAT_CAST Realspace_error( system, &parameters ), FLOAT_CAST error_k_est );
 	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\n", 
 		  FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / sqrt(system->nparticles) , 
-		  FLOAT_CAST estimate, Realspace_error( system, &parameters ), 
-		  FLOAT_CAST error_k_est, error_k, ewald_error_k_est );
+		  FLOAT_CAST estimate, FLOAT_CAST Realspace_error( system, &parameters ), 
+		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est );
         } else {
             printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles , FLOAT_CAST error.f_r, FLOAT_CAST error.f_k );
             fprintf ( fout,"% lf\t% e\t na\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles );

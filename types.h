@@ -9,25 +9,42 @@
 extern int __detailed_timings;
 #endif
 
-#define DOUBLE_PREC
-//#define QUAD_PREC
+//#define DOUBLE_PREC
+#define LONG_DOUBLE_PREC
 
 #ifdef SINGLE_PREC
 #define FLOAT_FORMAT "%.8f"
 #define FLOAT_TYPE float
 #define FLOAT_CAST (double)
+#define EXP expf
+#define SIN sinf
+#define COS cosf
+#define SQRT sqrtf
+#define ERFC erfcf
 #endif
 
 #ifdef DOUBLE_PREC
 #define FLOAT_FORMAT "%.15f"
 #define FLOAT_TYPE double
 #define FLOAT_CAST
+#define EXP exp
+#define SIN sin
+#define COS cos
+#define SQRT sqrt
+#define ERFC erfc
+#define FLOAT_ABS fabs
 #endif
 
-#ifdef QUAD_PREC
-#define FLOAT_TYPE __float128
+#ifdef LONG_DOUBLE_PREC
+#define FLOAT_TYPE long double
 #define FLOAT_FORMAT "%.35q"
 #define FLOAT_CAST (double)
+#define EXP expl
+#define SIN sinl
+#define COS cosl
+#define SQRT sqrtl
+#define ERFC erfcl
+#define FLOAT_ABS fabsl
 #endif
 
 // !3

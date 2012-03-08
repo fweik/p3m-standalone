@@ -99,10 +99,10 @@ int main ( int argc, char **argv ) {
     V = system->length*system->length*system->length;
     M = 2.0 * system->energy / V;
 
-    printf("rms %e est %e\n", rms, ref_prec );
-    printf("energy   %.15f\n", system->energy);
-    printf("madelung calc %.15f\n", 2.0 * system->energy / V);
-    printf("madelung true %.15f\n", MADELUNG);
-    printf("rel. error %e\n", fabs(MADELUNG - M)/MADELUNG);
+    printf("rms %e est %e\n", FLOAT_CAST rms, FLOAT_CAST ref_prec );
+    printf("energy   %.15f\n", FLOAT_CAST system->energy);
+    printf("madelung calc %.40f\n", FLOAT_CAST (2.0 * system->energy / V));
+    printf("madelung true %.40f\n", FLOAT_CAST MADELUNG);
+    printf("rel. error %e\n", FLOAT_CAST (FLOAT_ABS(MADELUNG - M)/MADELUNG));
 }
 
