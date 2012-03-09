@@ -58,8 +58,8 @@ static FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_T
   int kmax = p->mesh-1;
 
   /* Kolafa Perram, eq. 31 */
-  res = 2.0 * s->q2 * alpha * Leni * sqrt(1.0/(PI*kmax*s->nparticles))
-    * exp(-SQR(PI*kmax/(alpha*s->length)));
+  res = 2.0 * s->q2 * alpha * Leni * SQRT(1.0/(PI*kmax*s->nparticles))
+    * EXP(-SQR(PI*kmax/(alpha*s->length)));
 
   return res;
 }
@@ -142,7 +142,7 @@ int main ( int argc, char **argv ) {
       puts("Done.");
     } else {
       puts("Calculating reference forces.");
-      Calculate_reference_forces( system, &parameters );
+      printf("Reference precision %e\n.", FLOAT_CAST Calculate_reference_forces( system, &parameters ));
       puts("Done.");
     }
 
@@ -220,7 +220,7 @@ int main ( int argc, char **argv ) {
 	    error_k   += SQR( forces->f_k->fields[j][i] - forces_ewald->f_k->fields[j][i] );
 	  }
 	}
-	error_k = sqrt(error_k) / sqrt(system->nparticles);
+	error_k = SQRT(error_k) / SQRT(system->nparticles);
       }
 
       ewald_error_k_est = compute_error_estimate_k( system, &parameters_ewald, parameters_ewald.alpha);
@@ -230,10 +230,10 @@ int main ( int argc, char **argv ) {
 	if( calc_est == 0 )
 	  estimate = method.Error ( system, &parameters );
 	error_k_est = method.Error_k ( system, &parameters);
-	printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / sqrt(system->nparticles) , FLOAT_CAST estimate,
+	printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
 		 FLOAT_CAST Realspace_error( system, &parameters ), FLOAT_CAST error_k_est );
 	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\n", 
-		  FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / sqrt(system->nparticles) , 
+		  FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , 
 		  FLOAT_CAST estimate, FLOAT_CAST Realspace_error( system, &parameters ), 
 		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est );
         } else {

@@ -23,7 +23,7 @@ FLOAT_TYPE sinc(FLOAT_TYPE d)
 FLOAT_TYPE analytic_cotangent_sum(int n, FLOAT_TYPE mesh_i, int cao)
 {
     FLOAT_TYPE c, res=0.0;
-    c = SQR(cos(PI*mesh_i*(FLOAT_TYPE)n));
+    c = SQR(COS(PI*mesh_i*(FLOAT_TYPE)n));
 
     switch (cao) {
     case 1 :
@@ -68,7 +68,7 @@ void Init_differential_operator(data_t *d)
     for (i=0; i<d->mesh; i++)
     {
         dn    = (FLOAT_TYPE)i;
-        dn   -= round(dn/dMesh)*dMesh;
+        dn   -= ROUND(dn/dMesh)*dMesh;
         d->Dn[i] = dn;
     }
 
@@ -84,7 +84,7 @@ void Init_nshift(data_t *d)
     FLOAT_TYPE dMesh=(FLOAT_TYPE)d->mesh;
 
     for (i=0; i<d->mesh; i++)
-        d->nshift[i] = i - round(i/dMesh)*dMesh;
+        d->nshift[i] = i - ROUND(i/dMesh)*dMesh;
 
 }
 

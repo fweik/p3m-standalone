@@ -187,6 +187,8 @@ FLOAT_TYPE Calculate_reference_forces ( system_t *s, parameters_t *p ) {
 
     forces_t *f = Init_forces ( s->nparticles );
 
+    op.rcut = 0.49 * s->length;
+
     op.alpha = Ewald_compute_optimal_alpha ( s, &op );
 
     d = method_ewald.Init ( s, &op );

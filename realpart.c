@@ -35,18 +35,17 @@ void Realteil( system_t *s, parameters_t *p, forces_t *f )
     FLOAT_TYPE lengthi = 1.0/s->length;
     const FLOAT_TYPE wupi = 1.77245385090551602729816748334;
 
-#pragma omp parallel for private(dx,dy,dz, r, ar, erfc_teil, fak, t2)
     for (t1=0; t1<s->nparticles; t1++) {
         for (t2=0; t2<s->nparticles; t2++) {
 	  if(t1 == t2)
 	    continue;
 
 	  dx = s->p->x[t1] - s->p->x[t2];
-	  dx -= round(dx*lengthi)*s->length;
+	  dx -= ROUND(dx*lengthi)*s->length;
 	  dy = s->p->y[t1] - s->p->y[t2];
-	  dy -= round(dy*lengthi)*s->length;
+	  dy -= ROUND(dy*lengthi)*s->length;
 	  dz = s->p->z[t1] - s->p->z[t2];
-	  dz -= round(dz*lengthi)*s->length;
+	  dz -= ROUND(dz*lengthi)*s->length;
 	  
 	  r = SQRT(SQR(dx) + SQR(dy) + SQR(dz));
 	  if (r<=p->rcut)
@@ -77,11 +76,11 @@ static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p
 
     for (i=id+1;i<s->nparticles;i++) {
         dx = s->p->x[id] - s->p->x[i];
-        dx -= round(dx*lengthi)*s->length;
+        dx -= ROUND(dx*lengthi)*s->length;
         dy = s->p->y[id] - s->p->y[i];
-        dy -= round(dy*lengthi)*s->length;
+        dy -= ROUND(dy*lengthi)*s->length;
         dz = s->p->z[id] - s->p->z[i];
-        dz -= round(dz*lengthi)*s->length;
+        dz -= ROUND(dz*lengthi)*s->length;
 
         r = sqrt(SQR(dx) + SQR(dy) + SQR(dz));
 
@@ -163,11 +162,11 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, data_t *d, forces_t *f 
         for (j=0; j<neighbor_list[i].n; j++)
         {
             dx = s->p->fields[0][i] - neighbor_list[i].p->x[j];
-            dx -= round(dx*lengthi)*s->length;
+            dx -= ROUND(dx*lengthi)*s->length;
             dy = s->p->fields[1][i] - neighbor_list[i].p->y[j];
-            dy -= round(dy*lengthi)*s->length;
+            dy -= ROUND(dy*lengthi)*s->length;
             dz = s->p->fields[2][i] - neighbor_list[i].p->z[j];
-            dz -= round(dz*lengthi)*s->length;
+            dz -= ROUND(dz*lengthi)*s->length;
 
             r2 = SQR(dx) + SQR(dy) + SQR(dz);
             if (r2<=rcut2)

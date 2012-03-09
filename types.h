@@ -21,6 +21,16 @@ extern int __detailed_timings;
 #define COS cosf
 #define SQRT sqrtf
 #define ERFC erfcf
+#define FLOAT_ABS fabsf
+#define FFTW_FREE fftwf_free
+#define FFTW_MALLOC fftwf_malloc
+#define FFTW_EXECUTE fftwf_execute
+#define FFTW_COMPLEX fftwf_complex
+#define FFTW_PLAN_DFT_3D fftwf_plan_dft_3d
+#define FFTW_PLAN fftwf_plan
+#define FFTW_DESTROY_PLAN fftwf_destroy_plan
+#define ROUND roundf
+#define FLOOR floorf
 #endif
 
 #ifdef DOUBLE_PREC
@@ -33,6 +43,15 @@ extern int __detailed_timings;
 #define SQRT sqrt
 #define ERFC erfc
 #define FLOAT_ABS fabs
+#define FFTW_FREE fftw_free
+#define FFTW_MALLOC fftw_malloc
+#define FFTW_EXECUTE fftw_execute
+#define FFTW_COMPLEX fftw_complex
+#define FFTW_PLAN_DFT_3D fftw_plan_dft_3d
+#define FFTW_PLAN fftw_plan
+#define FFTW_DESTROY_PLAN fftw_destroy_plan
+#define ROUND round
+#define FLOOR floor
 #endif
 
 #ifdef LONG_DOUBLE_PREC
@@ -52,10 +71,13 @@ extern int __detailed_timings;
 #define FFTW_PLAN_DFT_3D fftwl_plan_dft_3d
 #define FFTW_PLAN fftwl_plan
 #define FFTW_DESTROY_PLAN fftwl_destroy_plan
+#define ROUND roundl
+#define FLOOR floorl
 #endif
 
 // !3
-#define PI 3.14159265358979323846264
+#define PI 3.1415926535897932384626433832795028841971693993751058209749445923078164062
+
 
 #define SQR(A) ((A)*(A))
 

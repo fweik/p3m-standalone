@@ -6,8 +6,6 @@
 extern int P3M_BRILLOUIN_TUNING;
 extern int P3M_BRILLOUIN;
 
-#define PI 3.14159265358979323846264
-
 #define r_ind(A,B,C) ((A)*d->mesh*d->mesh + (B)*d->mesh + (C))
 #define c_ind(A,B,C) (2*d->mesh*d->mesh*(A)+2*d->mesh*(B)+2*(C))
 

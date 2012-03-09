@@ -14,6 +14,6 @@ error_t Calculate_errors(system_t *system, forces_t *f ) {
         }
     }
 
-    e.f = sqrt(e.f);
+    e.f = SQRT(e.f);
     return e;
 }
