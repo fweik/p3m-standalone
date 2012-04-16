@@ -207,3 +207,25 @@ FLOAT_TYPE Calculate_reference_forces ( system_t *s, parameters_t *p ) {
     return method_ewald.Error( s, &op );
 }
 
+FLOAT_TYPE distance( system_t *s, int i, int j ) {
+  int k;
+  FLOAT_TYPE ret = 0.0;
+  for(k=0;k<3;k++) {
+    ret += SQR(s->p->fields[k][i] - s->p->fields[k][j]);
+  }
+  return SQRT(ret);
+}
+
+FLOAT_TYPE Min_distance( system_t *s ) {
+  int i,j;
+  FLOAT_TYPE min =2.0*s->length, d;
+  
+
+  for(i=0;i<s->nparticles;i++) {
+    for(j=0;j<i;j++) {
+      d = distance( s, i, j);
+      min = (d < min) ? d : min;
+    }
+  }
+  return min;
+}

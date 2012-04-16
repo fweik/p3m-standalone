@@ -271,9 +271,9 @@ void Write_exact_forces(system_t *s, char *forces_file) {
     }
 
     for (i=0;i<s->nparticles;i++) {
-        fprintf(fin, "%d %.22e %.22e %.22e %.22e %.22e %.22e\n",
-                i, FLOAT_CAST s->reference->f->x[i], FLOAT_CAST s->reference->f->y[i], FLOAT_CAST s->reference->f->z[i],
-                FLOAT_CAST s->reference->f_k->x[i], FLOAT_CAST s->reference->f_k->y[i], FLOAT_CAST s->reference->f_k->z[i]);
+        fprintf(fin, "%d %.*f %.*f %.*f %.*f %.*f %.*f\n",
+                i, DIGITS, FLOAT_CAST s->reference->f->x[i], DIGITS, FLOAT_CAST s->reference->f->y[i], DIGITS, FLOAT_CAST s->reference->f->z[i],
+                DIGITS, FLOAT_CAST s->reference->f_k->x[i], DIGITS, FLOAT_CAST s->reference->f_k->y[i], DIGITS, FLOAT_CAST s->reference->f_k->z[i]);
     }
 
     fclose(fin);

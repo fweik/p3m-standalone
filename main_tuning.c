@@ -24,7 +24,7 @@ int main( int argc, char *argv[] ) {
   int particles, i, j;
   char filename[] = "det.dat";
 
-  const FLOAT_TYPE rcut = 3.0;
+  const FLOAT_TYPE rcut = 49.9;
 
   const method_t *m[4] = { &method_p3m_ik, &method_p3m_ad, &method_p3m_ik_i, &method_p3m_ad_i };
 
@@ -90,7 +90,8 @@ int main( int argc, char *argv[] ) {
   printf("Timing for %d to %d particles in increments of %d.\n", part_min, part_max, part_step);
 
   for(particles = part_min; particles <= part_max; particles += part_step) {
-    boxl = pow(particles / 1000.0, 1.0/3.0)*20.0;
+    // boxl = pow(particles / 1000.0, 1.0/3.0)*20.0;
+    boxl = 100.0;
     printf("Init system with %d particles.\n", particles);
     printf("box %e\n", boxl);
 

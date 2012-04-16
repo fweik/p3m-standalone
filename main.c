@@ -77,7 +77,7 @@ int main ( int argc, char **argv ) {
     parameters_t parameters, parameters_ewald;
     data_t *data, *data_ewald;
     forces_t *forces, *forces_ewald;
-    char *pos_file = NULL, *force_file = NULL, *out_file = NULL;
+    char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL;
     error_t error;
     FLOAT_TYPE length, prec;
     int npart;
@@ -105,6 +105,7 @@ int main ( int argc, char **argv ) {
     add_param( "box", ARG_TYPE_FLOAT, ARG_OPTIONAL, &length, &params );
     add_param( "tune", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "prec", ARG_TYPE_FLOAT, ARG_OPTIONAL, &prec, &params );
+    add_param( "reference_out", ARG_TYPE_STRING, ARG_OPTIONAL, &ref_out, &params );
 
     parse_parameters( argc - 1, argv + 1, params );
 
@@ -135,6 +136,17 @@ int main ( int argc, char **argv ) {
 
     forces = Init_forces(system->nparticles);
     forces_ewald = Init_forces(system->nparticles);
+
+    if(param_isset("reference_out", params)) 
+      {
+	printf("Minimal distance: %.*f\n", DIGITS, FLOAT_CAST Min_distance( system ));
+	puts("Calculating reference forces.");
+	printf("Reference precision %e\n.", FLOAT_CAST Calculate_reference_forces( system, &parameters ));
+	puts("Done.");
+	printf("Writing reference forces to '%s'\n", ref_out);
+	Write_exact_forces(system, ref_out);
+	puts("Done.");
+      }
 
     if(param_isset("forces", params) == 1) {
       printf("Reading reference forces from '%s'.\n", force_file);

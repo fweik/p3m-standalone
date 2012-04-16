@@ -9,11 +9,11 @@
 extern int __detailed_timings;
 #endif
 
-//#define DOUBLE_PREC
-#define LONG_DOUBLE_PREC
+#define DOUBLE_PREC
+//#define LONG_DOUBLE_PREC
 
 #ifdef SINGLE_PREC
-#define FLOAT_FORMAT "%.8f"
+#define DIGITS 9
 #define FLOAT_TYPE float
 #define FLOAT_CAST (double)
 #define EXP expf
@@ -34,7 +34,7 @@ extern int __detailed_timings;
 #endif
 
 #ifdef DOUBLE_PREC
-#define FLOAT_FORMAT "%.15f"
+#define DIGITS 17
 #define FLOAT_TYPE double
 #define FLOAT_CAST
 #define EXP exp
@@ -55,6 +55,7 @@ extern int __detailed_timings;
 #endif
 
 #ifdef LONG_DOUBLE_PREC
+#define DIGITS 22
 #define FLOAT_TYPE long double
 #define FLOAT_FORMAT "%.35q"
 #define FLOAT_CAST (double)

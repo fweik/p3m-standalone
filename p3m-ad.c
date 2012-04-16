@@ -80,7 +80,7 @@ void Aliasing_sums_ad(int NX, int NY, int NZ, system_t *s, parameters_t *p, data
 	*Nenner2 += S3 * NM2;
 
 	expo = fak2*NM2;
-	TE = exp(-expo);
+	TE = EXP(-expo);
 	zwi  = S3 * TE;
         *Zaehler += zwi;
       }
@@ -223,7 +223,7 @@ void p3m_tune_aliasing_sums_ad(int nx, int ny, int nz,
 	fnmz = mesh_i * (nmz = nz + mz*p->mesh);
 	
 	nm2 = SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz );
-        ex = exp(-factor1*nm2);
+        ex = EXP(-factor1*nm2);
 	ex2 = SQR( ex );
 	
 	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
@@ -257,15 +257,15 @@ FLOAT_TYPE p3m_k_space_error_ad( system_t *s, parameters_t *p )
 	  n2 = SQR(nx) + SQR(ny) + SQR(nz);
 	  p3m_tune_aliasing_sums_ad(nx,ny,nz, s, p, &alias1,&alias2,&alias3,&alias4);	//alias4 = cs
 
-	  if(alias3 == 0.0)
+	  if( (alias3 == 0.0) || (alias4 == 0.0) )
 	    continue;
-	  he_q += (alias1  -  SQR(alias2) / (alias3*alias4));
+	  he_q += alias1  -  (SQR(alias2) / (alias3*alias4));
 	}
       }
     }
   }
-  he_q = fabs(he_q);
-  return 2.0*s->q2*sqrt ( he_q/ (FLOAT_TYPE)s->nparticles) / SQR(box_size);
+  he_q = FLOAT_ABS(he_q);
+  return 2.0*s->q2*SQRT ( he_q/ (FLOAT_TYPE)s->nparticles) / SQR(box_size);
 }
 
 FLOAT_TYPE Error_ad( system_t *s, parameters_t *p ) {
@@ -273,5 +273,5 @@ FLOAT_TYPE Error_ad( system_t *s, parameters_t *p ) {
   FLOAT_TYPE recp = p3m_k_space_error_ad( s, p );
   //  printf("p3m ad error for mesh %d rcut %lf cao %d alpha %lf : real %e recp %e\n", p->mesh, p->rcut, p->cao, p->alpha, real, recp);
   //  printf("system size %d box %lf\n", s->nparticles, s->length);
-  return sqrt( SQR ( real ) + SQR ( recp ) );
+  return SQRT( SQR ( real ) + SQR ( recp ) );
 }
