@@ -5,6 +5,7 @@
 
 #include "realpart.h"
 
+#include "sort.h"
 
 inline FLOAT_TYPE AS_erfc_part(double d)
 {
@@ -74,25 +75,54 @@ static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p
     FLOAT_TYPE lengthi = 1.0/s->length;
     neighbor_list_t *neighbor_list = d->neighbor_list;
 
-    for (i=id+1;i<s->nparticles;i++) {
-        dx = s->p->x[id] - s->p->x[i];
-        dx -= ROUND(dx*lengthi)*s->length;
-        dy = s->p->y[id] - s->p->y[i];
-        dy -= ROUND(dy*lengthi)*s->length;
-        dz = s->p->z[id] - s->p->z[i];
-        dz -= ROUND(dz*lengthi)*s->length;
+    for (i=id-1;i!=id;i--) {
+      if(i < 0)
+	i += s->nparticles;
+      dx = s->p->x[id] - s->p->x[i];
+      dx -= ROUND(dx*lengthi)*s->length;
+      if(dx > p->rcut)
+	break;
+      dy = s->p->y[id] - s->p->y[i];
+      dy -= ROUND(dy*lengthi)*s->length;
+      dz = s->p->z[id] - s->p->z[i];
+      dz -= ROUND(dz*lengthi)*s->length;
 
-        r = sqrt(SQR(dx) + SQR(dy) + SQR(dz));
+      r = sqrt(SQR(dx) + SQR(dy) + SQR(dz));
 
-        if (r<=p->rcut) {
-            neighbor_id_buffer[np] = i;
-            for (j=0;j<3;j++) {
-                buffer->fields[j][np] = s->p->fields[j][i];
-            }
-            charges_buffer[np] = s->q[i];
-            np++;
-        }
+      if (r<=p->rcut) {
+	neighbor_id_buffer[np] = i;
+	for (j=0;j<3;j++) {
+	  buffer->fields[j][np] = s->p->fields[j][i];
+	}
+	charges_buffer[np] = s->q[i];
+	np++;
+      }
     }
+
+    for (i=id+1;i!=id;i++) {
+      if(i >= s->nparticles)
+	i -= s->nparticles;
+      dx = s->p->x[id] - s->p->x[i];
+      dx -= ROUND(dx*lengthi)*s->length;
+      if(dx > p->rcut)
+	break;
+      dy = s->p->y[id] - s->p->y[i];
+      dy -= ROUND(dy*lengthi)*s->length;
+      dz = s->p->z[id] - s->p->z[i];
+      dz -= ROUND(dz*lengthi)*s->length;
+
+      r = sqrt(SQR(dx) + SQR(dy) + SQR(dz));
+
+      if (r<=p->rcut) {
+	neighbor_id_buffer[np] = i;
+	for (j=0;j<3;j++) {
+	  buffer->fields[j][np] = s->p->fields[j][i];
+	}
+	charges_buffer[np] = s->q[i];
+	np++;
+      }
+    }
+
     neighbor_list[id].p = Init_vector_array(np);
     neighbor_list[id].q = Init_array(np, sizeof(FLOAT_TYPE));
     neighbor_list[id].id = Init_array(np, sizeof(int));
@@ -115,6 +145,10 @@ void Init_neighborlist(system_t *s, parameters_t *p, data_t *d) {
     vector_array_t *position_buffer;
     FLOAT_TYPE *charges_buffer = NULL;
     neighbor_list_t *neighbor_list;
+
+    // Sort particles
+
+    sort_particles(s);
 
     neighbor_id_buffer = Init_array(s->nparticles, sizeof(int));
     position_buffer = Init_vector_array(s->nparticles);
