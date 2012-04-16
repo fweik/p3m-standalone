@@ -1,6 +1,6 @@
 #include "sort.h"
 
-void sort_particles_r(system_t *s, int i, int j);
+void sort_particles_r(system_t *s, int m, int n);
 
 // Swap particles i and j in s
 inline void swap_particles( system_t *s, int i, int j) {
@@ -25,32 +25,35 @@ inline void swap_particles( system_t *s, int i, int j) {
 
 // Sort system particles by x coordinate, using quicksort ( O(n*log(n)) average )
 void sort_particles(system_t *s) {
-  sort_particles_r( s, 0, s->nparticles );
+  sort_particles_r( s, 0, s->nparticles - 1 );
 }
 
-void sort_particles_r(system_t *s, int i, int j) {
-  int pivot = (i+j)/2;
-  int m,n;
+void sort_particles_r(system_t *s, int m, int n) {
+  int k = (m+n)/2;
+  int i,j;
   FLOAT_TYPE key;
   FLOAT_TYPE *x = s->p->x;
 
-  if( i < j ) {
-    swap_particles( s, i, pivot );
-    key = x[pivot];
+  if( m < n ) {
+    swap_particles( s, m, k );
+    key = x[m];
 
-    m=i+1;
-    n = j;
-    while(m<=n) {
-      while((m<=j) && (x[m] <= key))
-	m++;
-      while((n>=i) && (x[n] > key))
+    i = m+1;
+    j = n;
+    while( i <= j) {
+      while(( i <= n ) && (x[i] <= key))
+	i++;
+      while(( j >= m ) && (x[j] > key))
 	j--;
-      if(i<j)
-	swap_particles(s, m, n);
 
-      swap_particles(s, i, n);
-      sort_particles_r( s, i, n - 1);
-      sort_particles_r( s, n+1, j );
+      if( i < j )
+	swap_particles(s, i, j);
     }
+      
+    swap_particles( s, m, j );
+      
+    sort_particles_r( s, m, j - 1);
+    sort_particles_r( s, j+1 , n );
+    
   }
 }
