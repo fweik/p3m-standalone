@@ -7,19 +7,40 @@
 
 #include "sort.h"
 
-inline FLOAT_TYPE AS_erfc_part(double d)
+int to_left=0;
+int to_right=0;
+
+static int *count_neighbors( system_t *s, parameters_t *p )
 {
-#define AS_a1  0.254829592
-#define AS_a2 -0.284496736
-#define AS_a3  1.421413741
-#define AS_a4 -1.453152027
-#define AS_a5  1.061405429
-#define AS_p   0.3275911
-  double t;
-  
-  t = 1.0 / (1.0 + AS_p * d);
-  
-  return t * (AS_a1 + t * (AS_a2 + t * (AS_a3 + t * (AS_a4 + t * AS_a5) ) ) );
+    /* Zwei Teilchennummern: */
+    int t1,t2;
+    /* Minimum-Image-Abstand: */
+    FLOAT_TYPE dx,dy,dz,r;
+    FLOAT_TYPE lengthi = 1.0/s->length;
+    int *nb = fftw_malloc(s->nparticles*sizeof(int));
+
+    memset(nb, 0, s->nparticles * sizeof(int));
+
+    for (t1=0; t1<s->nparticles; t1++) {
+        for (t2=0; t2<s->nparticles; t2++) {
+	  if(t1 == t2)
+	    continue;
+
+	  dx = s->p->x[t1] - s->p->x[t2];
+	  dx -= ROUND(dx*lengthi)*s->length;
+	  dy = s->p->y[t1] - s->p->y[t2];
+	  dy -= ROUND(dy*lengthi)*s->length;
+	  dz = s->p->z[t1] - s->p->z[t2];
+	  dz -= ROUND(dz*lengthi)*s->length;
+	  
+	  r = SQRT(SQR(dx) + SQR(dy) + SQR(dz));
+	  if (r<=p->rcut)
+            {
+	      nb[t1]++;
+            }
+        }
+    }
+    return nb;
 }
 
 
@@ -52,8 +73,7 @@ void Realteil( system_t *s, parameters_t *p, forces_t *f )
 	  if (r<=p->rcut)
             {
 	      ar= p->alpha*r;
-	      //t = 1.0 / (1.0 + p*ar);
-	      //erfc_teil = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
+
 	      erfc_teil = ERFC(ar);
 	      r2 = SQR(r);
 	      fak = s->q[t1]*s->q[t2]*
@@ -69,19 +89,24 @@ void Realteil( system_t *s, parameters_t *p, forces_t *f )
     }
 }
 
-static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p, data_t *d, vector_array_t *buffer, int *neighbor_id_buffer, FLOAT_TYPE *charges_buffer, int id) {
-    int i, j, np=0;
+static void build_neighbor_list_for_particle(system_t *s, parameters_t *p, data_t *d, vector_array_t *buffer, int *neighbor_id_buffer, FLOAT_TYPE *charges_buffer, int id) {
+  int i, j, np=0, last=id;
     FLOAT_TYPE r, dx, dy, dz;
     FLOAT_TYPE lengthi = 1.0/s->length;
     neighbor_list_t *neighbor_list = d->neighbor_list;
 
     for (i=id-1;i!=id;i--) {
-      if(i < 0)
+      to_left++;
+      if(i < 0) {
 	i += s->nparticles;
+	if( i == id)
+	  break;
+      }
       dx = s->p->x[id] - s->p->x[i];
       dx -= ROUND(dx*lengthi)*s->length;
-      if(dx > p->rcut)
+      if(dx > p->rcut) {
 	break;
+      }
       dy = s->p->y[id] - s->p->y[i];
       dy -= ROUND(dy*lengthi)*s->length;
       dz = s->p->z[id] - s->p->z[i];
@@ -95,17 +120,25 @@ static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p
 	  buffer->fields[j][np] = s->p->fields[j][i];
 	}
 	charges_buffer[np] = s->q[i];
+	last = i;
 	np++;
       }
     }
 
     for (i=id+1;i!=id;i++) {
-      if(i >= s->nparticles)
+      to_right++;
+      if(i >= s->nparticles) {
 	i -= s->nparticles;
+	if( i == id )
+	  break;
+      }
+      if( i == last)
+	break;
       dx = s->p->x[id] - s->p->x[i];
       dx -= ROUND(dx*lengthi)*s->length;
-      if(dx > p->rcut)
+      if(fabs(dx) > p->rcut) {
 	break;
+      }
       dy = s->p->y[id] - s->p->y[i];
       dy -= ROUND(dy*lengthi)*s->length;
       dz = s->p->z[id] - s->p->z[i];
@@ -137,7 +170,7 @@ static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p
 }
 
 void Init_neighborlist(system_t *s, parameters_t *p, data_t *d) {
-    int i;
+  int i, *nb;
 
     // Define and allocate buffers (nessecary due to unknow number of neigbors per particle).
 
@@ -158,8 +191,10 @@ void Init_neighborlist(system_t *s, parameters_t *p, data_t *d) {
     // Sort particles
 
     sort_particles(s);
- 
+
     // Find neighbors for each particle.
+
+    to_left = to_right = 0;
 
     for (i=0;i<s->nparticles;i++)
       build_neighbor_list_for_particle( s, p, d, position_buffer, neighbor_id_buffer, charges_buffer, i );
@@ -167,6 +202,8 @@ void Init_neighborlist(system_t *s, parameters_t *p, data_t *d) {
     // NULL terminate the list
 
     neighbor_list[s->nparticles].n = -1;
+
+    //    printf("to_left %d to_right %d\n", to_left, to_right);
 
     // Free buffers
 
@@ -186,13 +223,10 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, data_t *d, forces_t *f 
     FLOAT_TYPE ar,erfc_teil;
     FLOAT_TYPE lengthi = 1.0/s->length;
     const FLOAT_TYPE wupi = 1.77245385090551602729816748334;
-    const FLOAT_TYPE wupii = 1.0/wupi;
 
     neighbor_list_t *neighbor_list = d->neighbor_list;
 
-    //#pragma omp  parallel for private(dx, dy, dz, ar, r, erfc_teil, fak, j)
-
-    for (i=0; i<s->nparticles-1; i++)
+    for (i=0; i<s->nparticles; i++)
         for (j=0; j<neighbor_list[i].n; j++)
         {
             dx = s->p->fields[0][i] - neighbor_list[i].p->x[j];
@@ -202,31 +236,19 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, data_t *d, forces_t *f 
             dz = s->p->fields[2][i] - neighbor_list[i].p->z[j];
             dz -= ROUND(dz*lengthi)*s->length;
 
-            r2 = SQR(dx) + SQR(dy) + SQR(dz);
-            if (r2<=rcut2)
+            r = SQRT(SQR(dx) + SQR(dy) + SQR(dz));
+            if ( r <= p->rcut )
             {
-	      r = sqrt( r2 );
 	      ar= p->alpha*r;
 
-	      //erfc_teil = erfc(ar);
-              //  fak = s->q[i]*neighbor_list[i].q[j]*
-	      //	  (erfc_teil/r+(2*p->alpha/wupi)*exp(-ar*ar))/ r2;
-
-	      erfc_teil = AS_erfc_part( ar ) / r;
-	      fak = s->q[i] * neighbor_list[i].q[j] * exp( - ar * ar ) * (erfc_teil + 2.0 * p->alpha * wupii ) / r2;
-
-		//#pragma omp atomic
-                f->f_r->x[i] += fak*dx;
-		//#pragma omp atomic
-                f->f_r->y[i] += fak*dy;
-		//#pragma omp atomic
-                f->f_r->z[i] += fak*dz;
-		//#pragma omp atomic
-                f->f_r->x[neighbor_list[i].id[j]] -= fak*dx;
-		//#pragma omp atomic
-                f->f_r->y[neighbor_list[i].id[j]] -= fak*dy;
-		//#pragma omp atomic
-                f->f_r->z[neighbor_list[i].id[j]] -= fak*dz;
+	      erfc_teil = ERFC(ar);
+	      r2 = SQR(r);
+	      fak = s->q[i]*neighbor_list[i].q[j]*
+		(erfc_teil/r+(2.0*p->alpha/wupi)*EXP(-ar*ar))/r2;
+	      
+	      f->f_r->x[i] += fak*dx;
+	      f->f_r->y[i] += fak*dy;
+	      f->f_r->z[i] += fak*dz;
             }
         }
 }

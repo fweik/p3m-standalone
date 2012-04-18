@@ -106,6 +106,7 @@ int main ( int argc, char **argv ) {
     add_param( "tune", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "prec", ARG_TYPE_FLOAT, ARG_OPTIONAL, &prec, &params );
     add_param( "reference_out", ARG_TYPE_STRING, ARG_OPTIONAL, &ref_out, &params );
+    add_param( "verlet_lists", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
 
     parse_parameters( argc - 1, argv + 1, params );
 
@@ -204,19 +205,18 @@ int main ( int argc, char **argv ) {
     printf ( ".\n" );
 
     printf ( "Init Ewald" );
-       data_ewald = method_ewald.Init ( system, &parameters_ewald );
+    data_ewald = method_ewald.Init ( system, &parameters_ewald );
+    printf ( ".\n" );
 
-    //    printf ( "Init neighborlist" );
-    //Init_neighborlist ( system, &parameters, data );
-    //printf ( ".\n" );
+    printf ( "Init neighborlist" );
+    Init_neighborlist ( system, &parameters, data );
+    printf ( ".\n" );
 
     printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error-Est", "K-Error-Est" );
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
       parameters_ewald.alpha = parameters.alpha;
 
       method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
-
-      Init_neighborlist( system, &parameters, data );
 
       Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 

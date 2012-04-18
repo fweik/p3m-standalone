@@ -202,6 +202,7 @@ FLOAT_TYPE Calculate_reference_forces ( system_t *s, parameters_t *p ) {
     
     Calculate_forces ( &method_ewald, s, &op, d, s->reference );
 
+    Free_neighborlist(d);
     Free_data(d);
     Free_forces(f);
 

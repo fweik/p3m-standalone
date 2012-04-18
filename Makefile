@@ -1,5 +1,5 @@
 CC=mpicc
-CFLAGS=-Wall -O3 -g
+CFLAGS=-Wall -O0 -g
 LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 -lfftw3l -lm
 
 all: p3mstandalone
