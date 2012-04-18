@@ -216,6 +216,8 @@ int main ( int argc, char **argv ) {
 
       method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
+      Init_neighborlist( system, &parameters, data );
+
       Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 
       error_k =0.0;

@@ -5,12 +5,18 @@
 #include "interpol.h"
 #include "common.h"
 
+const interpolation_function_t ip_bspline = { INTERPOL_BSPLINE, caf_bspline, caf_bspline_d, caf_bspline_k };
+const interpolation_function_t ip_kaiserbessel = { INTERPOL_KAISER, caf_kaiserbessel, NULL, caf_kaiserbessel_k };
+
 interpolation_t *Init_interpolation(int ip, int derivatives)
 {
   FLOAT_TYPE dInterpol=(FLOAT_TYPE)MaxInterpol;
   FLOAT_TYPE x;
   long   i,j;
+
+  interpolation_function_t i_fct = ip_bspline;
   
+
   interpolation_t *ret;
   ret = Init_array( 1, sizeof(interpolation_t));
 
@@ -34,11 +40,11 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
     for (i=-MaxInterpol; i<=MaxInterpol; i++)
       {
 	x=i/(2.0*dInterpol);
-	ret->interpol[j][i+MaxInterpol] = caf_bspline(j, x, ip+1);
+	ret->interpol[j][i+MaxInterpol] = i_fct.U(j, x, ip+1);
 	if(derivatives)
-	  ret->interpol_d[j][i+MaxInterpol] = caf_bspline_d(j, x, ip+1);
+	  ret->interpol_d[j][i+MaxInterpol] = i_fct.U_d(j, x, ip+1);
       }
-  ret->U_hat = &caf_bspline_k;
+  ret->U_hat = i_fct.U_hat;
   return ret;
 }
 

@@ -87,7 +87,7 @@ static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p
       dz = s->p->z[id] - s->p->z[i];
       dz -= ROUND(dz*lengthi)*s->length;
 
-      r = sqrt(SQR(dx) + SQR(dy) + SQR(dz));
+      r = SQRT(SQR(dx) + SQR(dy) + SQR(dz));
 
       if (r<=p->rcut) {
 	neighbor_id_buffer[np] = i;
@@ -111,7 +111,7 @@ static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p
       dz = s->p->z[id] - s->p->z[i];
       dz -= ROUND(dz*lengthi)*s->length;
 
-      r = sqrt(SQR(dx) + SQR(dy) + SQR(dz));
+      r = SQRT(SQR(dx) + SQR(dy) + SQR(dz));
 
       if (r<=p->rcut) {
 	neighbor_id_buffer[np] = i;
@@ -139,16 +139,12 @@ static inline void build_neighbor_list_for_particle(system_t *s, parameters_t *p
 void Init_neighborlist(system_t *s, parameters_t *p, data_t *d) {
     int i;
 
-    // Define and allocate buffers (nessecary due to unknow number of neigbors per particles).
+    // Define and allocate buffers (nessecary due to unknow number of neigbors per particle).
 
     int *neighbor_id_buffer = NULL;
     vector_array_t *position_buffer;
     FLOAT_TYPE *charges_buffer = NULL;
     neighbor_list_t *neighbor_list;
-
-    // Sort particles
-
-    sort_particles(s);
 
     neighbor_id_buffer = Init_array(s->nparticles, sizeof(int));
     position_buffer = Init_vector_array(s->nparticles);
@@ -158,6 +154,10 @@ void Init_neighborlist(system_t *s, parameters_t *p, data_t *d) {
 
     d->neighbor_list = Init_array(s->nparticles + 1, sizeof(neighbor_list_t));
     neighbor_list = d->neighbor_list;   
+
+    // Sort particles
+
+    sort_particles(s);
  
     // Find neighbors for each particle.
 
