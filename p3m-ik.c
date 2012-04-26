@@ -164,6 +164,7 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 
     int Mesh = p->mesh;
     int c_index;
+    FLOAT_TYPE charge_sum=0.0;
 
     /* Setting charge mesh to zero */
     memset ( d->Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof ( FLOAT_TYPE ) );
@@ -175,6 +176,16 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 
     /* chargeassignment */
     assign_charge ( s, p, d, 0 );
+
+    for ( i=0; i<Mesh; i++ )
+      for ( j=0; j<Mesh; j++ )
+	for ( k=0; k<Mesh; k++ ) {
+	  c_index = c_ind ( i,j,k );
+	  charge_sum += d->Qmesh[c_index];
+	  //	  printf("%d %d %d %lf\n", i,j,k, d->Qmesh[c_index]);
+	} 
+
+    printf("p3m-ik: total mesh charge: %lf\n", charge_sum);
 
   #ifdef __detailed_timings
   timer = MPI_Wtime() - timer;

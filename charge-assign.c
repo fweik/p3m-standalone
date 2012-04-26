@@ -23,6 +23,7 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 {
     int dim, i0, i1, i2, id;
     FLOAT_TYPE tmp0, tmp1;
+    FLOAT_TYPE cf_sum, cf_sum2=0.0, cf_total=0.0;
     /* position of a particle in local mesh units */
     FLOAT_TYPE pos;
     /* 1d-index of nearest mesh point */
@@ -31,7 +32,7 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
     int arg[3];
     /* index, index jumps for rs_mesh array */
     FLOAT_TYPE cur_ca_frac_val;
-    int cf_cnt;
+    int cf_cnt, cf_cnt2;
     // Mesh coordinates of the closest mesh point
     int base[3];
     int i,j,k;
@@ -56,22 +57,37 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
             arg[dim] = (int) FLOOR((pos - nmp + 0.5)*MI2);
             d->ca_ind[ii][3*id + dim] = base[dim];
         }
-
+	cf_sum=0.0;
         for (i0=0; i0<p->cao; i0++) {
-	  i = wrap_mesh_index(base[0] + i0, d->mesh);
-            tmp0 = s->q[id] * d->inter->interpol[i0][arg[0]];
-            for (i1=0; i1<p->cao; i1++) {
-	      j = wrap_mesh_index(base[1] + i1, d->mesh);
-                tmp1 = tmp0 * d->inter->interpol[i1][arg[1]];
-                for (i2=0; i2<p->cao; i2++) {
-		  k = wrap_mesh_index(base[2] + i2, d->mesh);
-		  cur_ca_frac_val = tmp1 * d->inter->interpol[i2][arg[2]];
-		  d->cf[ii][cf_cnt++] = cur_ca_frac_val ;
-		  d->Qmesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
-                }
-            }
+	  tmp0 = s->q[id] * d->inter->interpol[i0][arg[0]];
+	  for (i1=0; i1<p->cao; i1++) {
+	    tmp1 = tmp0 * d->inter->interpol[i1][arg[1]];
+	    for (i2=0; i2<p->cao; i2++) {
+	      cur_ca_frac_val = tmp1 * d->inter->interpol[i2][arg[2]];
+	      d->cf[ii][cf_cnt++] = cur_ca_frac_val ;
+	      cf_sum += cur_ca_frac_val;
+	    }
+	  }
         }
+	printf("id %d cf_sum %lf\n", id, cf_sum);
+	cf_sum2=0.0;
+	cf_cnt2 = cf_cnt - p->cao3;
+	for (i0=0; i0<p->cao; i0++) {
+	  i = wrap_mesh_index(base[0] + i0, d->mesh);
+	  for (i1=0; i1<p->cao; i1++) {
+	    j = wrap_mesh_index(base[1] + i1, d->mesh);
+	    for (i2=0; i2<p->cao; i2++) {
+	      k = wrap_mesh_index(base[2] + i2, d->mesh);
+	      d->cf[ii][cf_cnt2] /= fabs(cf_sum);
+	      cf_sum2 += d->cf[ii][cf_cnt2];
+	      d->Qmesh[c_ind(i,j,k)+ii] += d->cf[ii][cf_cnt2++];
+	    }
+	  }
+	} 
+	printf("id %d cf_sum2 %lf\n", id, cf_sum2);
+	cf_total += cf_sum2;
     }
+    printf("cf_total %lf\n", cf_total);
 }
 
 // assign the forces obtained from k-space

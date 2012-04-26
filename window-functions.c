@@ -7,7 +7,11 @@
 FLOAT_TYPE caf_kaiserbessel_k(int i, FLOAT_TYPE d) {
   FLOAT_TYPE alpha = 1.0;
   FLOAT_TYPE dd = fabs(2.0*d);
-  return (dd <= i) ? gsl_sf_bessel_I0(PI*alpha*sqrt(SQR(alpha) - SQR(dd/i)))/gsl_sf_bessel_I0(PI*alpha) : 0.0;
+  //  printf("caf_kaiserbessel_k: cao %d d %lf dd %lf\n", i, d, dd);
+  if(dd <= (FLOAT_TYPE)i)
+    return gsl_sf_bessel_I0(PI*alpha*sqrt(SQR(alpha) - SQR(dd/i)))/gsl_sf_bessel_I0(PI*alpha);
+  else 
+    return 0.0;
 }
 
 FLOAT_TYPE caf_kaiserbessel(int i, FLOAT_TYPE x, int cao) {
