@@ -69,7 +69,6 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 	    }
 	  }
         }
-	printf("id %d cf_sum %lf\n", id, cf_sum);
 	cf_sum2=0.0;
 	cf_cnt2 = cf_cnt - p->cao3;
 	for (i0=0; i0<p->cao; i0++) {
@@ -84,10 +83,8 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 	    }
 	  }
 	} 
-	printf("id %d cf_sum2 %lf\n", id, cf_sum2);
 	cf_total += cf_sum2;
     }
-    printf("cf_total %lf\n", cf_total);
 }
 
 // assign the forces obtained from k-space

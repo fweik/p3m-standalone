@@ -14,7 +14,7 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
   FLOAT_TYPE x;
   long   i,j;
 
-  interpolation_function_t i_fct = ip_kaiserbessel;
+  interpolation_function_t i_fct = ip_bspline;
   
 
   interpolation_t *ret;
