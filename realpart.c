@@ -5,7 +5,6 @@
 
 #include "realpart.h"
 
-#include "sort.h"
 
 int to_left=0;
 int to_right=0;
@@ -95,7 +94,6 @@ static void build_neighbor_list_for_particle(system_t *s, parameters_t *p, data_
     FLOAT_TYPE lengthi = 1.0/s->length;
     neighbor_list_t *neighbor_list = d->neighbor_list;
 
-    for (i=id-1;i!=id;i--) {
       to_left++;
       if(i < 0) {
 	i += s->nparticles;
@@ -155,7 +153,6 @@ static void build_neighbor_list_for_particle(system_t *s, parameters_t *p, data_
 	np++;
       }
     }
-
     neighbor_list[id].p = Init_vector_array(np);
     neighbor_list[id].q = Init_array(np, sizeof(FLOAT_TYPE));
     neighbor_list[id].id = Init_array(np, sizeof(int));
