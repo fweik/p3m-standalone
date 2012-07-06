@@ -94,6 +94,7 @@ static void build_neighbor_list_for_particle(system_t *s, parameters_t *p, data_
     FLOAT_TYPE lengthi = 1.0/s->length;
     neighbor_list_t *neighbor_list = d->neighbor_list;
 
+    for (i=id+1;i!=id;i--) {
       to_left++;
       if(i < 0) {
 	i += s->nparticles;
