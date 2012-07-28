@@ -208,9 +208,9 @@ int main ( int argc, char **argv ) {
     data_ewald = method_ewald.Init ( system, &parameters_ewald );
     printf ( ".\n" );
 
-    printf ( "Init neighborlist" );
-    Init_neighborlist ( system, &parameters, data );
-    printf ( ".\n" );
+    /* printf ( "Init neighborlist" ); */
+    /* Init_neighborlist ( system, &parameters, data ); */
+    /* printf ( ".\n" ); */
 
     printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error-Est", "K-Error-Est" );
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
