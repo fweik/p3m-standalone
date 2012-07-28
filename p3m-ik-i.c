@@ -111,16 +111,12 @@ void Influence_ik_i( system_t *s, parameters_t *p, data_t *d )
 {
     int    NX,NY,NZ;
     FLOAT_TYPE Dnx,Dny,Dnz;
-    FLOAT_TYPE dMesh,dMeshi;
     FLOAT_TYPE Zaehler[3]={0.0,0.0,0.0},Nenner1=0.0, Nenner2=0.0;
     FLOAT_TYPE zwi;
 
     int ind = 0;
     int Mesh = p->mesh;
     FLOAT_TYPE Leni = 1.0/s->length;
-
-    dMesh = (FLOAT_TYPE)Mesh;
-    dMeshi= 1.0/dMesh;
 
     for (NX=0; NX<Mesh; NX++)
     {

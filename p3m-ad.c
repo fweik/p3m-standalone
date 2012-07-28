@@ -92,13 +92,10 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
 {
 
   int    NX,NY,NZ;
-  FLOAT_TYPE dMesh,dMeshi;
   FLOAT_TYPE Zaehler=0.0,Nenner1=0.0, Nenner2=0.0;
 
   int ind = 0;
   int Mesh = p->mesh;
-  dMesh = (FLOAT_TYPE)Mesh;
-  dMeshi= 1.0/dMesh;
 
   /* bei Zahlen >= Mesh/2 wird noch Mesh abgezogen! */
   for (NX=0; NX<Mesh; NX++)
@@ -243,18 +240,12 @@ FLOAT_TYPE p3m_k_space_error_ad( system_t *s, parameters_t *p )
   FLOAT_TYPE mesh = p->mesh;
   FLOAT_TYPE box_size = s->length;
   FLOAT_TYPE he_q = 0.0;
-  FLOAT_TYPE alias1, alias2, alias3, alias4, n2, cs;
-  FLOAT_TYPE ctan_x, ctan_y;
-  FLOAT_TYPE mesh_i = 1.0/mesh;
+  FLOAT_TYPE alias1, alias2, alias3, alias4;
 
   for (nx=-mesh/2; nx<mesh/2; nx++) {
-    ctan_x = analytic_cotangent_sum ( nx, mesh_i, p->cao );
     for (ny=-mesh/2; ny<mesh/2; ny++) {
-      ctan_y = ctan_x * analytic_cotangent_sum ( ny, mesh_i, p->cao );
       for (nz=-mesh/2; nz<mesh/2; nz++) {
-	cs = ctan_y * analytic_cotangent_sum ( nz, mesh_i, p->cao );
 	if((nx!=0) || (ny!=0) || (nz!=0)) {
-	  n2 = SQR(nx) + SQR(ny) + SQR(nz);
 	  p3m_tune_aliasing_sums_ad(nx,ny,nz, s, p, &alias1,&alias2,&alias3,&alias4);	//alias4 = cs
 
 	  if( (alias3 == 0.0) || (alias4 == 0.0) )
