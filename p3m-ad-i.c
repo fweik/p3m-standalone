@@ -104,12 +104,9 @@ void Aliasing_sums_ad_i(int NX, int NY, int NZ, system_t *s, parameters_t *p, da
 void Influence_function_ad_i( system_t *s, parameters_t *p, data_t *d )
 {
   int    NX,NY,NZ;
-  FLOAT_TYPE dMesh,dMeshi;
   FLOAT_TYPE Zaehler=0.0,Nenner1=0.0, Nenner2=0.0, Nenner3=0.0, Nenner4=0.0;
   int ind = 0;
   int Mesh= d->mesh;
-  dMesh = (FLOAT_TYPE)Mesh;
-  dMeshi= 1.0/dMesh;
 
   for (NX=0; NX<Mesh; NX++)
     {
@@ -257,19 +254,13 @@ FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
 {
   int  nx, ny, nz;
   FLOAT_TYPE he_q = 0.0;
-  FLOAT_TYPE alias1, alias2, alias3, alias4, alias5, alias6, n2;
+  FLOAT_TYPE alias1, alias2, alias3, alias4, alias5, alias6;
   int mesh = p->mesh;
-  FLOAT_TYPE ctan_x, ctan_y, cs;
-  FLOAT_TYPE mesh_i = 1.0 / mesh;
 
   for (nx=-mesh/2; nx<mesh/2; nx++) {
-    ctan_x = analytic_cotangent_sum ( nx, mesh_i, p->cao );
       for (ny=-mesh/2; ny<mesh/2; ny++) {
-	ctan_y = ctan_x * analytic_cotangent_sum ( ny, mesh_i, p->cao );
 	for (nz=-mesh/2; nz<mesh/2; nz++) {
 	  if((nx!=0) || (ny!=0) || (nz!=0)) {
-	    cs = ctan_y * analytic_cotangent_sum ( nz, mesh_i, p->cao );
-	    n2 = SQR(nx) + SQR(ny) + SQR(nz);
 	    P3M_tune_aliasing_sums_AD_interlaced(nx,ny,nz,s,p,&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
 	    he_q += (alias1  -  SQR(alias2) / (0.5*(alias3*alias4 + alias5*alias6)));
 	  }

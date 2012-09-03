@@ -10,10 +10,6 @@
 #include "tools/visit_writer.h"
 
 
-static void usage(cmd_parameter_t **required, cmd_parameter_t **optinal) {
-  
-}
-
 void write_mesh(char *filename, FLOAT_TYPE *data, int *dims, FLOAT_TYPE *spacing, int data_size, const char *var_name) {
   int i,j,k,index_row,index_col;
   int centering[] = {1};

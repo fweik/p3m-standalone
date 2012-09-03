@@ -168,7 +168,7 @@ static void build_neighbor_list_for_particle(system_t *s, parameters_t *p, data_
 }
 
 void Init_neighborlist(system_t *s, parameters_t *p, data_t *d) {
-  int i, *nb;
+  int i;
 
     // Define and allocate buffers (nessecary due to unknow number of neigbors per particle).
 
@@ -214,7 +214,7 @@ void Realpart_neighborlist(system_t *s, parameters_t *p, data_t *d, forces_t *f 
 {
     int i,j;
     /* Minimum-Image-Abstand: */
-    FLOAT_TYPE dx,dy,dz,r, r2, rcut2 = SQR ( p->rcut );
+    FLOAT_TYPE dx,dy,dz,r, r2;
     /* Staerke der elegktrostatischen Kraefte */
     FLOAT_TYPE fak;
     /* Zur Approximation der Fehlerfunktion */

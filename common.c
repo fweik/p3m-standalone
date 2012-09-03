@@ -140,7 +140,6 @@ void Free_vector_array(vector_array_t *v) {
 void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 
     int i, j;
-    FLOAT_TYPE e_r;
 
 #ifdef DETAILED_TIMINGS
     FLOAT_TYPE t;
@@ -165,7 +164,6 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
 
     Realteil( s, p, f );
     //Realpart_neighborlist( s, p, d, f );
-
     e_r = s-> energy;
 
     //  Dipol(s, p);
@@ -194,7 +192,7 @@ FLOAT_TYPE Calculate_reference_forces ( system_t *s, parameters_t *p ) {
 
     d = method_ewald.Init ( s, &op );
 
-    Init_neighborlist( s, &op, d );
+    //Init_neighborlist( s, &op, d );
      
     method_ewald.Influence_function( s, &op, d );
 
@@ -202,7 +200,7 @@ FLOAT_TYPE Calculate_reference_forces ( system_t *s, parameters_t *p ) {
     
     Calculate_forces ( &method_ewald, s, &op, d, s->reference );
 
-    Free_neighborlist(d);
+    //Free_neighborlist(d);
     Free_data(d);
     Free_forces(f);
 
