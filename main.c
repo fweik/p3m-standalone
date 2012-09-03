@@ -174,8 +174,9 @@ int main ( int argc, char **argv ) {
         method = method_p3m_ad;
 #endif
 #ifdef P3M_AD_I_H
-    else if ( methodnr == method_p3m_ad_i.method_id )
+    else if ( methodnr == method_p3m_ad_i.method_id ) {
         method = method_p3m_ad_i;
+    }
 #endif
 #ifdef GREENS_IK_H
     else if ( methodnr == method_greens_ik.method_id )
@@ -208,9 +209,9 @@ int main ( int argc, char **argv ) {
     data_ewald = method_ewald.Init ( system, &parameters_ewald );
     printf ( ".\n" );
 
-    printf ( "Init neighborlist" );
-    Init_neighborlist ( system, &parameters, data );
-    printf ( ".\n" );
+    /* printf ( "Init neighborlist" ); */
+    /* Init_neighborlist ( system, &parameters, data ); */
+    /* printf ( ".\n" ); */
 
     printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error-Est", "K-Error-Est" );
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {

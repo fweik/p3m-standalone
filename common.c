@@ -163,8 +163,8 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
 #endif
 
 
-    //Realteil( s, p, f );
-    Realpart_neighborlist( s, p, d, f );
+    Realteil( s, p, f );
+    //Realpart_neighborlist( s, p, d, f );
 
     e_r = s-> energy;
 
