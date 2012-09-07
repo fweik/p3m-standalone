@@ -2,10 +2,12 @@ CC=mpicc
 CFLAGS=-Wall -O0 -g
 LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 -lfftw3l -lm
 
+OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o greens.o charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o
+
 all: p3mstandalone
 
-p3mstandalone: sort.o generate_system.o visit_writer.o window-functions.o greens.o charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o  Makefile main.c
-	$(CC) $(CFLAGS) -o p3m sort.o generate_system.o visit_writer.o window-functions.o greens.o charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o realpart.o main.c $(LFLAGS)
+p3mstandalone: $(OBJECTS) Makefile main.c
+	$(CC) $(CFLAGS) -o p3m main.c $(OBJECTS) $(LFLAGS)
 
 random_system: visit_writer.o window-functions.o greens.o charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o generate_system.o  Makefile main_random.c
 	$(CC) $(CFLAGS) generate_system.o window-functions.o greens.o charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o  p3m-ik-i.o p3m-ad.o p3m-ad-i.o realpart.o visit_writer.o main_random.c -o random_system $(LFLAGS)
