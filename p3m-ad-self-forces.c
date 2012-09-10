@@ -2,19 +2,9 @@
 #include "common.h"
 #include "p3m-common.h"
 
+#include <math.h>
+
 #define P3M_SELF_BRILLOUIN 1
-
-FLOAT_TYPE Aliasing_sums_ad(int NX, int NY, int NZ, system_t *s, parameters_t *p, data_t *);
-
-void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
-
-}
-
-void Substract_self_forces( system_t *s, parameters_t *p, data_t *d ) {
-
-}
-
-/* Internal functions */
 
 /* This is an implementation of equation (9) of
    V. Ballenegger et al., Computer Physics Communications 182(2011)
@@ -23,32 +13,78 @@ void Substract_self_forces( system_t *s, parameters_t *p, data_t *d ) {
    the paper.
 */
 
-FLOAT_TYPE Aliasing_sums_ad_self(int nx, int ny, int nz, 
-				 int p, int q, int r,
-				 system_t *s, parameters_t *par, data_t *d)
-{
-  int    mx,my,mz;
-  FLOAT_TYPE NMX,NMY,NMZ;
-  FLOAT_TYPE S1, S2, S3;
-  int Mesh = p->mesh;
-  FLOAT_TYPE Len = s->length;
-  FLOAT_TYPE Leni = 1.0/Len;
-  FLOAT_TYPE Res = 0.0;
-  FLOAT_TYPE fak1 = 1.0;
+FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
+					int m1, int m2, int m3, int dir)
+{ 
+  int nx, ny, nz;
+  int mx, my, mz;
+  //  int[3] n;
+  int mesh = p->mesh;
+  int true_nx,true_ny,true_nz;
+  double theSumOverK = 0.0, mesh_i = 1./mesh;
+  double U,U_shiftx;
+  int P3M_BRILLOUIN_LOCAL = 6;
 
-  for (MX = -P3M_SELF_BRILLOUIN; MX <= P3M_SELF_BRILLOUIN; MX++) {
-    NMX = NX + Mesh*MX;
-    S1   = my_power(sinc(fak1*NMX), 2*p->cao); 
-    for (MY = -P3M_SELF_BRILLOUIN; MY <= P3M_SELF_BRILLOUIN; MY++) {
-      NMY = NY + Mesh*MY;
-      S2   = S1*my_power(sinc(fak1*NMY), 2*p->cao);
-      for (MZ = -P3M_SELF_BRILLOUIN; MZ <= P3M_SELF_BRILLOUIN; MZ++) {
-	NMZ = NZ + Mesh*MZ;
-	S3   = S2*my_power(sinc(fak1*NMZ), 2*p->cao);
-	
-	Res += S3;
+  for(nx=0; nx<mesh; nx++) 
+    for(ny=0; ny<mesh; ny++) 
+      for(nz=0; nz<mesh; nz++) {
+	if ((nx!=0) || (ny!=0) || (nz!=0)) {
+	  true_nx = d->nshift[nx];
+	  true_ny = d->nshift[ny];
+	  true_nz = d->nshift[nz];
+	  for (mx=-P3M_BRILLOUIN_LOCAL; mx<=P3M_BRILLOUIN_LOCAL; mx++) {
+	    for (my=-P3M_BRILLOUIN_LOCAL; my<=P3M_BRILLOUIN_LOCAL; my++) {
+	      for (mz=-P3M_BRILLOUIN_LOCAL; mz<=P3M_BRILLOUIN_LOCAL; mz++) {
+		U = pow(sinc(mesh_i * (true_nx + mx*mesh))*sinc(mesh_i * (true_ny  + my*mesh))*sinc(mesh_i * (true_nz + mz*mesh)), p->cao);
+		U_shiftx = pow(sinc(mesh_i * (true_nx + (mx+m1)*mesh))*sinc(mesh_i * (true_ny + (my+m2)*mesh))*sinc(mesh_i * (true_nz + (mz+m3)*mesh)), p->cao);
+     
+		theSumOverK += (d->G_hat[c_ind( nx, ny, nz)]) * U * U_shiftx;
+	      }
+	    }
+	  }
+	}
       }
-    }
+  // Je mets un facteur (-1/2) pour tre en accord avec la formule finale (9) de l'article pour le coefficient b_beta^(m)
+  switch(dir) {
+    case 0:
+      return (PI*m1*mesh_i) / SQR(s->length) * theSumOverK;
+      break;
+    case 1:
+      return (PI*m2*mesh_i) / SQR(s->length) * theSumOverK;
+      break;
+    case 2:
+      return (PI*m3*mesh_i) / SQR(s->length) * theSumOverK;
+      break;
   }
-  return Res;
 }
+
+void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
+  int i[4], ind=0;
+
+  d->self_force_corrections = Init_array(my_power(1+2*P3M_SELF_BRILLOUIN, 3), 3*sizeof(FLOAT_TYPE));
+  
+  for(i[0] = -P3M_SELF_BRILLOUIN; i[0]<=P3M_SELF_BRILLOUIN; i[0]++)
+    for(i[1] = -P3M_SELF_BRILLOUIN; i[1]<=P3M_SELF_BRILLOUIN; i[1]++)
+      for(i[2] = -P3M_SELF_BRILLOUIN; i[2]<=P3M_SELF_BRILLOUIN; i[2]++) {
+	for(i[3] = 0; i[3]<3; i[3]++)
+	  d->self_force_corrections[ind++] = P3M_k_space_calc_self_force( s, p, d, i[0], i[1], i[2], i[3]);
+      }
+}
+
+void Substract_self_forces( system_t *s, parameters_t *p, data_t *d ) {
+  
+  int m[3], dir, b;
+
+  for(dir = 0; dir<3; dir++) 
+    for(id=0;id<s->nparticles;id++)
+      for(m[0] = -P3M_SELF_BRILLOUIN; m[0]<=P3M_SELF_BRILLOUIN; i[0]++)
+	for(m[1] = -P3M_SELF_BRILLOUIN; m[1]<=P3M_SELF_BRILLOUIN; i[1]++)
+	  for(m[2] = -P3M_SELF_BRILLOUIN; m[2]<=P3M_SELF_BRILLOUIN; i[2]++) {
+	    b = d->self_force_corrections[ind++];
+      }
+  
+}
+
+/* Internal functions */
+
+

@@ -8,6 +8,52 @@
 
 #include "stdlib.h"
 
+system_t *generate_seperated_dipole(int size, FLOAT_TYPE box) {
+  int id=0,i,j,k;
+  system_t *s;
+  FLOAT_TYPE d = 1.0;
+  int n_dipoles = size / 2;
+  FLOAT_TYPE u, theta;
+  FLOAT_TYPE x[3], y[3];
+
+  s = Init_system(2*n_dipoles);
+  s->length = box;
+  s->q2 = 0.0;
+
+  drand48();  
+
+  /* Generate randome position for the first particle of the dipole x,
+     then choose random direction and place second particle at x + d*y. Second
+     particle could be outside the box and has to be folded. */
+  // @TODO: Use better RNG
+
+  for(i=0; i < n_dipoles; i++) {
+    for(j=0;j<3;j++) {
+      x[j] = box * drand48();
+    }
+    u = -1 + 2*drand48();
+    theta = 2*PI*drand48();
+
+    y[0] = SQRT(1 - SQR(u)) * COS(theta);
+    y[1] = SQRT(1 - SQR(u)) * SIN(theta);
+    y[2] = u;
+
+    for(j=0;j<3;j++) {
+      s->p->fields[j][id  ] = x[j];
+      s->p->fields[j][id+1] = x[j] + d*y[j];
+      while(s->p->fields[j][id+1] >= box)
+	s->p->fields[j][id+1] -= box;
+      while(s->p->fields[j][id+1] < 0.0)
+	s->p->fields[j][id+1] += box;
+    }
+    s->q[id  ] = +1.0;
+    s->q[id+1] = -1.0;
+    id+=2;  
+  }
+
+  return s;
+}
+
 system_t *generate_madelung(int size, FLOAT_TYPE box) {
   int id=0,i,j,k;
   system_t *s;
@@ -85,6 +131,9 @@ system_t *generate_system( int form_factor, int size, FLOAT_TYPE box, FLOAT_TYPE
     break;
   case FORM_FACTOR_MADELUNG:
     return generate_madelung(size,box);
+    break;
+  case FORM_FACTOR_SEPERATED_DIPOLE:
+    return generate_seperated_dipole(size,box);
     break;
   default:
     fprintf( stderr, "Warning, form factor not known.\n");

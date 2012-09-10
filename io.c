@@ -9,6 +9,26 @@
 
 #include "tools/visit_writer.h"
 
+void write_vtf(char *filename, system_t *s) {
+  FILE *f = fopen( filename, "w");
+  int i;
+
+  if(f == NULL) {
+    fprintf( stderr, "Could not open '%s' for writing.", filename);
+    return;
+  }
+
+  for(i=0;i<s->nparticles;i++) {
+    fprintf( f, "a %d t %c r 0.5\n", i, (s->q[i] < 0.0) ? 'O' : 'H');
+  }
+
+  fprintf( f, "timestep indexed\n");
+
+  for(i=0;i<s->nparticles;i++) {
+    fprintf( f, "%d %lf %lf %lf\n", i, FLOAT_CAST s->p->x[i], FLOAT_CAST s->p->y[i], FLOAT_CAST s->p->z[i] );
+  }  
+} 
+
 
 void write_mesh(char *filename, FLOAT_TYPE *data, int *dims, FLOAT_TYPE *spacing, int data_size, const char *var_name) {
   int i,j,k,index_row,index_col;

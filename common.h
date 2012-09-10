@@ -28,7 +28,8 @@ extern double timer;
 #endif
 
 system_t *Init_system(int);
-void *Init_array(int, size_t);vector_array_t *Init_vector_array(int);
+void *Init_array(int, size_t);
+vector_array_t *Init_vector_array(int);
 forces_t *Init_forces(int);
 void Free_system(system_t *);
 void Free_forces(forces_t *);

@@ -34,5 +34,6 @@ system_t *Read_system(parameters_t *, char *);
 void Write_exact_forces(system_t *, char *);
 void Write_system(system_t *, char *);
 
+void write_vtf(char *filename, system_t *s);
 
 #endif
