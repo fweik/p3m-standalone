@@ -185,8 +185,6 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 	  //	  printf("%d %d %d %lf\n", i,j,k, d->Qmesh[c_index]);
 	} 
 
-    printf("p3m-ik: total mesh charge: %lf\n", charge_sum);
-
   #ifdef __detailed_timings
   timer = MPI_Wtime() - timer;
   t_charge_assignment[0] = timer;

@@ -234,6 +234,46 @@ void p3m_tune_aliasing_sums_ad(int nx, int ny, int nz,
   }
 }
 
+void p3m_tune_aliasing_sums_ad_correlated_dipoles(int nx, int ny, int nz, 
+			       system_t *s, parameters_t *p,
+			       FLOAT_TYPE *alias1, FLOAT_TYPE *alias2, FLOAT_TYPE *alias3,FLOAT_TYPE *alias4)
+{
+
+  int    mx,my,mz;
+  FLOAT_TYPE nmx,nmy,nmz;
+  FLOAT_TYPE fnmx,fnmy,fnmz;
+
+  FLOAT_TYPE ex,ex2,nm2,U2,factor1;
+
+  FLOAT_TYPE mesh_i = 1.0 / p->mesh;
+
+  factor1 = SQR ( PI / ( p->alpha*s->length ) );
+
+  *alias1 = *alias2 = *alias3 = *alias4 = 0.0;
+
+  for (mx=-P3M_BRILLOUIN_TUNING; mx<=P3M_BRILLOUIN_TUNING; mx++) {
+    fnmx = mesh_i * (nmx = nx + mx*p->mesh);
+    for (my=-P3M_BRILLOUIN_TUNING; my<=P3M_BRILLOUIN_TUNING; my++) {
+      fnmy = mesh_i * (nmy = ny + my*p->mesh);
+      for (mz=-P3M_BRILLOUIN_TUNING; mz<=P3M_BRILLOUIN_TUNING; mz++) {
+	fnmz = mesh_i * (nmz = nz + mz*p->mesh);
+	
+	nm2 = SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz );
+        ex = EXP(-factor1*nm2);
+	ex2 = SQR( ex );
+	
+	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
+	
+	*alias1 += ex2 / nm2;
+	*alias2 += U2 * ex;
+	*alias3 += U2 * nm2;
+	*alias4 += U2;
+      }
+    }
+  }
+}
+
+
 FLOAT_TYPE p3m_k_space_error_ad( system_t *s, parameters_t *p )
 {
   int  nx, ny, nz;

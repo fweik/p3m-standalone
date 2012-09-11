@@ -189,6 +189,8 @@ FLOAT_TYPE Calculate_reference_forces ( system_t *s, parameters_t *p ) {
 
     op.alpha = Ewald_compute_optimal_alpha ( s, &op );
 
+    printf("Reference Forces: alpha %lf, r_cut %lf\n", op.alpha, op.rcut);
+
     d = method_ewald.Init ( s, &op );
 
     //Init_neighborlist( s, &op, d );

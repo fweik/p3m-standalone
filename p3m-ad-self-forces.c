@@ -23,7 +23,7 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
   int true_nx,true_ny,true_nz;
   double theSumOverK = 0.0, mesh_i = 1./mesh;
   double U,U_shiftx;
-  int P3M_BRILLOUIN_LOCAL = 6;
+  int P3M_BRILLOUIN_LOCAL = 1;
 
   for(nx=0; nx<mesh; nx++) 
     for(ny=0; ny<mesh; ny++) 
@@ -56,6 +56,7 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
       return (PI*m3*mesh_i) / SQR(s->length) * theSumOverK;
       break;
   }
+  return 0.0;
 }
 
 void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
@@ -71,18 +72,25 @@ void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
       }
 }
 
-void Substract_self_forces( system_t *s, parameters_t *p, data_t *d ) {
+void Substract_self_forces( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
   
-  int m[3], dir, b;
+  int m[3], dir;
+  int id, ind;
+  FLOAT_TYPE sin_term;
+  FLOAT_TYPE h = s->length / p->mesh;
 
-  for(dir = 0; dir<3; dir++) 
-    for(id=0;id<s->nparticles;id++)
-      for(m[0] = -P3M_SELF_BRILLOUIN; m[0]<=P3M_SELF_BRILLOUIN; i[0]++)
-	for(m[1] = -P3M_SELF_BRILLOUIN; m[1]<=P3M_SELF_BRILLOUIN; i[1]++)
-	  for(m[2] = -P3M_SELF_BRILLOUIN; m[2]<=P3M_SELF_BRILLOUIN; i[2]++) {
-	    b = d->self_force_corrections[ind++];
-      }
-  
+  for(id=0;id<s->nparticles;id++) {
+    ind = 0;
+    for(m[0] = -P3M_SELF_BRILLOUIN; m[0]<=P3M_SELF_BRILLOUIN; m[0]++)
+      for(m[1] = -P3M_SELF_BRILLOUIN; m[1]<=P3M_SELF_BRILLOUIN; m[1]++)
+	for(m[2] = -P3M_SELF_BRILLOUIN; m[2]<=P3M_SELF_BRILLOUIN; m[2]++) 
+	  sin_term = SIN(2*PI*(m[0] * s->p->x[id]/h +
+			       m[1] * s->p->y[id]/h +
+			       m[2] * s->p->z[id]/h)); 
+	  for(dir = 0; dir<3; dir++) {
+	    f->f_k->fields[dir][id] -= SQR(s->q[id]) * d->self_force_corrections[ind++] * sin_term;
+	  }
+  }
 }
 
 /* Internal functions */

@@ -48,6 +48,8 @@ system_t *generate_seperated_dipole(int size, FLOAT_TYPE box) {
     }
     s->q[id  ] = +1.0;
     s->q[id+1] = -1.0;
+    s->q2 += SQR(s->q[id]) + SQR(s->q[id+1]);
+
     id+=2;  
   }
 
