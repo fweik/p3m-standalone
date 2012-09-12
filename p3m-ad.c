@@ -115,6 +115,11 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
 		  Aliasing_sums_ad(NX,NY,NZ,s,p,d,&Zaehler,&Nenner1, &Nenner2);
 		  d->G_hat[ind] = Zaehler / ( PI * Nenner1 * Nenner2 );
 		}
+	      if(isnan(d->G_hat[ind])) {
+		puts("G_hat is nan!");
+		printf("N (%d, %d, %d)\n",NX, NY, NZ);
+		exit(0);
+	      }
 	    }
 	}
     }

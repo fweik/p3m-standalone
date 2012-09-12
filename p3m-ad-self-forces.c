@@ -35,10 +35,16 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
 	  for (mx=-P3M_BRILLOUIN_LOCAL; mx<=P3M_BRILLOUIN_LOCAL; mx++) {
 	    for (my=-P3M_BRILLOUIN_LOCAL; my<=P3M_BRILLOUIN_LOCAL; my++) {
 	      for (mz=-P3M_BRILLOUIN_LOCAL; mz<=P3M_BRILLOUIN_LOCAL; mz++) {
+		if ((nx==0) || (ny==0) || (nz==0))
+		  continue;
 		U = pow(sinc(mesh_i * (true_nx + mx*mesh))*sinc(mesh_i * (true_ny  + my*mesh))*sinc(mesh_i * (true_nz + mz*mesh)), p->cao);
 		U_shiftx = pow(sinc(mesh_i * (true_nx + (mx+m1)*mesh))*sinc(mesh_i * (true_ny + (my+m2)*mesh))*sinc(mesh_i * (true_nz + (mz+m3)*mesh)), p->cao);
-     
-		theSumOverK += (d->G_hat[c_ind( nx, ny, nz)]) * U * U_shiftx;
+
+		theSumOverK += (d->G_hat[r_ind( nx, ny, nz)]) * U * U_shiftx;
+
+		//		printf("%d %d %d: U %e U_shiftx %e G_hat() %e\n theSumOverK %e\n", nx, ny, nz, U, U_shiftx, d->G_hat[c_ind( nx, ny, nz)],		       theSumOverK);
+		if(isnan(theSumOverK))
+		  exit(0);
 	      }
 	    }
 	  }
@@ -69,6 +75,8 @@ void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
       for(i[2] = -P3M_SELF_BRILLOUIN; i[2]<=P3M_SELF_BRILLOUIN; i[2]++) {
 	for(i[3] = 0; i[3]<3; i[3]++)
 	  d->self_force_corrections[ind++] = P3M_k_space_calc_self_force( s, p, d, i[0], i[1], i[2], i[3]);
+	printf("b(%d, %d, %d) = (%e, %e, %e)\n", i[0], i[1], i[2], d->self_force_corrections[ind-3],
+	       d->self_force_corrections[ind-2], d->self_force_corrections[ind-1]);
       }
 }
 
@@ -83,13 +91,14 @@ void Substract_self_forces( system_t *s, parameters_t *p, data_t *d, forces_t *f
     ind = 0;
     for(m[0] = -P3M_SELF_BRILLOUIN; m[0]<=P3M_SELF_BRILLOUIN; m[0]++)
       for(m[1] = -P3M_SELF_BRILLOUIN; m[1]<=P3M_SELF_BRILLOUIN; m[1]++)
-	for(m[2] = -P3M_SELF_BRILLOUIN; m[2]<=P3M_SELF_BRILLOUIN; m[2]++) 
+	for(m[2] = -P3M_SELF_BRILLOUIN; m[2]<=P3M_SELF_BRILLOUIN; m[2]++) {
 	  sin_term = SIN(2*PI*(m[0] * s->p->x[id]/h +
 			       m[1] * s->p->y[id]/h +
 			       m[2] * s->p->z[id]/h)); 
 	  for(dir = 0; dir<3; dir++) {
-	    f->f_k->fields[dir][id] -= SQR(s->q[id]) * d->self_force_corrections[ind++] * sin_term;
+	    f->f->fields[dir][id] -= SQR(s->q[id]) * d->self_force_corrections[ind++] * sin_term;
 	  }
+	}
   }
 }
 
