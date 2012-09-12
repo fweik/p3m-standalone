@@ -3,7 +3,7 @@
 void sort_particles_r(system_t *s, int m, int n);
 
 // Swap particles i and j in s
-inline void swap_particles( system_t *s, int i, int j) {
+inline static void swap_particles( system_t *s, int i, int j) {
   FLOAT_TYPE b;
   
   b = s->p->x[j];

@@ -38,6 +38,26 @@ void *Init_array(int size, size_t field_size) {
     return a;
 }
 
+void *Resize_array(void *a, size_t new_size, size_t old_size) {
+  size_t copy_size = (new_size<=old_size) ? new_size : old_size;
+  void *b;
+
+  assert(new_size >= 0);
+
+  if(new_size == 0) {
+    FFTW_FREE(a);
+    return NULL;
+  } else {
+    b = FFTW_MALLOC(new_size);
+    assert(b != NULL);
+    memcpy(b, a, copy_size);
+    if(a != NULL)
+      FFTW_FREE(a);
+    return b;
+  }
+  return NULL;
+}
+
 vector_array_t *Init_vector_array(int n) {
     int i;
     vector_array_t *v;
@@ -59,7 +79,22 @@ vector_array_t *Init_vector_array(int n) {
     v->y = v->fields[1];
     v->z = v->fields[2];
 
+    v->size = n;
+
     return v;
+}
+
+void Resize_vector_array(vector_array_t *d, int new_size) {
+  assert(d != NULL);
+
+  for(int i=0; i<3; i++)
+    d->fields[i] = Resize_array(d->fields[i], new_size*sizeof(FLOAT_TYPE), d->size*sizeof(FLOAT_TYPE));
+
+  d->x = d->fields[0];
+  d->y = d->fields[1];
+  d->z = d->fields[2];
+
+  d->size = new_size;
 }
 
 system_t *Init_system(int n) {
@@ -132,6 +167,7 @@ void Free_vector_array(vector_array_t *v) {
 
         v->x = v->y = v->z = NULL;
         v->fields = NULL;
+	v->size = 0;
 
 	FFTW_FREE(v);
     }

@@ -6,7 +6,7 @@
 
 // #define CA_DEBUG
 
-inline int wrap_mesh_index(int ind, int mesh) {
+inline static int wrap_mesh_index(int ind, int mesh) {
   int ret;
   if(ind < 0)
     ret = ind + mesh;

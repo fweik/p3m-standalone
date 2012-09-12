@@ -100,10 +100,11 @@ enum {
 // for convinience.
 
 typedef struct {
-    FLOAT_TYPE *x;
-    FLOAT_TYPE *y;
-    FLOAT_TYPE *z;
-    FLOAT_TYPE **fields;
+  int size;
+  FLOAT_TYPE *x;
+  FLOAT_TYPE *y;
+  FLOAT_TYPE *z;
+  FLOAT_TYPE **fields;
 } vector_array_t;
 
 // Struct to hold the forces
