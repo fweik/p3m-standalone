@@ -112,7 +112,7 @@ system_t *generate_random_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge
 
   gsl_rng_env_setup();
   
-  T = gsl_rng_default;
+ = gsl_rng_default;
   r = gsl_rng_alloc (T);
   
   s = Init_system(size);
@@ -123,7 +123,7 @@ system_t *generate_random_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge
     for(j=0;j<3;j++) {
       s->p->fields[j][i] = box*gsl_rng_uniform (r);
     }
-    s->q[i] = 1.0 - 2.0 * (i%2);
+    s->q[i] = (1.0 - 2.0 * (i%2)) * max_charge;
     q2 += s->q[i] * s->q[i];
   }
   s->q2 = q2;
