@@ -4,6 +4,29 @@
 #include "domain-decomposition.h"
 #include "common.h"
 
+void init_neighbors(domain_decomposition_t *d, cell_t *c) {
+  celllist_t *i, *last=NULL;
+  int n[3];
+
+  for(n[0]=(c->coords[0]-1);n[0]<=(c->coords[0]+1);n[0]++)
+    for(n[1]=(c->coords[1]-1);n[1]<=(c->coords[1]+1);n[1]++)
+      for(n[2]=(c->coords[2]-1);n[2]<=(c->coords[2]+1);n[2]++) {
+	if((n[0]==c->coords[0]) &&
+	   (n[1]==c->coords[1]) &&
+	   (n[2]==c->coords[2]))
+	  continue;
+
+	i = Init_array( 1, sizeof(celllist_t));
+	i->prev = (struct celllist_t *) last;
+	last->next = (struct celllist_t *)i;
+	i->c = &(d->cells[d->cells_per_direction * d->cells_per_direction * n[0] +
+			  d->cells_per_direction * n[1] + n[2]]);
+	last = i;
+      }
+
+  last->next = NULL;
+}
+
 domain_decomposition_t *Init_dd( int cells_per_direction, FLOAT_TYPE box ) {
   domain_decomposition_t *d = Init_array( 1, sizeof(domain_decomposition_t) );
   int n[3], ind=0;
@@ -21,13 +44,16 @@ domain_decomposition_t *Init_dd( int cells_per_direction, FLOAT_TYPE box ) {
   for(n[0]=0;n[0]<cells_per_direction;n[0]++)
     for(n[1]=0;n[1]<cells_per_direction;n[1]++)
       for(n[2]=0;n[2]<cells_per_direction;n[2]++) {
-	cell_t *c = &(d->cells[ind]);
+	cell_t *c = &(d->cells[ind++]);
 	c->p = NULL;
 	c->q = NULL;
 	c->ids = NULL;
+	c->neighbors = NULL;
 	c->n_particles = 0;
 	for(int j=0;j<3;j++)
 	  c->coords[j] = n[j];
+
+	init_neighbors(d, c);
       }
   return d;
 }
@@ -42,7 +68,7 @@ void add_particle_to_cell( cell_t *c, int id, FLOAT_TYPE pos[3], FLOAT_TYPE q) {
   c->ids = Resize_array( c->ids, new_size*sizeof(int), old_size*sizeof(int));
 
   for(int i = 0; i<3; i++)
-    c->p->fields[i][old_size] = p[i];
+    c->p->fields[i][old_size] = pos[i];
 
   c->q[old_size] = q;
   c->ids[old_size] = id;

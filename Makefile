@@ -6,6 +6,9 @@ OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o greens.o char
 
 all: p3mstandalone
 
+test_dd: $(OBJECTS) Makefile test-dd.c domain-decomposition.o
+	$(CC) $(CFLAGS) -o test-dd test-dd.c domain-decomposition.o $(OBJECTS) $(LFLAGS)
+
 p3mstandalone: $(OBJECTS) Makefile main.c
 	$(CC) $(CFLAGS) -o p3m main.c $(OBJECTS) $(LFLAGS)
 
