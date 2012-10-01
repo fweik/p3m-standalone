@@ -58,6 +58,27 @@ void *Resize_array(void *a, size_t new_size, size_t old_size) {
   return NULL;
 }
 
+buffered_list_t *Init_buffered_list(size_t size) {
+  buffered_list_t *l = Init_array( 1, sizeof(buffered_list_t));
+  
+  l->size = size;
+  l->bufsize = size+BLIST_STEP;
+
+  l->data = Init_array( 1, l->bufsize );
+
+  return l;
+}
+
+void Resize_buffered_list(buffered_list_t *l, size_t new_size) {
+  if( new_size <= l->bufsize ) {
+    l->size = new_size;
+    return;
+  }
+  l->data = Resize_array(l->data, new_size + BLIST_STEP, l->bufsize);
+  l->bufsize = new_size + BLIST_STEP;
+  l->size = new_size;
+}
+
 vector_array_t *Init_vector_array(int n) {
     int i;
     vector_array_t *v;
@@ -97,6 +118,49 @@ void Resize_vector_array(vector_array_t *d, int new_size) {
   d->size = new_size;
 }
 
+bvector_array_t *Init_bvector_array(int n) {
+    int i;
+    bvector_array_t *v;
+
+    v = Init_array( 1, sizeof(bvector_array_t));
+
+    assert(n >= 0 );
+
+    v->fields = Init_array( 3, sizeof(FLOAT_TYPE *));
+    v->data = Init_array( 3, sizeof(buffered_list_t *));
+
+    assert( v->fields != NULL );
+
+    for (i=0;i<3;i++) {
+      v->data[i] = Init_buffered_list(n*sizeof(FLOAT_TYPE));
+      v->fields[i] = v->data[i]->data;
+    }
+
+    v->x = v->fields[0];
+    v->y = v->fields[1];
+    v->z = v->fields[2];
+
+    v->size = n;
+
+    return v;
+}
+
+void Resize_bvector_array(bvector_array_t *d, int new_size) {
+  assert(d != NULL);
+
+  for(int i=0; i<3; i++) {
+    Resize_buffered_list( d->data[i], new_size*sizeof(FLOAT_TYPE));
+    d->fields[i] = d->data[i]->data;
+  }
+
+  d->x = d->fields[0];
+  d->y = d->fields[1];
+  d->z = d->fields[2];
+
+  d->size = new_size;
+}
+
+
 system_t *Init_system(int n) {
     system_t *s;
 
@@ -106,7 +170,9 @@ system_t *Init_system(int n) {
 
     s-> nparticles = n;
 
-    s-> p = Init_vector_array(s->nparticles);
+    s->p = Init_vector_array(s->nparticles);
+
+    s->v = Init_vector_array(s->nparticles);
 
     s->reference = Init_forces(s->nparticles);
 

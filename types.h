@@ -79,6 +79,7 @@ extern int __detailed_timings;
 // !3
 #define PI 3.1415926535897932384626433832795028841971693993751058209749445923078164062
 
+#define BLIST_STEP 100
 
 #define SQR(A) ((A)*(A))
 
@@ -107,6 +108,22 @@ typedef struct {
   FLOAT_TYPE **fields;
 } vector_array_t;
 
+
+typedef struct {
+  size_t size;
+  size_t bufsize;
+  void *data;
+} buffered_list_t;
+
+typedef struct {
+  int size;
+  FLOAT_TYPE *x;
+  FLOAT_TYPE *y;
+  FLOAT_TYPE *z;
+  buffered_list_t **data;
+  FLOAT_TYPE **fields;
+} bvector_array_t;
+
 // Struct to hold the forces
 
 typedef struct {
@@ -132,6 +149,8 @@ struct {
     FLOAT_TYPE *q;
     // sum of the squares of the particle charges
     FLOAT_TYPE q2;
+    // particle veloceties
+    vector_array_t *v;
     // the reference forces
     forces_t *reference;
     // dielectric constat of the environment at infinity
@@ -242,6 +261,5 @@ typedef struct {
     FLOAT_TYPE ( *Error ) ( system_t *, parameters_t * );
     FLOAT_TYPE ( *Error_k ) ( system_t *, parameters_t * );
 } method_t;
-
 
 #endif

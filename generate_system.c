@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <gsl/gsl_rng.h>
 
 #include "generate_system.h"
 
@@ -15,12 +17,11 @@ system_t *generate_seperated_dipole(int size, FLOAT_TYPE box) {
   int n_dipoles = size / 2;
   FLOAT_TYPE u, theta;
   FLOAT_TYPE x[3], y[3];
+  gsl_rng *rng = gsl_rng_alloc(gsl_rng_default);
 
   s = Init_system(2*n_dipoles);
   s->length = box;
   s->q2 = 0.0;
-
-  drand48();  
 
   /* Generate randome position for the first particle of the dipole x,
      then choose random direction and place second particle at x + d*y. Second
@@ -29,10 +30,10 @@ system_t *generate_seperated_dipole(int size, FLOAT_TYPE box) {
 
   for(i=0; i < n_dipoles; i++) {
     for(j=0;j<3;j++) {
-      x[j] = box * drand48();
+      x[j] = box * gsl_rng_uniform(rng);
     }
-    u = -1 + 2*drand48();
-    theta = 2*PI*drand48();
+    u = -1 + 2*gsl_rng_uniform(rng);
+    theta = 2*PI*gsl_rng_uniform(rng);
 
     y[0] = SQRT(1 - SQR(u)) * COS(theta);
     y[1] = SQRT(1 - SQR(u)) * SIN(theta);
@@ -124,6 +125,7 @@ system_t *generate_random_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge
 }
 
 system_t *generate_system( int form_factor, int size, FLOAT_TYPE box, FLOAT_TYPE max_charge ) {
+  srand48(42);
   switch(form_factor) {
   case FORM_FACTOR_RANDOM: 
     return generate_random_system( size, box, max_charge );

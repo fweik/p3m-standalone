@@ -25,4 +25,7 @@ void Realteil(system_t *, parameters_t *, forces_t *);
 
 FLOAT_TYPE Realspace_error( const system_t *, const parameters_t * );
 
+// Count neighbor pairs in s
+int *count_neighbors( system_t *s, parameters_t *p );
+
 #endif

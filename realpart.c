@@ -9,7 +9,7 @@
 int to_left=0;
 int to_right=0;
 
-static int *count_neighbors( system_t *s, parameters_t *p )
+int *count_neighbors( system_t *s, parameters_t *p )
 {
     /* Zwei Teilchennummern: */
     int t1,t2;
