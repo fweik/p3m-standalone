@@ -81,6 +81,7 @@ int main ( int argc, char **argv ) {
     error_t error;
     FLOAT_TYPE length, prec;
     int npart;
+    FLOAT_TYPE charge;
 
     FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est;
     int i,j, calc_k_error, calc_est;
@@ -107,6 +108,7 @@ int main ( int argc, char **argv ) {
     add_param( "prec", ARG_TYPE_FLOAT, ARG_OPTIONAL, &prec, &params );
     add_param( "reference_out", ARG_TYPE_STRING, ARG_OPTIONAL, &ref_out, &params );
     add_param( "verlet_lists", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
+    add_param( "charge", ARG_TYPE_FLOAT, ARG_OPTIONAL, &charge, &params );
 
     parse_parameters( argc - 1, argv + 1, params );
 
@@ -131,7 +133,10 @@ int main ( int argc, char **argv ) {
       puts("Done.");
     } else {
       puts("Generating system.");
-      system = generate_system( FORM_FACTOR_RANDOM, npart, length, 1.0);
+      if( !(param_isset("charge", params) == 1)) {
+	charge=1.0;
+      }
+      system = generate_system( FORM_FACTOR_RANDOM, npart, length, charge);
       puts("Done.");
     }
 

@@ -3,6 +3,14 @@
 
 #include "types.h"
 
+#define ILIST_STEP 100
+
+typedef struct {
+  int real_size;
+  int used_size;
+  int *data;
+} intlist_t;
+
 typedef struct {
   void *c;
   void *next;
@@ -31,5 +39,6 @@ typedef struct {
 domain_decomposition_t *Init_dd( int cells_per_direction, FLOAT_TYPE box );
 void Free_dd( domain_decomposition_t *dd);
 cell_t *add_particle( domain_decomposition_t *d, int id, FLOAT_TYPE pos[3], FLOAT_TYPE q);
+void add_system( domain_decomposition_t *d, system_t *s);
 
 #endif

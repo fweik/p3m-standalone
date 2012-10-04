@@ -123,7 +123,8 @@ static inline void add_particle_to_cell( cell_t *c, int id, FLOAT_TYPE pos[3], F
     c->p->fields[i][old_size] = pos[i];
 
   c->q[old_size] = q;
-  c->ids[old_size] = id;
+
+  c->ids.data[old_size] = id;
 
   c->n_particles++;     
 }
@@ -137,6 +138,9 @@ cell_t *add_particle( domain_decomposition_t *d, int id, FLOAT_TYPE pos[3], FLOA
   for(int i=0;i<3;i++)
     n[i] = (int)FLOOR(pos[i] / d->h);
 
+  /* printf("particle %d pos (%lf %lf %lf) cell (%d %d %d) q %lf\n", id, */
+  /* 	 pos[0], pos[1], pos[2], n[0], n[1], n[2], q); */
+
   ind = d->cells_per_direction * d->cells_per_direction * n[0] +
     d->cells_per_direction * n[1] + n[2];
 
@@ -148,4 +152,13 @@ cell_t *add_particle( domain_decomposition_t *d, int id, FLOAT_TYPE pos[3], FLOA
   add_particle_to_cell( c, id, pos, q);
 
   return c;
+}
+
+void add_system( domain_decomposition_t *d, system_t *s) {
+  FLOAT_TYPE pos[3];
+  for(int id=0;id<s->nparticles;id++) {
+    for(int j=0;j<3;j++)
+      pos[j] = s->p->fields[j][id];
+    add_particle( d, id, pos, s->q[id]);
+  }
 }

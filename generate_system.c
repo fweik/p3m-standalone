@@ -115,10 +115,13 @@ system_t *generate_random_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge
     for(j=0;j<3;j++) {
       s->p->fields[j][i] = box*gsl_rng_uniform(rng);
     }
-    s->q[i] = 1.0 - 2.0 * (i%2);
+    s->q[i] = (1.0 - 2.0 * (i%2)) * max_charge;
     q2 += s->q[i] * s->q[i];
   }
   s->q2 = q2;
+
+  gsl_rng_free (r);
+
   return s;
 }
 
