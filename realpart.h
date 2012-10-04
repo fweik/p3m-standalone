@@ -2,6 +2,7 @@
 #define REALPART_H
 
 #include "types.h"
+#include "domain-decomposition.h"
 
 /* Calculate Real space part of the Ewald sum.
  * Used in all methods

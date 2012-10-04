@@ -4,10 +4,9 @@
 #include "types.h"
 
 typedef struct {
-  struct cell_t *c;
-  struct celllist_t *next;
-  struct celllist_t *prev;
-  int wraped[3];
+  void *c;
+  void *next;
+  void *prev;
 } celllist_t;
 
 typedef struct {
@@ -18,7 +17,7 @@ typedef struct {
   buffered_list_t *__q;
   int *ids;
   buffered_list_t *__ids;
-  struct celllist_t *neighbors;
+  celllist_t *neighbors;
   int coords[3];
 } cell_t;
 
@@ -30,6 +29,7 @@ typedef struct {
 } domain_decomposition_t;
 
 domain_decomposition_t *Init_dd( int cells_per_direction, FLOAT_TYPE box );
+void Free_dd( domain_decomposition_t *dd);
 cell_t *add_particle( domain_decomposition_t *d, int id, FLOAT_TYPE pos[3], FLOAT_TYPE q);
 
 #endif

@@ -6,8 +6,21 @@
 #include "realpart.h"
 
 
+
 int to_left=0;
 int to_right=0;
+
+static inline void ewald_pair(parameters_t *p, forces_t *f, int id, int r, FLOAT_TYPE q12) {
+  FLOAT_TYPE erfc_teil;
+  FLOAT_TYPE r2, r;
+  FLOAT_TYPE ar = r*p->alpha;
+
+  erfc_teil = ERFC(ar);
+  r2 = SQR(r);
+  fak = q12*
+    (erfc_teil/r+(2.0*p->alpha/wupi)*EXP(-ar*ar))/r2;
+	      
+}
 
 int *count_neighbors( system_t *s, parameters_t *p )
 {
@@ -42,6 +55,34 @@ int *count_neighbors( system_t *s, parameters_t *p )
     return nb;
 }
 
+
+void Shortrange_Interactions( domain_decomposition_t *dd, parameters_t *p, forces_t *f ) {
+  for(int id = 0; id < dd->total_cells; id++) {
+    for(int j=0; j<dd->cells[id].n_particles;j++) {
+      c = &(dd->cells[id]);
+      int pid = c->ids[j];
+      for(int i=0;i<3;i++)
+	pos[i] = c->p->fields[i][j];
+      for(int k=0; k<dd->cells[id].n_particles;k++) {
+	if(pid == c->ids[k])
+	  continue;
+	for(int i=0;i<3;i++)
+	  pos2[i] = c->p->fields[i][k];
+	dd_nb_list[pid] += is_neighbor(box, para.rcut, pos, pos2);
+      }
+      celllist_t *l = dd->cells[id].neighbors;
+      while( l != NULL) {
+	c = l->c;
+	l = l->next;
+	for(int k=0; k<c->n_particles;k++) {
+	  for(int i=0;i<3;i++)
+	    pos2[i] = c->p->fields[i][k];
+	  dd_nb_list[pid] += is_neighbor(box, para.rcut, pos, pos2);
+	}
+      }
+    }
+  }
+}
 
 void Realteil( system_t *s, parameters_t *p, forces_t *f )
 {

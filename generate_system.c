@@ -11,7 +11,7 @@
 #include "stdlib.h"
 
 system_t *generate_seperated_dipole(int size, FLOAT_TYPE box) {
-  int id=0,i,j,k;
+  int id=0,i,j;
   system_t *s;
   FLOAT_TYPE d = 1.0;
   int n_dipoles = size / 2;
@@ -26,7 +26,6 @@ system_t *generate_seperated_dipole(int size, FLOAT_TYPE box) {
   /* Generate randome position for the first particle of the dipole x,
      then choose random direction and place second particle at x + d*y. Second
      particle could be outside the box and has to be folded. */
-  // @TODO: Use better RNG
 
   for(i=0; i < n_dipoles; i++) {
     for(j=0;j<3;j++) {
@@ -86,6 +85,7 @@ system_t *generate_inner_box(int size, FLOAT_TYPE box) {
 
   int i,j;
   system_t *s;
+  gsl_rng *rng = gsl_rng_alloc(gsl_rng_default);
 
   s = Init_system(size);
   s->length = box;
@@ -93,7 +93,7 @@ system_t *generate_inner_box(int size, FLOAT_TYPE box) {
 
   for(i=0;i<size;i++) {
     for(j=0;j<3;j++) {
-      s->p->fields[j][i] = lower_left + 0.5 * box*drand48();
+      s->p->fields[j][i] = lower_left + 0.5 * box*gsl_rng_uniform(rng);
     }
     s->q[i] = 1.0 - 2.0 * (i%2);
     s->q2 += s->q[i] * s->q[i];
@@ -105,17 +105,15 @@ system_t *generate_random_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge
   int i,j;
   system_t *s;
   FLOAT_TYPE q2 = 0.0;
+  gsl_rng *rng = gsl_rng_alloc(gsl_rng_default);
   
   s = Init_system(size);
   s->length = box;
   s->q2 = 0.0;
 
-  drand48();  
-
-#pragma omp parallel for private(j) reduction( + : q2 )
   for(i=0;i<size;i++) {
     for(j=0;j<3;j++) {
-      s->p->fields[j][i] = box*drand48();
+      s->p->fields[j][i] = box*gsl_rng_uniform(rng);
     }
     s->q[i] = 1.0 - 2.0 * (i%2);
     q2 += s->q[i] * s->q[i];
