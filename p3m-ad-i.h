@@ -4,6 +4,7 @@
 #define P3M_AD_I_H
 
 #include "types.h"
+#include "p3m-ad-self-forces.h"
 
 void Influence_function_ad_i( system_t *, parameters_t *, data_t * );
 void P3M_ad_i( system_t *, parameters_t *, data_t *, forces_t * );

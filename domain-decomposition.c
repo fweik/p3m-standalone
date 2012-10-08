@@ -124,7 +124,7 @@ static inline void add_particle_to_cell( cell_t *c, int id, FLOAT_TYPE pos[3], F
 
   c->q[old_size] = q;
 
-  c->ids.data[old_size] = id;
+  //  (c->ids.data)[old_size] = id;
 
   c->n_particles++;     
 }

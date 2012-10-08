@@ -75,8 +75,8 @@ void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
       for(i[2] = -P3M_SELF_BRILLOUIN; i[2]<=P3M_SELF_BRILLOUIN; i[2]++) {
 	for(i[3] = 0; i[3]<3; i[3]++)
 	  d->self_force_corrections[ind++] = P3M_k_space_calc_self_force( s, p, d, i[0], i[1], i[2], i[3]);
-	printf("b(%d, %d, %d) = (%e, %e, %e)\n", i[0], i[1], i[2], d->self_force_corrections[ind-3],
-	       d->self_force_corrections[ind-2], d->self_force_corrections[ind-1]);
+	/* printf("b(%d, %d, %d) = (%e, %e, %e)\n", i[0], i[1], i[2], d->self_force_corrections[ind-3], */
+	/*        d->self_force_corrections[ind-2], d->self_force_corrections[ind-1]); */
       }
 }
 

@@ -120,7 +120,7 @@ system_t *generate_random_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge
   }
   s->q2 = q2;
 
-  gsl_rng_free (r);
+  gsl_rng_free (rng);
 
   return s;
 }

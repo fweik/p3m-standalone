@@ -9,6 +9,7 @@
 #include "charge-assign.h"
 #include "p3m-ad.h"
 #include "common.h"
+#include "p3m-ad-self-forces.h"
 
 #include "realpart.h"
 
@@ -123,6 +124,7 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
 	    }
 	}
     }
+  Init_self_forces( s, p, d);
 }
 
 
@@ -196,6 +198,8 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     timer = MPI_Wtime() - timer;
     t_force_assignment[2] = timer;
   #endif
+
+    Substract_self_forces(s,p,d,f);
 
   return;
 }

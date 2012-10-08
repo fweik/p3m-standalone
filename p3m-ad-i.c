@@ -129,6 +129,7 @@ void Influence_function_ad_i( system_t *s, parameters_t *p, data_t *d )
 	    }
 	}
     }
+  Init_self_forces(s, p, d);
 }
 
 
@@ -201,6 +202,8 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     timer = MPI_Wtime() - timer;
     t_force_assignment[3] = timer;
   #endif
+
+    Substract_self_forces(s, p, d, f);
 }
 
 void P3M_tune_aliasing_sums_AD_interlaced(int nx, int ny, int nz, 

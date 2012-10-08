@@ -9,8 +9,8 @@
 extern int __detailed_timings;
 #endif
 
-#define DOUBLE_PREC
-//#define LONG_DOUBLE_PREC
+//#define DOUBLE_PREC
+#define LONG_DOUBLE_PREC
 
 #ifdef SINGLE_PREC
 #define DIGITS 9
