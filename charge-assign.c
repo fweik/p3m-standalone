@@ -96,30 +96,32 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
     FLOAT_TYPE B;
     
     cf_cnt=0;
-    
-    for (i=0; i<s->nparticles; i++) {
-      base = d->ca_ind[ii] + 3*i;
-      for (i0=0; i0<p->cao; i0++) {
-	j = wrap_mesh_index(base[0] + i0, d->mesh);
-	for (i1=0; i1<p->cao; i1++) {
-	  k = wrap_mesh_index(base[1] + i1, d->mesh);
-	  for (i2=0; i2<p->cao; i2++) {
-	    l = wrap_mesh_index(base[2] + i2, d->mesh);
-	    B = force_prefac*d->cf[ii][cf_cnt];
-	    f->f_k->fields[0][i] -= d->Fmesh->fields[0][c_ind(j,k,l)+ii]*B;
-	    f->f_k->fields[1][i] -= d->Fmesh->fields[1][c_ind(j,k,l)+ii]*B;
-	    f->f_k->fields[2][i] -= d->Fmesh->fields[2][c_ind(j,k,l)+ii]*B;
 
-	    cf_cnt++;
+
+      for (i=0; i<s->nparticles; i++) {
+	base = d->ca_ind[ii] + 3*i;
+	for (i0=0; i0<p->cao; i0++) {
+	  j = wrap_mesh_index(base[0] + i0, d->mesh);
+	  for (i1=0; i1<p->cao; i1++) {
+	    k = wrap_mesh_index(base[1] + i1, d->mesh);
+	    for (i2=0; i2<p->cao; i2++) {
+	      l = wrap_mesh_index(base[2] + i2, d->mesh);
+	      B = force_prefac*d->cf[ii][cf_cnt];
+	      f->f_k->fields[0][i] -= d->Fmesh->fields[0][c_ind(j,k,l)+ii]*B;
+	      f->f_k->fields[1][i] -= d->Fmesh->fields[1][c_ind(j,k,l)+ii]*B;
+	      f->f_k->fields[2][i] -= d->Fmesh->fields[2][c_ind(j,k,l)+ii]*B;
+
+	      cf_cnt++;
+	    }
 	  }
 	}
+	if (ii==1) {
+	  f->f_k->fields[0][i] *= 0.5;
+	  f->f_k->fields[1][i] *= 0.5;
+	  f->f_k->fields[2][i] *= 0.5;
+	}
       }
-      if (ii==1) {
-	f->f_k->fields[0][i] *= 0.5;
-	f->f_k->fields[1][i] *= 0.5;
-	f->f_k->fields[2][i] *= 0.5;
-      }
-    }
+
 }
 
 

@@ -99,6 +99,7 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
   int Mesh = p->mesh;
 
   /* bei Zahlen >= Mesh/2 wird noch Mesh abgezogen! */
+#pragma omp parallel for private(ind, Zaehler, Nenner1, Nenner2)
   for (NX=0; NX<Mesh; NX++)
     {
       for (NY=0; NY<Mesh; NY++)
@@ -124,6 +125,7 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
 	    }
 	}
     }
+  #pragma omp barrier
   Init_self_forces( s, p, d);
 }
 
@@ -199,7 +201,7 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     t_force_assignment[2] = timer;
   #endif
 
-    Substract_self_forces(s,p,d,f);
+        Substract_self_forces(s,p,d,f);
 
   return;
 }

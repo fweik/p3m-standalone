@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <mpi.h>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #include "types.h"
 
@@ -9,6 +14,7 @@
 
 // Methods
 
+#include <callgrind.h>
 
 #include "p3m-ik-i.h"
 #include "p3m-ik.h"
@@ -69,6 +75,8 @@ int main ( int argc, char **argv ) {
     int methodnr;
 
     FLOAT_TYPE alphamin,alphamax,alphastep;
+    FLOAT_TYPE alpha;
+    FLOAT_TYPE wtime;
 
     FILE* fout;
 
@@ -77,7 +85,7 @@ int main ( int argc, char **argv ) {
     parameters_t parameters, parameters_ewald;
     data_t *data, *data_ewald;
     forces_t *forces, *forces_ewald;
-    char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL;
+    char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL, *sys_out = NULL;
     error_t error;
     FLOAT_TYPE length, prec;
     int npart;
@@ -86,12 +94,17 @@ int main ( int argc, char **argv ) {
     FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est;
     int i,j, calc_k_error, calc_est;
 
+    #ifdef _OPENMP
+    int nthreads;
+    #endif
+
     cmd_parameters_t params = { NULL, 0, NULL, 0 };
 
     add_param( "rcut", ARG_TYPE_FLOAT, ARG_REQUIRED, &(parameters.rcut), &params );
-    add_param( "alphamin", ARG_TYPE_FLOAT, ARG_REQUIRED, &alphamin, &params );
-    add_param( "alphamax", ARG_TYPE_FLOAT, ARG_REQUIRED, &alphamax, &params );
-    add_param( "alphastep", ARG_TYPE_FLOAT, ARG_REQUIRED, &alphastep, &params );
+    add_param( "alphamin", ARG_TYPE_FLOAT, ARG_OPTIONAL, &alphamin, &params );
+    add_param( "alphamax", ARG_TYPE_FLOAT, ARG_OPTIONAL, &alphamax, &params );
+    add_param( "alphastep", ARG_TYPE_FLOAT, ARG_OPTIONAL, &alphastep, &params );
+    add_param( "alpha", ARG_TYPE_FLOAT, ARG_OPTIONAL, &alpha, &params );
     add_param( "positions", ARG_TYPE_STRING, ARG_OPTIONAL, &pos_file, &params );
     add_param( "forces", ARG_TYPE_STRING, ARG_OPTIONAL, &force_file, &params );
     add_param( "mesh", ARG_TYPE_INT, ARG_REQUIRED, &(parameters.mesh), &params );
@@ -107,8 +120,12 @@ int main ( int argc, char **argv ) {
     add_param( "tune", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "prec", ARG_TYPE_FLOAT, ARG_OPTIONAL, &prec, &params );
     add_param( "reference_out", ARG_TYPE_STRING, ARG_OPTIONAL, &ref_out, &params );
+    add_param( "system_out", ARG_TYPE_STRING, ARG_OPTIONAL, &sys_out, &params );
     add_param( "verlet_lists", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "charge", ARG_TYPE_FLOAT, ARG_OPTIONAL, &charge, &params );
+    #ifdef _OPENMP
+    add_param( "threads", ARG_TYPE_INT, ARG_OPTIONAL, &nthreads, &params );
+    #endif
 
     parse_parameters( argc - 1, argv + 1, params );
 
@@ -119,6 +136,18 @@ int main ( int argc, char **argv ) {
     parameters.ip = parameters.cao - 1;
     parameters.alpha = 0.0;
     parameters_ewald = parameters;
+
+#ifdef _OPENMP
+    if(param_isset("threads", params)) {
+      omp_set_num_threads(nthreads);
+    }
+    printf("OpenMP: Using up to %d threads.\n", omp_get_max_threads( ));
+#endif
+
+    if(!(param_isset("alphamin", params) && param_isset("alphamax", params) && param_isset("alphastep", params)) && !param_isset("alpha", params)) {
+      puts("Need to provide either alpha-range (alphamin, alphamax, alphastep) or alpha.");
+      exit(1);
+    }
 
     if( !(param_isset("positions", params) == 1) &&
 	!((param_isset("box", params) == 1) && (param_isset("particles", params))) ) {
@@ -151,6 +180,13 @@ int main ( int argc, char **argv ) {
 	puts("Done.");
 	printf("Writing reference forces to '%s'\n", ref_out);
 	Write_exact_forces(system, ref_out);
+	puts("Done.");
+      }
+
+    if(param_isset("system_out", params)) 
+      {
+	printf("Writing system to '%s'\n", sys_out);
+	Write_system(system, sys_out);
 	puts("Done.");
       }
 
@@ -224,7 +260,15 @@ int main ( int argc, char **argv ) {
 
       method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
+      wtime = MPI_Wtime();
+
+      CALLGRIND_START_INSTRUMENTATION;
+
       Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
+
+      CALLGRIND_STOP_INSTRUMENTATION;
+
+      wtime = MPI_Wtime() - wtime;
 
       error_k =0.0;
       if(calc_k_error == 1) {
@@ -250,8 +294,8 @@ int main ( int argc, char **argv ) {
 	if( calc_est == 0 )
 	  estimate = method.Error ( system, &parameters );
 	error_k_est = method.Error_k ( system, &parameters);
-	printf ( "%8lf\t%8e\t%8e\t %8e %8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
-		 FLOAT_CAST Realspace_error( system, &parameters ), FLOAT_CAST error_k_est );
+	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
+		 FLOAT_CAST Realspace_error( system, &parameters ), FLOAT_CAST error_k_est, FLOAT_CAST wtime );
 	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\n", 
 		  FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , 
 		  FLOAT_CAST estimate, FLOAT_CAST Realspace_error( system, &parameters ), 

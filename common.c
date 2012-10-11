@@ -5,9 +5,7 @@
 #include <string.h>
 #include <fftw3.h>
 
-#ifdef DETAILED_TIMINGS
 #include <mpi.h>
-#endif
 
 #include "types.h"
 #include "common.h"
@@ -243,9 +241,7 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
 
     int i, j;
 
-#ifdef DETAILED_TIMINGS
     FLOAT_TYPE t;
-#endif
 
     for ( i=0; i<3; i++ ) {
         memset ( f->f->fields[i]  , 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
@@ -263,13 +259,19 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
       printf(" %e", MPI_Wtime() - t);
 #endif
 
-
+    t = MPI_Wtime();
     Realteil( s, p, f );
+    t  = MPI_Wtime() - t;
+    printf("Realpart %lf sec\n", t);
     //Realpart_neighborlist( s, p, d, f );
 
     //  Dipol(s, p);
 
+    t = MPI_Wtime();
     m->Kspace_force ( s, p, d, f );
+    t  = MPI_Wtime() - t;
+    printf("Kpart %lf sec\n", t);
+
 
     //#pragma omp parallel for private( i )
     for ( j=0; j < 3; j++ ) {
@@ -291,7 +293,7 @@ FLOAT_TYPE Calculate_reference_forces ( system_t *s, parameters_t *p ) {
 
     op.alpha = Ewald_compute_optimal_alpha ( s, &op );
 
-    printf("Reference Forces: alpha %lf, r_cut %lf\n", op.alpha, op.rcut);
+    printf("Reference Forces: alpha %lf, r_cut %lf\n", FLOAT_CAST op.alpha, FLOAT_CAST op.rcut);
 
     d = method_ewald.Init ( s, &op );
 

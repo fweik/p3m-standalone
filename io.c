@@ -194,6 +194,8 @@ void Read_exact_forces(system_t *s, char *filename)
     FLOAT_TYPE E_Coulomb;
     double buf[6];
 
+    printf("npart %d\n", s->nparticles);
+
     fp=fopen(filename, "r");
 
     if ((fp == NULL) || feof(fp)) {
@@ -202,14 +204,14 @@ void Read_exact_forces(system_t *s, char *filename)
     }
 
     for (i=0; i<s->nparticles; i++) {
-        ret_val = fscanf(fp,"%lf\t%lf\t%lf\t%lf\n",
+        ret_val = fscanf(fp,"%d\t%lf\t%lf\t%lf\n",
 			 &E_Coulomb, buf, buf + 1, buf + 2);
 	s->reference->f->x[i] = buf[0];
 	s->reference->f->y[i] = buf[1];
 	s->reference->f->z[i] = buf[2];
 			 
 	if((ret_val != 4)) {
-          fprintf(stderr, "Error while reading file '%s' (%d)\n", filename, ret_val);
+          fprintf(stderr, "Error while reading file '%s' (%d) (%d)\n", filename, ret_val, i);
           exit(-1);
         }
     }
@@ -287,9 +289,8 @@ void Write_exact_forces(system_t *s, char *forces_file) {
     }
 
     for (i=0;i<s->nparticles;i++) {
-        fprintf(fin, "%d %.*f %.*f %.*f %.*f %.*f %.*f\n",
-                i, DIGITS, FLOAT_CAST s->reference->f->x[i], DIGITS, FLOAT_CAST s->reference->f->y[i], DIGITS, FLOAT_CAST s->reference->f->z[i],
-                DIGITS, FLOAT_CAST s->reference->f_k->x[i], DIGITS, FLOAT_CAST s->reference->f_k->y[i], DIGITS, FLOAT_CAST s->reference->f_k->z[i]);
+        fprintf(fin, "%d\t%lf\t%lf\t%lf\n",
+                i, FLOAT_CAST s->reference->f->x[i], FLOAT_CAST s->reference->f->y[i], FLOAT_CAST s->reference->f->z[i]);
     }
 
     fclose(fin);
@@ -315,14 +316,6 @@ void Write_system(system_t *s, char *filename)
     //read system parameters
     fprintf(fp,"# Teilchenzahl: %d\n", s->nparticles);
     fprintf(fp,"# Len: %lf\n", FLOAT_CAST  s->length);
-
-    //read p3m/ewal parameters
-    fprintf(fp,"# Mesh: %d\n", 1);
-    fprintf(fp,"# alpha: %lf\n", 1.0);
-    fprintf(fp,"# ip: %d\n", 5);
-    fprintf(fp,"# rcut: %lf\n", 1.0);
-    fprintf(fp,"# Temp: %lf\n", 1.0);
-    fprintf(fp,"# Bjerrum: %lf\n", 1.0);
 
     /* Teilchenkoordinaten und -ladungen: */
     for (i=0; i<s->nparticles; i++) {

@@ -43,8 +43,10 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
 		theSumOverK += (d->G_hat[r_ind( nx, ny, nz)]) * U * U_shiftx;
 
 		//		printf("%d %d %d: U %e U_shiftx %e G_hat() %e\n theSumOverK %e\n", nx, ny, nz, U, U_shiftx, d->G_hat[c_ind( nx, ny, nz)],		       theSumOverK);
-		if(isnan(theSumOverK))
+		if(isnan(theSumOverK)) {
+		  printf("%d %d %d is nan\n", m1, m2, m3);
 		  exit(0);
+		}
 	      }
 	    }
 	  }
@@ -66,18 +68,22 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
 }
 
 void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
-  int i[4], ind=0;
+  int m1,m2,m3,dim, indp;
 
   d->self_force_corrections = Init_array(my_power(1+2*P3M_SELF_BRILLOUIN, 3), 3*sizeof(FLOAT_TYPE));
-  
-  for(i[0] = -P3M_SELF_BRILLOUIN; i[0]<=P3M_SELF_BRILLOUIN; i[0]++)
-    for(i[1] = -P3M_SELF_BRILLOUIN; i[1]<=P3M_SELF_BRILLOUIN; i[1]++)
-      for(i[2] = -P3M_SELF_BRILLOUIN; i[2]<=P3M_SELF_BRILLOUIN; i[2]++) {
-	for(i[3] = 0; i[3]<3; i[3]++)
-	  d->self_force_corrections[ind++] = P3M_k_space_calc_self_force( s, p, d, i[0], i[1], i[2], i[3]);
+
+#pragma omp parallel for collapse(4) private(indp)
+  for(m1 = -P3M_SELF_BRILLOUIN; m1<=P3M_SELF_BRILLOUIN; m1++)
+    for(m2 = -P3M_SELF_BRILLOUIN; m2<=P3M_SELF_BRILLOUIN; m2++)
+      for(m3 = -P3M_SELF_BRILLOUIN; m3<=P3M_SELF_BRILLOUIN; m3++) {
+	for(dim = 0; dim<3; dim++) {
+	  indp = 3*(9*(m1+P3M_SELF_BRILLOUIN)*P3M_SELF_BRILLOUIN*P3M_SELF_BRILLOUIN + 3*(P3M_SELF_BRILLOUIN+m2)*P3M_SELF_BRILLOUIN + (m3+P3M_SELF_BRILLOUIN)) + dim;
+	  d->self_force_corrections[indp] = P3M_k_space_calc_self_force( s, p, d, m1, m2, m3, dim);
 	/* printf("b(%d, %d, %d) = (%e, %e, %e)\n", i[0], i[1], i[2], d->self_force_corrections[ind-3], */
 	/*        d->self_force_corrections[ind-2], d->self_force_corrections[ind-1]); */
+	}
       }
+#pragma omp barrier
 }
 
 void Substract_self_forces( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
