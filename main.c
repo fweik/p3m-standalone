@@ -14,8 +14,6 @@
 
 // Methods
 
-#include <callgrind.h>
-
 #include "p3m-ik-i.h"
 #include "p3m-ik.h"
 #include "p3m-ad.h"
@@ -90,6 +88,7 @@ int main ( int argc, char **argv ) {
     FLOAT_TYPE length, prec;
     int npart;
     FLOAT_TYPE charge;
+    int form_factor;
 
     FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est;
     int i,j, calc_k_error, calc_est;
@@ -123,6 +122,7 @@ int main ( int argc, char **argv ) {
     add_param( "system_out", ARG_TYPE_STRING, ARG_OPTIONAL, &sys_out, &params );
     add_param( "verlet_lists", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "charge", ARG_TYPE_FLOAT, ARG_OPTIONAL, &charge, &params );
+    add_param( "system_type", ARG_TYPE_INT, ARG_OPTIONAL, &form_factor, &params );
     #ifdef _OPENMP
     add_param( "threads", ARG_TYPE_INT, ARG_OPTIONAL, &nthreads, &params );
     #endif
@@ -165,7 +165,12 @@ int main ( int argc, char **argv ) {
       if( !(param_isset("charge", params) == 1)) {
 	charge=1.0;
       }
-      system = generate_system( FORM_FACTOR_RANDOM, npart, length, charge);
+      if(param_isset("system_type", params)) {
+	printf("Using system type %d\n", form_factor);
+	system = generate_system( form_factor, npart, length, charge);
+      } else {
+	system = generate_system( FORM_FACTOR_RANDOM, npart, length, charge);
+      }
       puts("Done.");
     }
 
@@ -262,11 +267,7 @@ int main ( int argc, char **argv ) {
 
       wtime = MPI_Wtime();
 
-      CALLGRIND_START_INSTRUMENTATION;
-
       Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
-
-      CALLGRIND_STOP_INSTRUMENTATION;
 
       wtime = MPI_Wtime() - wtime;
 
@@ -296,6 +297,7 @@ int main ( int argc, char **argv ) {
 	error_k_est = method.Error_k ( system, &parameters);
 	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
 		 FLOAT_CAST Realspace_error( system, &parameters ), FLOAT_CAST error_k_est, FLOAT_CAST wtime );
+	printf ( "Generic error formula yields %e\n", Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data));
 	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\n", 
 		  FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , 
 		  FLOAT_CAST estimate, FLOAT_CAST Realspace_error( system, &parameters ), 

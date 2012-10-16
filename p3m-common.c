@@ -223,3 +223,44 @@ void Free_data(data_t *d) {
     FFTW_FREE(d);
 
 }
+
+FLOAT_TYPE C_ewald(int nx, int ny, int nz, system_t *s, parameters_t *p) {
+
+  FLOAT_TYPE nm2;
+
+  FLOAT_TYPE factor1 = SQR ( PI / ( p->alpha*s->length ) );
+
+
+  nm2 = SQR(2.0*PI/s->length) * ( SQR ( nx ) + SQR ( ny ) + SQR ( nz ) );
+  return SQR(EXP(-factor1*nm2)) / nm2;
+
+}
+
+#define NTRANS(N) (N<0) ? (N + d->mesh - 1) : N
+
+FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, parameters_t *p, data_t *d) {
+  // The Hockney-Eastwood pair-error functional.
+  FLOAT_TYPE Q_HE = 0.0;
+  // Linear index for G, this breaks notation, but G is calculated anyway, so this is convinient.
+  int ind = 0;
+  // Convinience variable to hold the current value of the influence function.
+  FLOAT_TYPE G_hat = 0.0;
+  
+  int nx, ny, nz;
+
+  for (nx=-d->mesh/2+1; nx<d->mesh/2; nx++) {
+    for (ny=-d->mesh/2+1; ny<d->mesh/2; ny++) {
+      for (nz=-d->mesh/2+1; nz<d->mesh/2; nz++) {
+	if((nx!=0) || (ny!=0) || (nz!=0)) {
+	  ind = r_ind(NTRANS(nx), NTRANS(ny), NTRANS(nz));
+	  G_hat = d->G_hat[ind];
+
+	  Q_HE += A(nx,ny,nz,s,p) * SQR(G_hat) - 2.0 * B(nx,ny,nz,s,p) * G_hat + C(nx,ny,nz,s,p);
+	}
+      }
+    }
+  }
+
+  return  s->q2*SQRT ( FLOAT_ABS(Q_HE) / (FLOAT_TYPE)s->nparticles) / ( s->length * SQR(s->length));
+
+}

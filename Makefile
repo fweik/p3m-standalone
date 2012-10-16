@@ -1,5 +1,5 @@
 CC=mpicc
-CFLAGS=-std=c99 -O3 -DNDEBUG -g -Wall -fopenmp -I../../Base/include/valgrind
+CFLAGS=-std=c99 -O3 -Wall -DNDEBUG
 #CFLAGS+=-Wall -O0 -g -pg
 LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 -lfftw3l -lm
 
