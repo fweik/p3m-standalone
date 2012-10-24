@@ -192,7 +192,6 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
    timer = MPI_Wtime();
   #endif
 
-
   /* Force assignment */
   assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0 );
 
@@ -201,9 +200,20 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     t_force_assignment[2] = timer;
   #endif
 
-    Substract_self_forces(s,p,d,f);
+  Substract_self_forces(s,p,d,f);
 
   return;
+}
+
+// Cf. Ballenegger, unpublished notes
+
+FLOAT_TYPE A_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
+  FLOAT_TYPE d = 1.0; // Dipole parameter
+  FLOAT_TYPE k2 = SQR(2.0*PI/s->length) * ( SQR ( nx ) + SQR ( ny ) + SQR ( nz ) );	
+  int nm2;
+
+  
+
 }
 
 // Cf. Eq. (A12) in Stern08a.
@@ -212,7 +222,7 @@ FLOAT_TYPE A_ad(int nx, int ny, int nz, system_t *s, parameters_t *p) {
   int mx, my, mz;
   int nmx, nmy, nmz;
   FLOAT_TYPE fnmx,fnmy,fnmz;
-  FLOAT_TYPE nm2;
+  FLOAT_TYPE km2;
   FLOAT_TYPE U2, U2m = 0.0, U2km = 0.0;
   FLOAT_TYPE mesh_i = 1.0/p->mesh;
 
@@ -227,10 +237,10 @@ FLOAT_TYPE A_ad(int nx, int ny, int nz, system_t *s, parameters_t *p) {
 	fnmz = nmz * mesh_i;
 
 	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
-	nm2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
+	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
 
 	U2m += U2;
-	U2km += U2 * nm2;
+	U2km += U2 * km2;
       }
     }
   }
@@ -242,7 +252,7 @@ FLOAT_TYPE B_ad(int nx, int ny, int nz, system_t *s, parameters_t *p) {
   int mx, my, mz;
   int nmx, nmy, nmz;
   FLOAT_TYPE fnmx,fnmy,fnmz;
-  FLOAT_TYPE nm2;
+  FLOAT_TYPE km2;
   FLOAT_TYPE ret = 0.0;
   FLOAT_TYPE U2;
   FLOAT_TYPE mesh_i = 1.0/p->mesh;
@@ -257,11 +267,11 @@ FLOAT_TYPE B_ad(int nx, int ny, int nz, system_t *s, parameters_t *p) {
 	nmz = nz + p->mesh*mz;
 	fnmz = nmz * mesh_i;
 
-	nm2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
+	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
 
 	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
 
-	ret += U2 * 4.0 * PI * EXP(- nm2 / ( 4.0 * SQR(p->alpha)));
+	ret += U2 * 4.0 * PI * EXP(- km2 / ( 4.0 * SQR(p->alpha)));
       }
     }
   }

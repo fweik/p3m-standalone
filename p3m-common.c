@@ -225,42 +225,63 @@ void Free_data(data_t *d) {
 }
 
 FLOAT_TYPE C_ewald(int nx, int ny, int nz, system_t *s, parameters_t *p) {
+  int mx, my, mz;
+  int nmx, nmy, nmz;
+  FLOAT_TYPE km2;
+  FLOAT_TYPE ret = 0.0;
 
-  FLOAT_TYPE nm2;
+  for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
+    nmx = nx + p->mesh*mx;
+    for (my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
+      nmy = ny + p->mesh*my;
+      for (mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
+	nmz = nz + p->mesh*mz;
 
-  FLOAT_TYPE factor1 = SQR ( PI / ( p->alpha*s->length ) );
-
-
-  nm2 = SQR(2.0*PI/s->length) * ( SQR ( nx ) + SQR ( ny ) + SQR ( nz ) );
-  return SQR(EXP(-factor1*nm2)) / nm2;
-
+	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );
+	ret += SQR(EXP(- km2 / ( 4.0 * SQR(p->alpha)) )) / km2;
+      }
+    }
+  }
+  return 16.0 * SQR(PI) * ret;
 }
 
-#define NTRANS(N) (N<0) ? (N + d->mesh - 1) : N
+#define NTRANS(N) (N<0) ? (N + d->mesh) : N
 
 FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, parameters_t *p, data_t *d) {
   // The Hockney-Eastwood pair-error functional.
-  FLOAT_TYPE Q_HE = 0.0;
+  FLOAT_TYPE Q_HE = 0.0, Q_opt=0.0;
   // Linear index for G, this breaks notation, but G is calculated anyway, so this is convinient.
   int ind = 0;
   // Convinience variable to hold the current value of the influence function.
   FLOAT_TYPE G_hat = 0.0;
-  
+  FLOAT_TYPE V = s->length * SQR(s->length);
+  FLOAT_TYPE a,b,c;
+
   int nx, ny, nz;
 
   for (nx=-d->mesh/2+1; nx<d->mesh/2; nx++) {
     for (ny=-d->mesh/2+1; ny<d->mesh/2; ny++) {
       for (nz=-d->mesh/2+1; nz<d->mesh/2; nz++) {
-	if((nx!=0) || (ny!=0) || (nz!=0)) {
+	if((nx!=0) && (ny!=0) && (nz!=0)) {
 	  ind = r_ind(NTRANS(nx), NTRANS(ny), NTRANS(nz));
 	  G_hat = d->G_hat[ind];
 
-	  Q_HE += A(nx,ny,nz,s,p) * SQR(G_hat) - 2.0 * B(nx,ny,nz,s,p) * G_hat + C(nx,ny,nz,s,p);
+	  a = A(nx,ny,nz,s,p);
+	  b = B(nx,ny,nz,s,p);
+	  c = C(nx,ny,nz,s,p);
+
+	  Q_HE += a * SQR(G_hat) - 2.0 * b * G_hat + c;
+	  Q_opt += c - SQR( b ) / a;
+	  printf("A\t%e\tB\t%e\tC\t%e\n", a , b, c);
+	  printf("B/A\t%lf\tG_hat\t%lf\n", b / a, G_hat);
+	  printf("Q_HE\t%lf\tQ_opt\t%lf\n", Q_HE, Q_opt);
 	}
       }
     }
   }
+  printf("Final Q_HE\t%lf\tQ_opt\t%lf\n", Q_HE, Q_opt);
+  printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / V);
 
-  return  s->q2*SQRT ( FLOAT_ABS(Q_HE) / (FLOAT_TYPE)s->nparticles) / ( s->length * SQR(s->length));
+  return  s->q2* SQRT( FLOAT_ABS(Q_HE) / (FLOAT_TYPE)s->nparticles) / V;
 
 }

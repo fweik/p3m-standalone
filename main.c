@@ -18,7 +18,6 @@
 #include "p3m-ik.h"
 #include "p3m-ad.h"
 #include "p3m-ad-i.h"
-#include "greens.h"
 
 #include "ewald.h"
 
@@ -259,7 +258,9 @@ int main ( int argc, char **argv ) {
     /* Init_neighborlist ( system, &parameters, data ); */
     /* printf ( ".\n" ); */
 
-    printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error-Est", "K-Error-Est" );
+    FLOAT_TYPE gen_err;
+
+    printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error-Est", "K-Error-Est Generic-K-Space-err" );
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
       parameters_ewald.alpha = parameters.alpha;
 
@@ -295,13 +296,14 @@ int main ( int argc, char **argv ) {
 	if( calc_est == 0 )
 	  estimate = method.Error ( system, &parameters );
 	error_k_est = method.Error_k ( system, &parameters);
-	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
-		 FLOAT_CAST Realspace_error( system, &parameters ), FLOAT_CAST error_k_est, FLOAT_CAST wtime );
-	printf ( "Generic error formula yields %e\n", Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data));
-	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\n", 
+	gen_err = Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data);
+	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
+		 FLOAT_CAST Realspace_error( system, &parameters ), FLOAT_CAST error_k_est, FLOAT_CAST wtime, FLOAT_CAST gen_err );
+
+	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\t %e\n", 
 		  FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , 
 		  FLOAT_CAST estimate, FLOAT_CAST Realspace_error( system, &parameters ), 
-		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est );
+		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est, FLOAT_CAST gen_err );
         } else {
             printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles , FLOAT_CAST error.f_r, FLOAT_CAST error.f_k );
             fprintf ( fout,"% lf\t% e\t na\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles );
