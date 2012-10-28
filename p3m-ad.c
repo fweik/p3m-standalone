@@ -77,6 +77,7 @@ void Aliasing_sums_ad(int NX, int NY, int NZ, system_t *s, parameters_t *p, data
 	S3   = S2*my_power(sinc(fak1*NMZ), 2*p->cao);
 
 	NM2 = SQR(NMX*Leni) + SQR(NMY*Leni) + SQR(NMZ*Leni);
+
 	*Nenner1 += S3;
 	*Nenner2 += S3 * NM2;
 

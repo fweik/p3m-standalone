@@ -280,7 +280,7 @@ FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, 
     }
   }
   printf("Final Q_HE\t%lf\tQ_opt\t%lf\n", Q_HE, Q_opt);
-  printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / V);
+  printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / SQR(V));
 
   return  s->q2* SQRT( FLOAT_ABS(Q_HE) / (FLOAT_TYPE)s->nparticles) / V;
 
