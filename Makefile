@@ -1,7 +1,7 @@
 CC=mpicc
 CFLAGS=-std=c99 -O3 -Wall -DNDEBUG
 #CFLAGS+=-Wall -O0 -g -pg
-LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 -lm
+LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 -lfftw3l -lm
 
 OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o
 
