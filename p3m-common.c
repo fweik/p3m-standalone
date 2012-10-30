@@ -238,7 +238,7 @@ FLOAT_TYPE C_ewald(int nx, int ny, int nz, system_t *s, parameters_t *p) {
 	nmz = nz + p->mesh*mz;
 
 	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );
-	ret += SQR(EXP(- km2 / ( 4.0 * SQR(p->alpha)) )) / km2;
+	ret += EXP(- 2.0 * km2 / ( 4.0 * SQR(p->alpha)) ) / km2;
       }
     }
   }
@@ -259,9 +259,9 @@ FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, 
 
   int nx, ny, nz;
 
-  for (nx=-d->mesh/2+1; nx<d->mesh/2; nx++) {
-    for (ny=-d->mesh/2+1; ny<d->mesh/2; ny++) {
-      for (nz=-d->mesh/2+1; nz<d->mesh/2; nz++) {
+  for (nx=-d->mesh/2; nx<d->mesh/2; nx++) {
+    for (ny=-d->mesh/2; ny<d->mesh/2; ny++) {
+      for (nz=-d->mesh/2; nz<d->mesh/2; nz++) {
 	if((nx!=0) && (ny!=0) && (nz!=0)) {
 	  ind = r_ind(NTRANS(nx), NTRANS(ny), NTRANS(nz));
 	  G_hat = d->G_hat[ind];
@@ -280,7 +280,7 @@ FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, 
     }
   }
   printf("Final Q_HE\t%lf\tQ_opt\t%lf\n", Q_HE, Q_opt);
-  printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / SQR(V));
+  printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / V);
 
   return  s->q2* SQRT( FLOAT_ABS(Q_HE) / (FLOAT_TYPE)s->nparticles) / V;
 

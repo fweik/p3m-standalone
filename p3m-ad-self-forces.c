@@ -23,7 +23,7 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
   int true_nx,true_ny,true_nz;
   double theSumOverK = 0.0, mesh_i = 1./mesh;
   double U,U_shiftx;
-  int P3M_BRILLOUIN_LOCAL = 1;
+  int P3M_BRILLOUIN_LOCAL = P3M_SELF_BRILLOUIN;
 
   for(nx=0; nx<mesh; nx++) 
     for(ny=0; ny<mesh; ny++) 
