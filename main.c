@@ -274,6 +274,7 @@ int main ( int argc, char **argv ) {
 
       error_k =0.0;
       if(calc_k_error == 1) {
+	puts("kerror");
 	for(i=0;i<3;i++) {
 	  memset ( forces_ewald->f_k->fields[i], 0, system->nparticles*sizeof ( FLOAT_TYPE ) );
 	}

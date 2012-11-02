@@ -262,7 +262,7 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
     t = MPI_Wtime();
     Realteil( s, p, f );
     t  = MPI_Wtime() - t;
-    printf("Realpart %lf sec\n", t);
+    printf("Realpart %lf sec\n", FLOAT_CAST t);
     //Realpart_neighborlist( s, p, d, f );
 
     //  Dipol(s, p);
@@ -270,7 +270,7 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
     t = MPI_Wtime();
     m->Kspace_force ( s, p, d, f );
     t  = MPI_Wtime() - t;
-    printf("Kpart %lf sec\n", t);
+    printf("Kpart %lf sec\n", FLOAT_CAST t);
 
 
     //#pragma omp parallel for private( i )
@@ -279,6 +279,14 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
             f->f->fields[j][i] += f->f_k->fields[j][i] + f->f_r->fields[j][i];
         }
     }
+    #define FORCE_DEBUG
+    #ifdef FORCE_DEBUG
+    for(int id = 0; id<s->nparticles; id++) {
+      printf("%4d\t%e\t%e\t%e\n", id, FLOAT_CAST f->f->x[id], FLOAT_CAST f->f->y[id], FLOAT_CAST f->f->z[id]);
+      printf("%4d\t%e\t%e\t%e\n", id, FLOAT_CAST s->reference->f->x[id], FLOAT_CAST s->reference->f->y[id], FLOAT_CAST s->reference->f->z[id]);
+    }
+    #endif
+    #undef FORCE_DEBUG
 }
 
 FLOAT_TYPE Calculate_reference_forces ( system_t *s, parameters_t *p ) {

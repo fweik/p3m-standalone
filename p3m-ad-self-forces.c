@@ -1,6 +1,7 @@
 #include "types.h"
 #include "common.h"
 #include "p3m-common.h"
+#include "p3m-ad-self-forces.h"
 
 #include <math.h>
 
@@ -21,67 +22,71 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
   //  int[3] n;
   int mesh = p->mesh;
   int true_nx,true_ny,true_nz;
-  double theSumOverK = 0.0, mesh_i = 1./mesh;
-  double U,U_shiftx;
+  FLOAT_TYPE theSumOverK = 0.0, mesh_i = 1./mesh;
+  FLOAT_TYPE U,U_shiftx;
   int P3M_BRILLOUIN_LOCAL = P3M_SELF_BRILLOUIN;
+  FLOAT_TYPE G_hat;
+
+  SF_TRACE(puts("P3M_k_space_calc_self_force()"));
 
   for(nx=0; nx<mesh; nx++) 
     for(ny=0; ny<mesh; ny++) 
       for(nz=0; nz<mesh; nz++) {
-	if ((nx!=0) || (ny!=0) || (nz!=0)) {
-	  true_nx = d->nshift[nx];
-	  true_ny = d->nshift[ny];
-	  true_nz = d->nshift[nz];
-	  for (mx=-P3M_BRILLOUIN_LOCAL; mx<=P3M_BRILLOUIN_LOCAL; mx++) {
-	    for (my=-P3M_BRILLOUIN_LOCAL; my<=P3M_BRILLOUIN_LOCAL; my++) {
-	      for (mz=-P3M_BRILLOUIN_LOCAL; mz<=P3M_BRILLOUIN_LOCAL; mz++) {
-		if ((nx==0) || (ny==0) || (nz==0))
-		  continue;
-		U = pow(sinc(mesh_i * (true_nx + mx*mesh))*sinc(mesh_i * (true_ny  + my*mesh))*sinc(mesh_i * (true_nz + mz*mesh)), p->cao);
-		U_shiftx = pow(sinc(mesh_i * (true_nx + (mx+m1)*mesh))*sinc(mesh_i * (true_ny + (my+m2)*mesh))*sinc(mesh_i * (true_nz + (mz+m3)*mesh)), p->cao);
+	G_hat = d->G_hat[r_ind(nx, ny, nz)];
+	if(G_hat == 0.0)
+	  continue;
+	true_nx = d->nshift[nx];
+	true_ny = d->nshift[ny];
+	true_nz = d->nshift[nz];
+	//	printf("n[] = (%d %d %d), true_n[] = (%d %d %d)\n", nx, ny, nz, true_nx, true_ny, true_nz);
+	for (mx=-P3M_BRILLOUIN_LOCAL; mx<=P3M_BRILLOUIN_LOCAL; mx++) {
+	  for (my=-P3M_BRILLOUIN_LOCAL; my<=P3M_BRILLOUIN_LOCAL; my++) {
+	    for (mz=-P3M_BRILLOUIN_LOCAL; mz<=P3M_BRILLOUIN_LOCAL; mz++) {
+	      U = pow(sinc(mesh_i * (true_nx + mx*mesh))*sinc(mesh_i * (true_ny  + my*mesh))*sinc(mesh_i * (true_nz + mz*mesh)), p->cao);
+	      U_shiftx = pow(sinc(mesh_i * (true_nx + (mx+m1)*mesh))*sinc(mesh_i * (true_ny + (my+m2)*mesh))*sinc(mesh_i * (true_nz + (mz+m3)*mesh)), p->cao);
 
-		theSumOverK += (d->G_hat[r_ind( nx, ny, nz)]) * U * U_shiftx;
+	      theSumOverK += G_hat * U * U_shiftx;
 
-		//		printf("%d %d %d: U %e U_shiftx %e G_hat() %e\n theSumOverK %e\n", nx, ny, nz, U, U_shiftx, d->G_hat[c_ind( nx, ny, nz)],		       theSumOverK);
-		if(isnan(theSumOverK)) {
-		  printf("%d %d %d is nan\n", m1, m2, m3);
-		  exit(0);
-		}
+	      /* printf("%d %d %d: U %e U_shiftx %e G_hat() %e\n theSumOverK %e\n", nx, ny, nz, FLOAT_CAST U, U_shiftx, FLOAT_CAST d->G_hat[c_ind( nx, ny, nz)],  FLOAT_CAST theSumOverK); */
+	      if(isnan(theSumOverK)) {
+		printf("%d %d %d is nan\n", m1, m2, m3);
+		exit(0);
 	      }
 	    }
 	  }
 	}
       }
-  // Je mets un facteur (-1/2) pour tre en accord avec la formule finale (9) de l'article pour le coefficient b_beta^(m)
+ 
   switch(dir) {
-    case 0:
-      return (PI*m1*mesh_i) / SQR(s->length) * theSumOverK;
-      break;
-    case 1:
-      return (PI*m2*mesh_i) / SQR(s->length) * theSumOverK;
-      break;
-    case 2:
-      return (PI*m3*mesh_i) / SQR(s->length) * theSumOverK;
-      break;
+  case 0:
+    return (PI*m1*p->mesh) / SQR(SQR(s->length)) * theSumOverK;
+    break;
+  case 1:
+    return (PI*m2*p->mesh) / SQR(SQR(s->length)) * theSumOverK;
+    break;
+  case 2:
+    return (PI*m3*p->mesh) / SQR(SQR(s->length)) * theSumOverK;
+    break;
   }
   return 0.0;
 }
 
 void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
-  int m1,m2,m3,dim, indp;
+  int m[3],dim, indp=0;
+
+  puts("Init_self_forces()");
 
   d->self_force_corrections = Init_array(my_power(1+2*P3M_SELF_BRILLOUIN, 3), 3*sizeof(FLOAT_TYPE));
 
 #pragma omp parallel for collapse(4) private(indp)
-  for(m1 = -P3M_SELF_BRILLOUIN; m1<=P3M_SELF_BRILLOUIN; m1++)
-    for(m2 = -P3M_SELF_BRILLOUIN; m2<=P3M_SELF_BRILLOUIN; m2++)
-      for(m3 = -P3M_SELF_BRILLOUIN; m3<=P3M_SELF_BRILLOUIN; m3++) {
+  for(m[0] = -P3M_SELF_BRILLOUIN; m[0]<=P3M_SELF_BRILLOUIN; m[0]++)
+    for(m[1] = -P3M_SELF_BRILLOUIN; m[1]<=P3M_SELF_BRILLOUIN; m[1]++)
+      for(m[2] = -P3M_SELF_BRILLOUIN; m[2]<=P3M_SELF_BRILLOUIN; m[2]++) {
 	for(dim = 0; dim<3; dim++) {
-	  indp = 3*(9*(m1+P3M_SELF_BRILLOUIN)*P3M_SELF_BRILLOUIN*P3M_SELF_BRILLOUIN + 3*(P3M_SELF_BRILLOUIN+m2)*P3M_SELF_BRILLOUIN + (m3+P3M_SELF_BRILLOUIN)) + dim;
-	  d->self_force_corrections[indp] = P3M_k_space_calc_self_force( s, p, d, m1, m2, m3, dim);
-	/* printf("b(%d, %d, %d) = (%e, %e, %e)\n", i[0], i[1], i[2], d->self_force_corrections[ind-3], */
-	/*        d->self_force_corrections[ind-2], d->self_force_corrections[ind-1]); */
+	  d->self_force_corrections[indp++] = (m[dim] == 0) ? 0.0 : P3M_k_space_calc_self_force( s, p, d, m[0], m[1], m[2], dim);
 	}
+	printf("b(%d, %d, %d) = (%e, %e, %e)\n", m[0], m[1], m[2], FLOAT_CAST d->self_force_corrections[indp-3], 
+	       FLOAT_CAST d->self_force_corrections[indp-2], FLOAT_CAST d->self_force_corrections[indp-1]); 
       }
 #pragma omp barrier
 }
@@ -92,6 +97,7 @@ void Substract_self_forces( system_t *s, parameters_t *p, data_t *d, forces_t *f
   int id, ind;
   FLOAT_TYPE sin_term;
   FLOAT_TYPE h = s->length / p->mesh;
+  FLOAT_TYPE f_self[3] = { 0.0, 0.0, 0.0};
 
   for(id=0;id<s->nparticles;id++) {
     ind = 0;
@@ -101,10 +107,15 @@ void Substract_self_forces( system_t *s, parameters_t *p, data_t *d, forces_t *f
 	  sin_term = SIN(2*PI*(m[0] * s->p->x[id]/h +
 			       m[1] * s->p->y[id]/h +
 			       m[2] * s->p->z[id]/h)); 
+	  /* printf("Selfforce: m (%d %d %d), sin_term %e, self_force_corrections (%e %e %e)\n", m[0], m[1], m[2], FLOAT_CAST sin_term, FLOAT_CAST d->self_force_corrections[ind], */
+	  /* 	 FLOAT_CAST d->self_force_corrections[ind+1], FLOAT_CAST d->self_force_corrections[ind+2]); */
+
 	  for(dir = 0; dir<3; dir++) {
 	    f->f->fields[dir][id] -= SQR(s->q[id]) * d->self_force_corrections[ind++] * sin_term;
+	    f_self[dir] += SQR(s->q[id]) * d->self_force_corrections[ind-1] * sin_term;
 	  }
 	}
+    printf("Selfforce: particle %d, force (%e %e %e)\n", id, FLOAT_CAST f_self[0], FLOAT_CAST f_self[1], FLOAT_CAST f_self[2]);
   }
 }
 

@@ -133,7 +133,6 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
     if ( m->flags & METHOD_FLAG_ca ) {
       int i;
       int max = ( m->flags & METHOD_FLAG_interlaced ) ? 2 : 1;
-      printf("max %d\n", max);
       d->cf[1] = NULL;
       d->ca_ind[1] = NULL;
       

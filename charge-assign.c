@@ -162,9 +162,6 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
 	  base[dim]  = wrap_mesh_index( nmp, d->mesh);
 	  arg[dim] = (int) FLOOR((pos - nmp + 0.5)*MI2);
 	  d->ca_ind[ii][3*id + dim] = base[dim];
-	  //	  if(id == 0)
-	  // printf("id %d dim %d base %d\n", id, dim, base[dim]);
-
         }
 
         for (i0=0; i0<p->cao; i0++) {

@@ -36,6 +36,8 @@ inline void backward_fft ( data_t *d ) {
 data_t *Init_ad ( system_t *s, parameters_t *p ) {
     int mesh = p->mesh;
 
+    puts("Init_ad()");
+
     data_t *d = Init_data ( &method_p3m_ad, s, p );
 
     d->forward_plans = 1;
@@ -99,6 +101,10 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
   int ind = 0;
   int Mesh = p->mesh;
 
+  if(p->alpha == 0.0) {
+    memset(d->G_hat, 0, Mesh*Mesh*Mesh*sizeof(FLOAT_TYPE));
+    return;
+  }
   /* bei Zahlen >= Mesh/2 wird noch Mesh abgezogen! */
 #pragma omp parallel for private(ind, Zaehler, Nenner1, Nenner2)
   for (NX=0; NX<Mesh; NX++)
@@ -199,7 +205,7 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     t_force_assignment[2] = timer;
   #endif
 
-  Substract_self_forces(s,p,d,f);
+    Substract_self_forces(s,p,d,f);
 
   return;
 }
