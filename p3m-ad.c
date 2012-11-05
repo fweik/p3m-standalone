@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <fftw3.h>
 #include <string.h>
+#include <assert.h>
 
 #include "types.h"
 #include "charge-assign.h"
@@ -122,11 +123,7 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
 		  Aliasing_sums_ad(NX,NY,NZ,s,p,d,&Zaehler,&Nenner1, &Nenner2);
 		  d->G_hat[ind] = Zaehler / ( PI * Nenner1 * Nenner2 );
 		}
-	      if(isnan(d->G_hat[ind])) {
-		puts("G_hat is nan!");
-		printf("N (%d, %d, %d)\n",NX, NY, NZ);
-		exit(0);
-	      }
+	      assert(!isnan(d->G_hat[ind]));
 	    }
 	}
     }
@@ -212,14 +209,14 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 
 // Cf. Ballenegger, unpublished notes
 
-FLOAT_TYPE A_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
-  FLOAT_TYPE d = 1.0; // Dipole parameter
-  FLOAT_TYPE k2 = SQR(2.0*PI/s->length) * ( SQR ( nx ) + SQR ( ny ) + SQR ( nz ) );	
-  int nm2;
+/* FLOAT_TYPE A_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) { */
+/*   FLOAT_TYPE d = 1.0; // Dipole parameter */
+/*   FLOAT_TYPE k2 = SQR(2.0*PI/s->length) * ( SQR ( nx ) + SQR ( ny ) + SQR ( nz ) );	 */
+/*   int nm2; */
 
   
 
-}
+/* } */
 
 // Cf. Eq. (A12) in Stern08a.
 
