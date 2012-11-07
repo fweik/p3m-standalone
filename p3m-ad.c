@@ -118,6 +118,8 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
 
 	      if ((NX==0) && (NY==0) && (NZ==0))
 		d->G_hat[ind]=0.0;
+              /* else if ((NX%(Mesh/2) == 0) && (NY%(Mesh/2) == 0) && (NZ%(Mesh/2) == 0)) */
+              /*   d->G_hat[ind]=0.0; */
 	      else
 		{
 		  Aliasing_sums_ad(NX,NY,NZ,s,p,d,&Zaehler,&Nenner1, &Nenner2);
