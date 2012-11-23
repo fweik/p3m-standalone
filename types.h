@@ -9,8 +9,8 @@
 extern int __detailed_timings;
 #endif
 
-//#define DOUBLE_PREC
-#define LONG_DOUBLE_PREC
+#define DOUBLE_PREC
+//#define LONG_DOUBLE_PREC
 
 #ifdef SINGLE_PREC
 #define DIGITS 9
@@ -261,5 +261,10 @@ typedef struct {
     FLOAT_TYPE ( *Error ) ( system_t *, parameters_t * );
     FLOAT_TYPE ( *Error_k ) ( system_t *, parameters_t * );
 } method_t;
+
+// Function pointer types
+
+typedef FLOAT_TYPE (*R3_to_R)(int, int, int, system_t *s, parameters_t *p);
+typedef FLOAT_TYPE (*R_to_R)(FLOAT_TYPE);
 
 #endif

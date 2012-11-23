@@ -74,7 +74,7 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
 void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
   int m[3],dim, indp=0;
 
-  puts("Init_self_forces()");
+  SF_TRACE(puts("Init_self_forces()"));
 
   d->self_force_corrections = Init_array(my_power(1+2*P3M_SELF_BRILLOUIN, 3), 3*sizeof(FLOAT_TYPE));
 
@@ -85,8 +85,8 @@ void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
 	for(dim = 0; dim<3; dim++) {
 	  d->self_force_corrections[indp++] = (m[dim] == 0) ? 0.0 : P3M_k_space_calc_self_force( s, p, d, m[0], m[1], m[2], dim);
 	}
-	printf("b(%d, %d, %d) = (%e, %e, %e)\n", m[0], m[1], m[2], FLOAT_CAST d->self_force_corrections[indp-3], 
-	       FLOAT_CAST d->self_force_corrections[indp-2], FLOAT_CAST d->self_force_corrections[indp-1]); 
+	/* printf("b(%d, %d, %d) = (%e, %e, %e)\n", m[0], m[1], m[2], FLOAT_CAST d->self_force_corrections[indp-3],  */
+	/*        FLOAT_CAST d->self_force_corrections[indp-2], FLOAT_CAST d->self_force_corrections[indp-1]);  */
       }
 #pragma omp barrier
 }
@@ -115,7 +115,7 @@ void Substract_self_forces( system_t *s, parameters_t *p, data_t *d, forces_t *f
 	    f_self[dir] += SQR(s->q[id]) * d->self_force_corrections[ind-1] * sin_term;
 	  }
 	}
-    printf("Selfforce: particle %d, force (%e %e %e)\n", id, FLOAT_CAST f_self[0], FLOAT_CAST f_self[1], FLOAT_CAST f_self[2]);
+    /* printf("Selfforce: particle %d, force (%e %e %e)\n", id, FLOAT_CAST f_self[0], FLOAT_CAST f_self[1], FLOAT_CAST f_self[2]); */
   }
 }
 

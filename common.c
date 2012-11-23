@@ -279,7 +279,6 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
             f->f->fields[j][i] += f->f_k->fields[j][i] + f->f_r->fields[j][i];
         }
     }
-    #define FORCE_DEBUG
     #ifdef FORCE_DEBUG
     for(int id = 0; id<s->nparticles; id++) {
       printf("%4d\t%e\t%e\t%e\n", id, FLOAT_CAST f->f->x[id], FLOAT_CAST f->f->y[id], FLOAT_CAST f->f->z[id]);

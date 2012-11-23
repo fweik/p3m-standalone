@@ -45,6 +45,9 @@
 
 #include "generate_system.h"
 
+#include "statistics.h"
+#include "common.h"
+
 // #define WRITE_FORCES
 
 // #define FORCE_DEBUG
@@ -76,13 +79,13 @@ int main ( int argc, char **argv ) {
     FLOAT_TYPE wtime;
 
     FILE* fout;
-
+    
     system_t *system;
     method_t method;
     parameters_t parameters, parameters_ewald;
     data_t *data, *data_ewald;
     forces_t *forces, *forces_ewald;
-    char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL, *sys_out = NULL;
+    char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL, *sys_out = NULL, *rdf_file = NULL;
     error_t error;
     FLOAT_TYPE length, prec;
     int npart;
@@ -122,6 +125,7 @@ int main ( int argc, char **argv ) {
     add_param( "verlet_lists", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "charge", ARG_TYPE_FLOAT, ARG_OPTIONAL, &charge, &params );
     add_param( "system_type", ARG_TYPE_INT, ARG_OPTIONAL, &form_factor, &params );
+    add_param( "rdf", ARG_TYPE_STRING, ARG_OPTIONAL, &rdf_file, &params );
     #ifdef _OPENMP
     add_param( "threads", ARG_TYPE_INT, ARG_OPTIONAL, &nthreads, &params );
     #endif
@@ -170,6 +174,19 @@ int main ( int argc, char **argv ) {
       } else {
 	system = generate_system( FORM_FACTOR_RANDOM, npart, length, charge);
       }
+      puts("Done.");
+    }
+
+    if( param_isset("rdf", params) == 1) {
+      puts("Calculating RDF");
+      int bins = 100;
+      FLOAT_TYPE *rdf = radial_charge_distribution(0.0, 1.5, bins, system);
+      FILE *rdf_out = fopen(rdf_file, "w");
+
+      for(int i = 0; i<bins; i++)
+	fprintf(rdf_out, "%e %e\n", FLOAT_CAST rdf[2*i], FLOAT_CAST rdf[2*i+1]);
+      fclose(rdf_out);
+      fftw_free(rdf);
       puts("Done.");
     }
 
@@ -258,7 +275,7 @@ int main ( int argc, char **argv ) {
     /* Init_neighborlist ( system, &parameters, data ); */
     /* printf ( ".\n" ); */
 
-    FLOAT_TYPE gen_err;
+    FLOAT_TYPE gen_err, gen_err_dip;
 
     printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error-Est", "K-Error-Est Generic-K-Space-err" );
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
@@ -297,14 +314,26 @@ int main ( int argc, char **argv ) {
 	if( calc_est == 0 )
 	  estimate = method.Error ( system, &parameters );
 	error_k_est = method.Error_k ( system, &parameters);
-	gen_err = Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data);
-	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
-		 FLOAT_CAST Realspace_error( system, &parameters ), FLOAT_CAST error_k_est, FLOAT_CAST wtime, FLOAT_CAST gen_err );
+	FLOAT_TYPE Q_uncorr, Q_corr, Q_nonfluc;
+	Q_uncorr = Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data);
+	Q_corr = Dip_error_estimate( A_ad_dip, B_ad_dip, C_ewald_dip, system, &parameters, data);
+	Q_nonfluc = Generic_error_estimate( A_const, B_const,  C_ewald, system, &parameters, data );
+	FLOAT_TYPE corrected_est, corrected_total, rs_error;
+	corrected_est = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr - Q_corr + Q_nonfluc ) / system->nparticles );
+	gen_err = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr ) / system->nparticles );
+	gen_err_dip = ((Q_corr > 0) - (Q_corr < 0)) * system->q2 / (system->length * SQR(system->length)) * SQRT( ( FLOAT_ABS(Q_corr) ) / system->nparticles );
+	rs_error =Realspace_error( system, &parameters );
+	corrected_total = SQRT( SQR(rs_error) + SQR(corrected_est));
 
-	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\t %e\n", 
+	printf("Q_uncorr %e, Q_corr %e, Q_nonfluc %e\n", Q_uncorr, Q_corr, Q_nonfluc);
+
+	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e\t %e\t %e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
+		 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime, FLOAT_CAST gen_err, FLOAT_CAST gen_err_dip, FLOAT_CAST corrected_total );
+
+	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\t %e\t %e\n", 
 		  FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , 
 		  FLOAT_CAST estimate, FLOAT_CAST Realspace_error( system, &parameters ), 
-		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est, FLOAT_CAST gen_err );
+		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est, FLOAT_CAST gen_err, FLOAT_CAST corrected_total );
         } else {
             printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles , FLOAT_CAST error.f_r, FLOAT_CAST error.f_k );
             fprintf ( fout,"% lf\t% e\t na\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles );

@@ -244,6 +244,95 @@ FLOAT_TYPE C_ewald(int nx, int ny, int nz, system_t *s, parameters_t *p) {
   return 16.0 * SQR(PI) * ret;
 }
 
+FLOAT_TYPE C_ewald_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
+  int mx, my, mz;
+  int nmx, nmy, nmz;
+  FLOAT_TYPE km2;
+  FLOAT_TYPE ret = 0.0;
+  FLOAT_TYPE kmd;
+
+  for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
+    nmx = nx + p->mesh*mx;
+    for (my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
+      nmy = ny + p->mesh*my;
+      for (mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
+	nmz = nz + p->mesh*mz;
+
+	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );
+	kmd = 1.0 * SQRT(km2);
+
+	/* printf("sin_term: %e\n", FLOAT_CAST SIN(kmd) / kmd); */
+
+	ret += EXP(- 2.0 * km2 / ( 4.0 * SQR(p->alpha)) ) / km2 * SIN(kmd)/kmd;
+      }
+    }
+  }
+  return 16.0 * SQR(PI) * ret;
+}
+
+
+
+FLOAT_TYPE A_const(int nx, int ny, int nz, system_t *s, parameters_t *p) {
+  int mx, my, mz;
+  int nmx, nmy, nmz;
+  FLOAT_TYPE fnmx,fnmy,fnmz;
+  FLOAT_TYPE km2;
+  FLOAT_TYPE U4, U4km = 0.0;
+  FLOAT_TYPE mesh_i = 1.0/p->mesh;
+
+  for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
+    nmx = nx + p->mesh*mx;
+    fnmx = nmx * mesh_i;
+    for (my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
+      nmy = ny + p->mesh*my;
+      fnmy = nmy * mesh_i;
+      for (mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
+	nmz = nz + p->mesh*mz;
+	fnmz = nmz * mesh_i;
+
+	U4 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 4*p->cao);
+	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
+
+	U4km += U4 * km2;
+      }
+    }
+  }
+  return U4km;
+ 
+}
+
+FLOAT_TYPE B_const(int nx, int ny, int nz, system_t *s, parameters_t *p) {
+  int mx, my, mz;
+  int nmx, nmy, nmz;
+  FLOAT_TYPE fnmx,fnmy,fnmz;
+  FLOAT_TYPE km2;
+  FLOAT_TYPE ret = 0.0;
+  FLOAT_TYPE U2;
+  FLOAT_TYPE mesh_i = 1.0/p->mesh;
+
+  for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
+    nmx = nx + p->mesh*mx;
+    fnmx = nmx * mesh_i;
+    for (my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
+      nmy = ny + p->mesh*my;
+      fnmy = nmy * mesh_i;
+      for (mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
+	nmz = nz + p->mesh*mz;
+	fnmz = nmz * mesh_i;
+
+	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
+
+	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
+
+	ret += U2 * 4.0 * PI * EXP(- km2 / ( 4.0 * SQR(p->alpha)));
+      }
+    }
+  }
+  return ret;
+ 
+}
+
+
 #define NTRANS(N) (N<0) ? (N + d->mesh) : N
 
 FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, parameters_t *p, data_t *d) {
@@ -270,7 +359,6 @@ FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, 
 	  c = C(nx,ny,nz,s,p);
 
 	  Q_HE += a * SQR(G_hat) - 2.0 * b * G_hat + c;
-	  Q_opt += c - SQR( b ) / a;
 
 	  /* printf("A\t%e\tB\t%e\tC\t%e\n", FLOAT_CAST a , FLOAT_CAST b, FLOAT_CAST c); */
 	  /* printf("B/A\t%e\tG_hat\t%e\n", FLOAT_CAST (b / a), FLOAT_CAST G_hat); */
@@ -282,6 +370,45 @@ FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, 
   /* printf("Final Q_HE\t%lf\tQ_opt\t%lf\n", Q_HE, Q_opt); */
   /* printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / V); */
 
-  return  s->q2* SQRT( FLOAT_ABS(Q_HE) / (FLOAT_TYPE)s->nparticles) / V;
+  return  Q_HE;
+ 
+}
 
+FLOAT_TYPE Dip_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, parameters_t *p, data_t *d) {
+  // The Hockney-Eastwood pair-error functional.
+  FLOAT_TYPE Q = 0.0;
+  // Linear index for G, this breaks notation, but G is calculated anyway, so this is convinient.
+  int ind = 0;
+  // Convinience variable to hold the current value of the influence function.
+  FLOAT_TYPE G_hat = 0.0;
+  FLOAT_TYPE V = s->length * SQR(s->length);
+  FLOAT_TYPE a,b,c;
+  FLOAT_TYPE sin_term;
+  int nx, ny, nz;
+  FLOAT_TYPE k;
+
+  for (nx=-d->mesh/2; nx<d->mesh/2; nx++) {
+    for (ny=-d->mesh/2; ny<d->mesh/2; ny++) {
+      for (nz=-d->mesh/2; nz<d->mesh/2; nz++) {
+	if((nx!=0) || (ny!=0) || (nz!=0)) {
+	  ind = r_ind(NTRANS(nx), NTRANS(ny), NTRANS(nz));
+	  G_hat = d->G_hat[ind];
+
+	  a = A(nx,ny,nz,s,p);
+	  b = B(nx,ny,nz,s,p);
+	  c = C(nx,ny,nz,s,p);
+
+	  Q += (a * SQR(G_hat) - 2.0 * b * G_hat + c);
+
+	   /* printf("A\t%e\tB\t%e\tC\t%e\n", FLOAT_CAST a , FLOAT_CAST b, FLOAT_CAST c);  */
+	   /* printf("Q\t %e\n", FLOAT_CAST Q);   */
+	}
+      }
+    }
+  }
+  /* printf("Final Q_HE\t%lf\tQ_opt\t%lf\n", Q_HE, Q_opt); */
+  /* printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / V); */
+
+  return Q;
+ 
 }

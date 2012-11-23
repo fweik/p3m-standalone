@@ -1,6 +1,8 @@
 #include <math.h>
 #include <string.h>
 
+#include <gsl/gsl_integration.h>
+
 #include "common.h"
 
 #include "realpart.h"
@@ -306,4 +308,8 @@ void Free_neighborlist(data_t *d) {
 FLOAT_TYPE Realspace_error( const system_t *s, const parameters_t *p )
 {
   return (2.0*s->q2*EXP(-SQR(p->rcut * p->alpha))) / (SQRT((double)s->nparticles* p->rcut*s->length*s->length*s->length ));
+}
+
+FLOAT_TYPE Realspace_error_cor( FLOAT_TYPE r_cut, R_to_R K, R_to_R C) {
+
 }

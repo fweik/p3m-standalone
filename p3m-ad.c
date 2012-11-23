@@ -283,6 +283,80 @@ FLOAT_TYPE B_ad(int nx, int ny, int nz, system_t *s, parameters_t *p) {
  
 }
 
+FLOAT_TYPE A_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
+  int mx, my, mz;
+  int nmx, nmy, nmz;
+  FLOAT_TYPE fnmx,fnmy,fnmz;
+  FLOAT_TYPE km2;
+  FLOAT_TYPE U2, U2m = 0.0, U2km = 0.0;
+  FLOAT_TYPE mesh_i = 1.0/p->mesh;
+  FLOAT_TYPE d = 1.0;
+  FLOAT_TYPE sin_term = 0.0, kmd;
+
+  for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
+    nmx = nx + p->mesh*mx;
+    fnmx = nmx * mesh_i;
+    for (my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
+      nmy = ny + p->mesh*my;
+      fnmy = nmy * mesh_i;
+      for (mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
+	nmz = nz + p->mesh*mz;
+	fnmz = nmz * mesh_i;
+
+	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
+	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
+	kmd = SQRT(km2)*d;
+
+	sin_term = SIN(kmd) / kmd; 
+	/* sin_term = 1.0; */
+
+	U2m += U2 * sin_term;
+	U2km += U2 * km2;
+	
+      }
+    }
+  }
+  return U2m*U2km;
+ 
+}
+
+FLOAT_TYPE B_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
+  int mx, my, mz;
+  int nmx, nmy, nmz;
+  FLOAT_TYPE fnmx,fnmy,fnmz;
+  FLOAT_TYPE km2;
+  FLOAT_TYPE ret = 0.0;
+  FLOAT_TYPE U2;
+  FLOAT_TYPE mesh_i = 1.0/p->mesh;
+  FLOAT_TYPE d = 1.0;
+  FLOAT_TYPE sin_term = 0.0, kmd;
+  FLOAT_TYPE P3M_BRILLOUIN_LOCAL = P3M_BRILLOUIN;
+
+  for (mx = -P3M_BRILLOUIN_LOCAL; mx <= P3M_BRILLOUIN_LOCAL; mx++) {
+    nmx = nx + p->mesh*mx;
+    fnmx = nmx * mesh_i;
+    for (my = -P3M_BRILLOUIN_LOCAL; my <= P3M_BRILLOUIN_LOCAL; my++) {
+      nmy = ny + p->mesh*my;
+      fnmy = nmy * mesh_i;
+      for (mz = -P3M_BRILLOUIN_LOCAL; mz <= P3M_BRILLOUIN_LOCAL; mz++) {
+	nmz = nz + p->mesh*mz;
+	fnmz = nmz * mesh_i;
+
+	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
+	kmd = SQRT(km2)*d;
+
+	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
+
+        sin_term =  SIN(kmd) / kmd;
+
+	ret += U2 * 4.0 * PI * EXP(- km2 / ( 4.0 * SQR(p->alpha))) * sin_term;
+      }
+    }
+  }
+  return ret;
+ 
+}
+
 
 void p3m_tune_aliasing_sums_ad(int nx, int ny, int nz, 
 			       system_t *s, parameters_t *p,
@@ -334,7 +408,7 @@ FLOAT_TYPE p3m_k_space_error_ad( system_t *s, parameters_t *p )
   for (nx=-mesh/2; nx<mesh/2; nx++) {
     for (ny=-mesh/2; ny<mesh/2; ny++) {
       for (nz=-mesh/2; nz<mesh/2; nz++) {
-	if((nx!=0) && (ny!=0) && (nz!=0)) {
+	if((nx!=0) || (ny!=0) || (nz!=0)) {
 	  p3m_tune_aliasing_sums_ad(nx,ny,nz, s, p, &alias1,&alias2,&alias3,&alias4);	//alias4 = cs
 	  if( (alias3 == 0.0) || (alias4 == 0.0) )
 	    continue;
