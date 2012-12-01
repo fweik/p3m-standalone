@@ -59,16 +59,21 @@ system_t *generate_seperated_dipole(int size, FLOAT_TYPE box) {
 system_t *generate_madelung(int size, FLOAT_TYPE box) {
   int id=0,i,j,k;
   system_t *s;
-  FLOAT_TYPE off = 0.5;
-  FLOAT_TYPE a = 1.0;
+  int per_row = ceil( pow(size, 0.33333) );
+  FLOAT_TYPE a = box / per_row;
+  FLOAT_TYPE off = 0.5*a;
+
+  size = per_row * per_row * per_row;
+
+  printf("generate_madelung: box %lf, size %d, per_row %d, a %lf, off %lf\n", box, size, per_row, a, off);
 
   s = Init_system(size);
   s->length = box;
   s->q2 = 0.0;
 
-  for(i=0; i<box; i++)
-    for(j=0; j<box; j++)
-      for(k=0; k<box; k++) {
+  for(i=0; i<per_row; i++)
+    for(j=0; j<per_row; j++)
+      for(k=0; k<per_row; k++) {
 	s->p->fields[0][id] = a*i + off;
 	s->p->fields[1][id] = a*j + off;
 	s->p->fields[2][id] = a*k + off;

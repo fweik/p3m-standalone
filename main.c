@@ -85,12 +85,14 @@ int main ( int argc, char **argv ) {
     parameters_t parameters, parameters_ewald;
     data_t *data, *data_ewald;
     forces_t *forces, *forces_ewald;
-    char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL, *sys_out = NULL, *rdf_file = NULL;
+    char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL, *sys_out = NULL, *rdf_file = NULL, *vtf_file = NULL;
     error_t error;
     FLOAT_TYPE length, prec;
     int npart;
     FLOAT_TYPE charge;
     int form_factor;
+    FLOAT_TYPE rdf_min, rdf_max;
+    int rdf_bins;
 
     FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est;
     int i,j, calc_k_error, calc_est;
@@ -126,6 +128,11 @@ int main ( int argc, char **argv ) {
     add_param( "charge", ARG_TYPE_FLOAT, ARG_OPTIONAL, &charge, &params );
     add_param( "system_type", ARG_TYPE_INT, ARG_OPTIONAL, &form_factor, &params );
     add_param( "rdf", ARG_TYPE_STRING, ARG_OPTIONAL, &rdf_file, &params );
+    add_param( "rdf_bins", ARG_TYPE_INT, ARG_OPTIONAL, &rdf_bins, &params );
+    add_param( "rdf_rmin", ARG_TYPE_FLOAT, ARG_OPTIONAL, &rdf_min, &params );
+    add_param( "rdf_rmax", ARG_TYPE_FLOAT, ARG_OPTIONAL, &rdf_max, &params );
+    add_param( "no_calculation", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
+    add_param( "vtf_file", ARG_TYPE_STRING, ARG_OPTIONAL, &vtf_file, &params );
     #ifdef _OPENMP
     add_param( "threads", ARG_TYPE_INT, ARG_OPTIONAL, &nthreads, &params );
     #endif
@@ -177,16 +184,26 @@ int main ( int argc, char **argv ) {
       puts("Done.");
     }
 
+    if( param_isset("vtf_file", params) == 1) 
+      write_vtf( vtf_file, system );
+
     if( param_isset("rdf", params) == 1) {
       puts("Calculating RDF");
-      int bins = 100;
-      FLOAT_TYPE *rdf = radial_charge_distribution(0.0, 1.5, bins, system);
-      FILE *rdf_out = fopen(rdf_file, "w");
+      int bins = 1000;
+      FLOAT_TYPE *rdf = radial_charge_distribution(0.0, 5.0, bins, system);
+      FLOAT_TYPE *c = rdf_fft( bins, rdf);
+      FILE *rdf_out = fopen(rdf_file, "w"), *c_out = fopen("c_fft.dat", "w");
 
       for(int i = 0; i<bins; i++)
 	fprintf(rdf_out, "%e %e\n", FLOAT_CAST rdf[2*i], FLOAT_CAST rdf[2*i+1]);
+
+      for(int i = 0; i<bins; i++)
+	fprintf(c_out, "%e %e %e\n", FLOAT_CAST rdf[2*i], FLOAT_CAST c[2*i], FLOAT_CAST c[2*i + 1]);
+
+      fclose(c_out);
       fclose(rdf_out);
       fftw_free(rdf);
+      fftw_free(c);
       puts("Done.");
     }
 
@@ -210,6 +227,9 @@ int main ( int argc, char **argv ) {
 	Write_system(system, sys_out);
 	puts("Done.");
       }
+
+    if(param_isset("no_calculation", params) == 1)
+      return 0;
 
     if(param_isset("forces", params) == 1) {
       printf("Reading reference forces from '%s'.\n", force_file);
