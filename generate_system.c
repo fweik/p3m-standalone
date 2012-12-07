@@ -63,7 +63,7 @@ system_t *generate_madelung(int size, FLOAT_TYPE box) {
   FLOAT_TYPE a = box / per_row;
   FLOAT_TYPE off = 0.5*a;
 
-  size = per_row * per_row * per_row;
+  size = per_row * per_row * per_row; 
 
   printf("generate_madelung: box %lf, size %d, per_row %d, a %lf, off %lf\n", box, size, per_row, a, off);
 

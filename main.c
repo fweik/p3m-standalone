@@ -85,7 +85,7 @@ int main ( int argc, char **argv ) {
     parameters_t parameters, parameters_ewald;
     data_t *data, *data_ewald;
     forces_t *forces, *forces_ewald;
-    char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL, *sys_out = NULL, *rdf_file = NULL, *vtf_file = NULL;
+    char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL, *sys_out = NULL, *rdf_file = NULL, *vtf_file = NULL, *cdf_file = NULL;
     error_t error;
     FLOAT_TYPE length, prec;
     int npart;
@@ -131,6 +131,7 @@ int main ( int argc, char **argv ) {
     add_param( "rdf_bins", ARG_TYPE_INT, ARG_OPTIONAL, &rdf_bins, &params );
     add_param( "rdf_rmin", ARG_TYPE_FLOAT, ARG_OPTIONAL, &rdf_min, &params );
     add_param( "rdf_rmax", ARG_TYPE_FLOAT, ARG_OPTIONAL, &rdf_max, &params );
+    add_param( "cdf", ARG_TYPE_STRING, ARG_OPTIONAL, &cdf_file, &params );
     add_param( "no_calculation", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "vtf_file", ARG_TYPE_STRING, ARG_OPTIONAL, &vtf_file, &params );
     #ifdef _OPENMP
@@ -189,16 +190,30 @@ int main ( int argc, char **argv ) {
 
     if( param_isset("rdf", params) == 1) {
       puts("Calculating RDF");
-      int bins = 1000;
-      FLOAT_TYPE *rdf = radial_charge_distribution(0.0, 5.0, bins, system);
-      FLOAT_TYPE *c = rdf_fft( bins, rdf);
+      int bins = 100;
+      FLOAT_TYPE *rdf = radial_charge_distribution(0.0, 12.0, bins, system);
+      FLOAT_TYPE *c;
+      FLOAT_TYPE *rdf_sym = Init_array( 2*bins, 2*sizeof(FLOAT_TYPE));
+      c = low_pass_forward( bins, rdf, 0.3);
+      c = low_pass_backward(bins, c, 0.3);
+      rdf = c;
+      for(int i = 0; i < 2*bins; i++) {
+	rdf_sym[i] = c[i];
+      }
+      for(int i = bins; i < 2*bins; i++) {
+	rdf_sym[2*i] = c[2*i] + bins*c[0];
+	rdf_sym[2*i+1] = c[bins - 2*i];
+      }
+
+      c = rdf_fft( 2*bins, rdf);
       FILE *rdf_out = fopen(rdf_file, "w"), *c_out = fopen("c_fft.dat", "w");
+
 
       for(int i = 0; i<bins; i++)
 	fprintf(rdf_out, "%e %e\n", FLOAT_CAST rdf[2*i], FLOAT_CAST rdf[2*i+1]);
 
-      for(int i = 0; i<bins; i++)
-	fprintf(c_out, "%e %e %e\n", FLOAT_CAST rdf[2*i], FLOAT_CAST c[2*i], FLOAT_CAST c[2*i + 1]);
+      for(int i = 0; i<2*bins; i++)
+	fprintf(c_out, "%e %e %e\n", FLOAT_CAST rdf_sym[2*i], FLOAT_CAST [2*i], FLOAT_CAST c[2*i + 1]);
 
       fclose(c_out);
       fclose(rdf_out);
