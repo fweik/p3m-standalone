@@ -1,0 +1,14 @@
+#include "assign.h"
+
+#include <stdlib.h>
+
+#define mesh_size 32
+#define particles 512
+#define cao 5
+
+int main(void) {
+  float *h_mesh = malloc(mesh_size*sizeof(float));
+  float *h_part = malloc(particles*sizeof(float));
+  
+
+}

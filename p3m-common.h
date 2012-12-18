@@ -20,7 +20,6 @@ void Free_data(data_t *);
 FLOAT_TYPE C_ewald(int nx, int ny, int nz, system_t *s, parameters_t *p);
 FLOAT_TYPE C_ewald_dip(int nx, int ny, int nz, system_t *s, parameters_t *p);
 FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, parameters_t *p, data_t *d);
-FLOAT_TYPE Dip_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, parameters_t *p, data_t *d);
 
 FLOAT_TYPE A_const(int nx, int ny, int nz, system_t *s, parameters_t *p);
 FLOAT_TYPE B_const(int nx, int ny, int nz, system_t *s, parameters_t *p);

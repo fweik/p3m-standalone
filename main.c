@@ -190,30 +190,39 @@ int main ( int argc, char **argv ) {
 
     if( param_isset("rdf", params) == 1) {
       puts("Calculating RDF");
-      int bins = 100;
-      FLOAT_TYPE *rdf = radial_charge_distribution(0.0, 12.0, bins, system);
+      if( param_isset("rdf_bins", params) == 0)
+	rdf_bins = 100;
+      if( param_isset("rdf_rmin", params) == 0)
+	rdf_min = 0.0;
+      if( param_isset("rdf_rmax", params) == 0)
+	rdf_max = system->length/2;
+      printf("Using %d bins, %lf <= r <= %lf\n", rdf_bins, rdf_min, rdf_max);
+      int bins = rdf_bins;
+      FLOAT_TYPE *rdf = radial_charge_distribution(rdf_min, rdf_max, rdf_bins, system);
       FLOAT_TYPE *c;
-      FLOAT_TYPE *rdf_sym = Init_array( 2*bins, 2*sizeof(FLOAT_TYPE));
+      FLOAT_TYPE *rdf_sym = Init_array( 2*bins-1, 2*sizeof(FLOAT_TYPE));
       c = low_pass_forward( bins, rdf, 0.3);
       c = low_pass_backward(bins, c, 0.3);
       rdf = c;
       for(int i = 0; i < 2*bins; i++) {
 	rdf_sym[i] = c[i];
       }
-      for(int i = bins; i < 2*bins; i++) {
-	rdf_sym[2*i] = c[2*i] + bins*c[0];
-	rdf_sym[2*i+1] = c[bins - 2*i];
+      for(int i = bins; i < 2*bins-1; i++) {
+	rdf_sym[2*i] =  c[2*bins - 2] + (i-bins)*(c[2] - c[0]);
+	rdf_sym[2*i+1] = c[4*bins - 2*i - 1];
       }
 
-      c = rdf_fft( 2*bins, rdf);
+      c = rdf_fft( 2*bins-1, rdf_sym);
       FILE *rdf_out = fopen(rdf_file, "w"), *c_out = fopen("c_fft.dat", "w");
 
+      rshif_array(2*(2*bins-1), c, 2*bins);
 
       for(int i = 0; i<bins; i++)
 	fprintf(rdf_out, "%e %e\n", FLOAT_CAST rdf[2*i], FLOAT_CAST rdf[2*i+1]);
 
-      for(int i = 0; i<2*bins; i++)
-	fprintf(c_out, "%e %e %e\n", FLOAT_CAST rdf_sym[2*i], FLOAT_CAST [2*i], FLOAT_CAST c[2*i + 1]);
+      for(int i = 0; i<2*bins-1; i++)
+	/* fprintf(c_out, "%e %e\n", FLOAT_CAST rdf_sym[2*i], FLOAT_CAST rdf_sym[2*i+1] );  */
+	fprintf(c_out, "%d %e %e\n", i, FLOAT_CAST c[2*i], FLOAT_CAST c[2*i+1] );
 
       fclose(c_out);
       fclose(rdf_out);
@@ -351,10 +360,10 @@ int main ( int argc, char **argv ) {
 	error_k_est = method.Error_k ( system, &parameters);
 	FLOAT_TYPE Q_uncorr, Q_corr, Q_nonfluc;
 	Q_uncorr = Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data);
-	Q_corr = Dip_error_estimate( A_ad_dip, B_ad_dip, C_ewald_dip, system, &parameters, data);
-	Q_nonfluc = Generic_error_estimate( A_const, B_const,  C_ewald, system, &parameters, data );
+	Q_corr = Generic_error_estimate( A_ad_dip, B_ad_dip, C_ewald_dip, system, &parameters, data);
+	//	Q_corr_real = Realpart_corr_error(parameters.rcut, parameters.alpha);
 	FLOAT_TYPE corrected_est, corrected_total, rs_error;
-	corrected_est = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr - Q_corr + Q_nonfluc ) / system->nparticles );
+	corrected_est = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr - Q_corr ) / system->nparticles );
 	gen_err = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr ) / system->nparticles );
 	gen_err_dip = ((Q_corr > 0) - (Q_corr < 0)) * system->q2 / (system->length * SQR(system->length)) * SQRT( ( FLOAT_ABS(Q_corr) ) / system->nparticles );
 	rs_error =Realspace_error( system, &parameters );

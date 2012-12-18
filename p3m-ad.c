@@ -307,7 +307,7 @@ FLOAT_TYPE A_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
 	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
 	kmd = SQRT(km2)*d;
 
-	sin_term = SIN(kmd) / kmd; 
+	sin_term = 0.67 * SIN(kmd) / kmd; 
 	/* sin_term = 1.0; */
 
 	U2m += U2 * sin_term;
@@ -347,7 +347,7 @@ FLOAT_TYPE B_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
 
 	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
 
-        sin_term =  SIN(kmd) / kmd;
+        sin_term =  0.67 * SIN(kmd) / kmd;
 
 	ret += U2 * 4.0 * PI * EXP(- km2 / ( 4.0 * SQR(p->alpha))) * sin_term;
       }

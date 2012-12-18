@@ -22,6 +22,8 @@ void Free_neighborlist(data_t *);
 
 void Realteil(system_t *, parameters_t *, forces_t *);
 
+FLOAT_TYPE Realpart_corr_error(FLOAT_TYPE rcut, FLOAT_TYPE alpha);
+
 // Error of the realspace part
 
 FLOAT_TYPE Realspace_error( const system_t *, const parameters_t * );

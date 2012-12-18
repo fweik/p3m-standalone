@@ -263,7 +263,7 @@ FLOAT_TYPE C_ewald_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
 
 	/* printf("sin_term: %e\n", FLOAT_CAST SIN(kmd) / kmd); */
 
-	ret += EXP(- 2.0 * km2 / ( 4.0 * SQR(p->alpha)) ) / km2 * SIN(kmd)/kmd;
+	ret += EXP(- 2.0 * km2 / ( 4.0 * SQR(p->alpha)) ) / km2 * 0.67 * SIN(kmd)/kmd;
       }
     }
   }
@@ -374,41 +374,3 @@ FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, 
  
 }
 
-FLOAT_TYPE Dip_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, parameters_t *p, data_t *d) {
-  // The Hockney-Eastwood pair-error functional.
-  FLOAT_TYPE Q = 0.0;
-  // Linear index for G, this breaks notation, but G is calculated anyway, so this is convinient.
-  int ind = 0;
-  // Convinience variable to hold the current value of the influence function.
-  FLOAT_TYPE G_hat = 0.0;
-  FLOAT_TYPE V = s->length * SQR(s->length);
-  FLOAT_TYPE a,b,c;
-  FLOAT_TYPE sin_term;
-  int nx, ny, nz;
-  FLOAT_TYPE k;
-
-  for (nx=-d->mesh/2; nx<d->mesh/2; nx++) {
-    for (ny=-d->mesh/2; ny<d->mesh/2; ny++) {
-      for (nz=-d->mesh/2; nz<d->mesh/2; nz++) {
-	if((nx!=0) || (ny!=0) || (nz!=0)) {
-	  ind = r_ind(NTRANS(nx), NTRANS(ny), NTRANS(nz));
-	  G_hat = d->G_hat[ind];
-
-	  a = A(nx,ny,nz,s,p);
-	  b = B(nx,ny,nz,s,p);
-	  c = C(nx,ny,nz,s,p);
-
-	  Q += (a * SQR(G_hat) - 2.0 * b * G_hat + c);
-
-	   /* printf("A\t%e\tB\t%e\tC\t%e\n", FLOAT_CAST a , FLOAT_CAST b, FLOAT_CAST c);  */
-	   /* printf("Q\t %e\n", FLOAT_CAST Q);   */
-	}
-      }
-    }
-  }
-  /* printf("Final Q_HE\t%lf\tQ_opt\t%lf\n", Q_HE, Q_opt); */
-  /* printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / V); */
-
-  return Q;
- 
-}

@@ -148,3 +148,13 @@ FLOAT_TYPE *rdf_fft( int N, FLOAT_TYPE *rdf) {
 
   return data;
 }
+
+void rshif_array( int N, FLOAT_TYPE *data, int shift ) {
+  FLOAT_TYPE *buf = Init_array( N, sizeof(FLOAT_TYPE));
+  for(int i=0;i<N;i++)
+    buf[(shift+i) % N] = data[i];
+  for(int i=0;i<N;i++)
+    data[i] = buf[i];
+
+  fftw_free(buf);
+}
