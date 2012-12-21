@@ -1,0 +1,10 @@
+#!/usr/bin/python
+
+import math
+
+def smooth_numbers(N):
+    factors = [2,3,5,7,11,13]
+    limits = [int(N**(1./x) for x in factors]
+    print limits
+
+smooth_numbers(1024)

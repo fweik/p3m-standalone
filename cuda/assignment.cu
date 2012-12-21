@@ -108,14 +108,18 @@ float hi) {
       m_pos[1] = pos[3*id + 1] * hi - pos_shift;
       m_pos[2] = pos[3*id + 2] * hi - pos_shift;
 
-      nmp_x = (int) floorf(m_pos[0] + 0.5);
-      nmp_y = (int) floorf(m_pos[1] + 0.5);
-      nmp_z = (int) floorf(m_pos[2] + 0.5);
+      nmp_x = (int) floor(m_pos[0] + 0.5);
+      nmp_y = (int) floor(m_pos[1] + 0.5);
+      nmp_z = (int) floor(m_pos[2] + 0.5);
+
+      m_pos[0] -= nmp_x;
+      m_pos[1] -= nmp_y;
+      m_pos[2] -= nmp_z;
 
       nmp_x = wrap_index(nmp_x + threadIdx.x, m_size);
       nmp_y = wrap_index(nmp_y + threadIdx.y, m_size);
       nmp_z = wrap_index(nmp_z + threadIdx.z, m_size);
       /** should be atomic **/
-      mesh[r_ind(nmp_x, nmp_y, nmp_z)] += caf(threadIdx.x, m_pos[0], cao)*caf(threadIdx.y, m_pos[1], cao)*caf(threadIdx.z, m_pos[2], cao)*q[id];
+      mesh[r_ind(nmp_x, nmp_y, nmp_z)].x += caf(threadIdx.x, m_pos[0], cao)*caf(threadIdx.y, m_pos[1], cao)*caf(threadIdx.z, m_pos[2], cao)*q[id];
 }
 
