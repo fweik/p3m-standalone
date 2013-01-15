@@ -52,6 +52,7 @@ extern int __detailed_timings;
 #define FFTW_DESTROY_PLAN fftw_destroy_plan
 #define ROUND round
 #define FLOOR floor
+#define LOG log
 #endif
 
 #ifdef LONG_DOUBLE_PREC
