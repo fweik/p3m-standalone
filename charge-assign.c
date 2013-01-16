@@ -23,7 +23,6 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 {
     int dim, i0, i1, i2, id;
     FLOAT_TYPE tmp0, tmp1;
-    FLOAT_TYPE cf_sum, cf_sum2=0.0, cf_total=0.0;
     /* position of a particle in local mesh units */
     FLOAT_TYPE pos;
     /* 1d-index of nearest mesh point */
@@ -32,13 +31,20 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
     int arg[3];
     /* index, index jumps for rs_mesh array */
     FLOAT_TYPE cur_ca_frac_val;
-    int cf_cnt, cf_cnt2;
+    FLOAT_TYPE *cf_cnt;
     // Mesh coordinates of the closest mesh point
     int base[3];
     int i,j,k;
     FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
 
     FLOAT_TYPE Hi = (double)d->mesh/(double)s->length;
+
+    FLOAT_TYPE *cf = d->cf[ii];
+    const FLOAT_TYPE **interpol = d->inter->interpol;
+    FLOAT_TYPE *Qmesh = d->Qmesh;
+    FLOAT_TYPE q;
+    const int cao = p->cao;
+    const int mesh = d->mesh;
 
     // Make sure parameter-set and data-set are compatible
 
@@ -48,7 +54,6 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
     pos_shift = (double)((p->cao-1)/2);
 
     for (id=0;id<s->nparticles;id++) {
-        cf_cnt = id*p->cao3;
         /* particle position in mesh coordinates */
         for (dim=0;dim<3;dim++) {
             pos    = s->p->fields[dim][id]*Hi - pos_shift + 0.5*ii;
@@ -57,33 +62,22 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
             arg[dim] = (int) FLOOR((pos - nmp + 0.5)*MI2);
             d->ca_ind[ii][3*id + dim] = base[dim];
         }
-	cf_sum=0.0;
-        for (i0=0; i0<p->cao; i0++) {
-	  tmp0 = s->q[id] * d->inter->interpol[i0][arg[0]];
-	  for (i1=0; i1<p->cao; i1++) {
-	    tmp1 = tmp0 * d->inter->interpol[i1][arg[1]];
-	    for (i2=0; i2<p->cao; i2++) {
-	      cur_ca_frac_val = tmp1 * d->inter->interpol[i2][arg[2]];
-	      d->cf[ii][cf_cnt++] = cur_ca_frac_val ;
-	      cf_sum += cur_ca_frac_val;
-	    }
-	  }
-        }
-	cf_sum2=0.0;
-	cf_cnt2 = cf_cnt - p->cao3;
-	for (i0=0; i0<p->cao; i0++) {
-	  i = wrap_mesh_index(base[0] + i0, d->mesh);
-	  for (i1=0; i1<p->cao; i1++) {
-	    j = wrap_mesh_index(base[1] + i1, d->mesh);
-	    for (i2=0; i2<p->cao; i2++) {
-	      k = wrap_mesh_index(base[2] + i2, d->mesh);
-	      d->cf[ii][cf_cnt2] /= fabs(cf_sum);
-	      cf_sum2 += d->cf[ii][cf_cnt2];
-	      d->Qmesh[c_ind(i,j,k)+ii] += d->cf[ii][cf_cnt2++];
+	q = s->q[id];
+        cf_cnt = cf + id*p->cao3;
+	for (i0=0; i0<cao; i0++) {
+	  i = wrap_mesh_index(base[0] + i0, mesh);
+	  tmp0 = q * interpol[i0][arg[0]];
+	  for (i1=0; i1<cao; i1++) {
+	    tmp1 = tmp0 * interpol[i1][arg[1]];
+	    j = wrap_mesh_index(base[1] + i1, mesh);
+	    for (i2=0; i2<cao; i2++) {
+	      cur_ca_frac_val = tmp1 * interpol[i2][arg[2]];
+	      k = wrap_mesh_index(base[2] + i2, mesh);
+	      *cf_cnt++ = cur_ca_frac_val;
+	      Qmesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
 	    }
 	  }
 	} 
-	cf_total += cf_sum2;
     }
 }
 

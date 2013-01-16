@@ -37,8 +37,6 @@ inline void backward_fft ( data_t *d ) {
 data_t *Init_ad ( system_t *s, parameters_t *p ) {
     int mesh = p->mesh;
 
-    puts("Init_ad()");
-
     data_t *d = Init_data ( &method_p3m_ad, s, p );
 
     d->forward_plans = 1;
@@ -130,7 +128,11 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
 	}
     }
   #pragma omp barrier
+  #ifdef P3M_AD_SELF_FORCES
   Init_self_forces( s, p, d);
+  #else
+  #warning Self force compensation disabled
+  #endif
 }
 
 
@@ -203,9 +205,9 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     timer = MPI_Wtime() - timer;
     t_force_assignment[2] = timer;
   #endif
-
+    #ifdef P3M_AD_SELF_FORCES
     Substract_self_forces(s,p,d,f);
-
+    #endif
   return;
 }
 

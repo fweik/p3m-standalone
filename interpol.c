@@ -12,6 +12,7 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
 {
   FLOAT_TYPE dInterpol=(FLOAT_TYPE)MaxInterpol;
   FLOAT_TYPE x;
+  FLOAT_TYPE *buf;
   long   i,j;
 
   interpolation_function_t i_fct = ip_bspline;
@@ -23,8 +24,11 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
   ret->interpol = Init_array( ip + 2, sizeof(FLOAT_TYPE *));
 
   ret->interpol_d = NULL;
+
+  buf = Init_array( (ip+1) * (2* MaxInterpol + 1), sizeof(FLOAT_TYPE) );
+
   for( i = 0; i <= ip; i++) {
-    ret->interpol[i] = Init_array( 2* MaxInterpol + 1, sizeof(FLOAT_TYPE) );
+    ret->interpol[i] = buf + i * (2* MaxInterpol + 1);
   }
   ret->interpol[ip+1] = NULL;
 
