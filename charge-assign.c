@@ -40,7 +40,7 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
     FLOAT_TYPE Hi = (double)d->mesh/(double)s->length;
 
     FLOAT_TYPE *cf = d->cf[ii];
-    const FLOAT_TYPE **interpol = d->inter->interpol;
+    FLOAT_TYPE **interpol = d->inter->interpol;
     FLOAT_TYPE *Qmesh = d->Qmesh;
     FLOAT_TYPE q;
     const int cao = p->cao;
@@ -66,12 +66,12 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
         cf_cnt = cf + id*p->cao3;
 	for (i0=0; i0<cao; i0++) {
 	  i = wrap_mesh_index(base[0] + i0, mesh);
-	  tmp0 = q * interpol[i0][arg[0]];
+	  tmp0 = q * interpol[arg[0]][i0];
 	  for (i1=0; i1<cao; i1++) {
-	    tmp1 = tmp0 * interpol[i1][arg[1]];
+	    tmp1 = tmp0 * interpol[arg[1]][i1];
 	    j = wrap_mesh_index(base[1] + i1, mesh);
 	    for (i2=0; i2<cao; i2++) {
-	      cur_ca_frac_val = tmp1 * interpol[i2][arg[2]];
+	      cur_ca_frac_val = tmp1 * interpol[arg[2]][i2];
 	      k = wrap_mesh_index(base[2] + i2, mesh);
 	      *cf_cnt++ = cur_ca_frac_val;
 	      Qmesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
@@ -83,43 +83,50 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 
 // assign the forces obtained from k-space
 void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii) {
-    int i,i0,i1,i2;
-    int cf_cnt=0;
-    int *base;
-    int j,k,l;
-    FLOAT_TYPE B;
-    
-    cf_cnt=0;
+  int i,i0,i1,i2;
+  FLOAT_TYPE *cf_cnt;
+  int *base;
+  int j,k,l;
+  FLOAT_TYPE B;
+  FLOAT_TYPE field_x, field_y, field_z;
+  FLOAT_TYPE *fmesh_x = d->Fmesh->fields[0], *fmesh_y = d->Fmesh->fields[1], *fmesh_z = d->Fmesh->fields[2];
+  int mesh = d->mesh;
 
+  const int cao = p->cao;
 
-      for (i=0; i<s->nparticles; i++) {
-	base = d->ca_ind[ii] + 3*i;
-	for (i0=0; i0<p->cao; i0++) {
-	  j = wrap_mesh_index(base[0] + i0, d->mesh);
-	  for (i1=0; i1<p->cao; i1++) {
-	    k = wrap_mesh_index(base[1] + i1, d->mesh);
-	    for (i2=0; i2<p->cao; i2++) {
-	      l = wrap_mesh_index(base[2] + i2, d->mesh);
-	      B = force_prefac*d->cf[ii][cf_cnt];
-	      f->f_k->fields[0][i] -= d->Fmesh->fields[0][c_ind(j,k,l)+ii]*B;
-	      f->f_k->fields[1][i] -= d->Fmesh->fields[1][c_ind(j,k,l)+ii]*B;
-	      f->f_k->fields[2][i] -= d->Fmesh->fields[2][c_ind(j,k,l)+ii]*B;
+  cf_cnt = d->cf[ii];
 
-	      cf_cnt++;
-	    }
-	  }
-	}
-	if (ii==1) {
-	  f->f_k->fields[0][i] *= 0.5;
-	  f->f_k->fields[1][i] *= 0.5;
-	  f->f_k->fields[2][i] *= 0.5;
+  for (i=0; i<s->nparticles; i++) {
+    field_x = field_y = field_z = 0;
+    base = d->ca_ind[ii] + 3*i;
+    for (i0=0; i0<cao; i0++) {
+      j = wrap_mesh_index(base[0] + i0, mesh);
+      for (i1=0; i1<cao; i1++) {
+	k = wrap_mesh_index(base[1] + i1, mesh);
+	for (i2=0; i2<cao; i2++) {
+	  l = wrap_mesh_index(base[2] + i2, mesh);
+	  B = force_prefac*(*cf_cnt++);
+	  field_x -= fmesh_x[c_ind(j,k,l)+ii]*B;
+	  field_y -= fmesh_y[c_ind(j,k,l)+ii]*B;
+	  field_z -= fmesh_z[c_ind(j,k,l)+ii]*B;
 	}
       }
+    }
+    f->f_k->fields[0][i] = field_x;
+    f->f_k->fields[1][i] = field_y;
+    f->f_k->fields[2][i] = field_z;
+
+    if (ii==1) {
+      f->f_k->fields[0][i] *= 0.5;
+      f->f_k->fields[1][i] *= 0.5;
+      f->f_k->fields[2][i] *= 0.5;
+    }
+  }
 
 }
 
 
-void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int ii, int derivatives)
+void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int ii)
 {
     int dim, i0, i1, i2;
     int id;
@@ -142,7 +149,7 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
 
     FLOAT_TYPE Hi = (double)Mesh/s->length;
     FLOAT_TYPE Leni = 1.0/s->length;
-
+    FLOAT_TYPE q, qLeni;
 
     double pos_shift;
 
@@ -150,6 +157,8 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
     /* particle position in mesh coordinates */
     for (id=0;id<s->nparticles;id++) {
         cf_cnt = id*p->cao3;
+	q = s->q[id] ;
+	qLeni = q * Leni;
         for (dim=0;dim<3;dim++) {
 	  pos    = s->p->fields[dim][id]*Hi - pos_shift + 0.5*ii;
 	  nmp = (int) FLOOR(pos + 0.5);
@@ -160,23 +169,23 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
 
         for (i0=0; i0<p->cao; i0++) {
 	  i = wrap_mesh_index(base[0] + i0, d->mesh);
-	  tmp0 = d->inter->interpol[i0][arg[0]];
-	  tmp0_x = d->inter->interpol_d[i0][arg[0]];
+	  tmp0 = d->inter->interpol[arg[0]][i0];
+	  tmp0_x = d->inter->interpol_d[arg[0]][i0];
 	  for (i1=0; i1<p->cao; i1++) {
 	    j = wrap_mesh_index(base[1] + i1, d->mesh);
-	    tmp1 = d->inter->interpol[i1][arg[1]];
-	    tmp1_y = d->inter->interpol_d[i1][arg[1]];
+	    tmp1 = d->inter->interpol[arg[1]][i1];
+	    tmp1_y = d->inter->interpol_d[arg[1]][i1];
 	    for (i2=0; i2<p->cao; i2++) {
 	      k = wrap_mesh_index(base[2] + i2, d->mesh);
-	      tmp2 = d->inter->interpol[i2][arg[2]];
-	      tmp2_z = d->inter->interpol_d[i2][arg[2]];
-	      cur_ca_frac_val = s->q[id] * tmp0 * tmp1 * tmp2;
+	      tmp2 = d->inter->interpol[arg[2]][i2];
+	      tmp2_z = d->inter->interpol_d[arg[2]][i2];
+	      cur_ca_frac_val = q * tmp0 * tmp1 * tmp2;
 	      d->cf[ii][cf_cnt] = cur_ca_frac_val ;
-	      if (derivatives) {
-		d->dQdx[ii][cf_cnt] = Leni * tmp0_x * tmp1 * tmp2 * s->q[id];
-		d->dQdy[ii][cf_cnt] = Leni * tmp0 * tmp1_y * tmp2 * s->q[id];
-		d->dQdz[ii][cf_cnt] = Leni * tmp0 * tmp1 * tmp2_z * s->q[id];
-	      }
+
+	      d->dQdx[ii][cf_cnt] = tmp0_x * tmp1 * tmp2 * qLeni;
+	      d->dQdy[ii][cf_cnt] = tmp0 * tmp1_y * tmp2 * qLeni;
+	      d->dQdz[ii][cf_cnt] = tmp0 * tmp1 * tmp2_z * qLeni;
+
 	      d->Qmesh[c_ind(i,j,k)+ii] += cur_ca_frac_val;
 	      cf_cnt++;
 	    }
@@ -188,36 +197,41 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
 // assign the forces obtained from k-space
 void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii)
 {
-    int i,i0,i1,i2;
-    int cf_cnt=0, c_index;
-    int *base;
-    int j,k,l;
-    FLOAT_TYPE B;
+  int i,i0,i1,i2;
+  int cf_cnt=0;
+  int *base;
+  int j,k,l;
+  FLOAT_TYPE B;
+  FLOAT_TYPE force_x, force_y, force_z;
+  int cao = p->cao;
 
-    cf_cnt=0;
-    for (i=0; i<s->nparticles; i++) {
-        base = d->ca_ind[ii] + 3*i;
-        cf_cnt = i*p->cao3;
-        for (i0=0; i0<p->cao; i0++) {
-	  j = wrap_mesh_index(base[0] + i0, d->mesh);
-            for (i1=0; i1<p->cao; i1++) {
-	      k = wrap_mesh_index(base[1] + i1, d->mesh);
-                for (i2=0; i2<p->cao; i2++) {
-		  l = wrap_mesh_index(base[2] + i2, d->mesh);
+  cf_cnt=0;
+  for (i=0; i<s->nparticles; i++) {
+    force_x = force_y = force_z = 0.0;
+    base = d->ca_ind[ii] + 3*i;
+    cf_cnt = i*p->cao3;
+    for (i0=0; i0<cao; i0++) {
+      j = wrap_mesh_index(base[0] + i0, d->mesh);
+      for (i1=0; i1<cao; i1++) {
+	k = wrap_mesh_index(base[1] + i1, d->mesh);
+	for (i2=0; i2<cao; i2++) {
+	  l = wrap_mesh_index(base[2] + i2, d->mesh);
 
-		  c_index = c_ind(j,k,l)+ii;
-		  B = force_prefac*d->Qmesh[c_index];
-		  f->f_k->x[i] -= B*d->dQdx[ii][cf_cnt];
-		  f->f_k->y[i] -= B*d->dQdy[ii][cf_cnt];
-		  f->f_k->z[i] -= B*d->dQdz[ii][cf_cnt];
-		  cf_cnt++;
-                }
-            }
-        }
-        if (ii==1) {
-	  f->f_k->fields[0][i] *= 0.5;
-	  f->f_k->fields[1][i] *= 0.5;
-	  f->f_k->fields[2][i] *= 0.5;
-        }
+	  B = force_prefac*d->Qmesh[c_ind(j,k,l)+ii];
+	  force_x -= B*d->dQdx[ii][cf_cnt];
+	  force_y -= B*d->dQdy[ii][cf_cnt];
+	  force_z -= B*d->dQdz[ii][cf_cnt];
+	  cf_cnt++;
+	}
+      }
     }
+    f->f_k->fields[0][i] = force_x;
+    f->f_k->fields[1][i] = force_y;
+    f->f_k->fields[2][i] = force_z;
+    if (ii==1) {
+      f->f_k->fields[0][i] *= 0.5;
+      f->f_k->fields[1][i] *= 0.5;
+      f->f_k->fields[2][i] *= 0.5;
+    }
+  }
 }

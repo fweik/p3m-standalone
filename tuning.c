@@ -15,8 +15,6 @@ const int smooth_numbers[] = {4, 5, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 3
 const int smooth_numbers_n = 122;
 
 
-#define TUNE_DEBUG
-
 #ifdef TUNE_DEBUG
   #include <stdio.h>
   #define TUNE_TRACE(A) A
@@ -24,7 +22,7 @@ const int smooth_numbers_n = 122;
   #define TUNE_TRACE(A) 
 #endif
 
-int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision ) {
+FLOAT_TYPE Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision ) {
   //Parameter iteraters, best parameter set
   parameters_t it, p_best;
   // Array to store forces
@@ -36,16 +34,11 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 
   FLOAT_TYPE best_time=1e250, time=1e240;
 
-  FLOAT_TYPE min_error=1e110, error = -1.0;
-  FLOAT_TYPE alpha_step = 0.1;
-  FLOAT_TYPE alpha_min_error = 0.0;
+  FLOAT_TYPE error = -1.0;
   FLOAT_TYPE V = pow( s->length, 3);
-  int direction=1, over_min=0, success=0, cao_start;
-  FLOAT_TYPE last_error = 1e100;
-  int j;
+  int cao_start;
   int mesh_it_min=0, mesh_it_max=smooth_numbers_n, mesh_it;
   int success_once = 0;
-  int start_cao_run = 0;
   int cao_min, cao_max, cao_limit, cao_last;
 
   p_best.mesh = smooth_numbers[mesh_it_max];
@@ -62,23 +55,26 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
   it.rcut = p->rcut;
 
   TUNE_TRACE(printf("Starting tuning for '%s' with prec '%e'\n", m->method_name, precision);)
-  TUNE_TRACE(printf("cao_min %d cao_max %d\n", cao_min, cao_max);)
+    TUNE_TRACE(printf("cao_min %d cao_max %d\n", cao_min, cao_max);)
 
     for(mesh_it = mesh_it_min; mesh_it <= mesh_it_max; mesh_it++ ) {
       it.mesh = smooth_numbers[mesh_it];
-      // If we were already successful with a smaller mesh
-      // we can start at fastest cao so far.
-      if( best_time < 1e200 ) 
-	cao_start = (cao_last <= cao_min) ? cao_min : cao_last - 1;
-      else
+      if( success_once == 1 ) {
+	if(cao_last <= cao_min) {
+	  break;
+        } else {
+	  cao_start = cao_last - 1;
+	}
+      } else {
 	cao_last = cao_start = cao_max;
+      }
 
       cao_limit = cao_min;
 
       it.alpha = SQRT(-LOG((precision*SQRT(s->nparticles*it.rcut*V))/(2*SQRT(2)*s->q2)))/it.rcut;
 
-      success = 0;
       TUNE_TRACE(printf("cao_start %d cao_limit %d\n", cao_start, cao_limit););
+
       for(it.cao = cao_start; (it.cao >= cao_min) && ( it.cao >= cao_limit ); it.cao--) {
 	it.cao3 = it.cao * it.cao * it.cao;
 	it.ip = it.cao - 1;
@@ -89,13 +85,13 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
       
 	if( error <= precision ) {
 	  cao_last = it.cao;
-	  success = 1;
+	  success_once = 1;
 	} else {
 	  break;
 	}
 
 	if( (it.mesh >= p_best.mesh) && (it.cao >= p_best.cao))
-	  continue;
+	  break;
 
 	TUNE_TRACE(puts("Initializing..."););
 
@@ -119,10 +115,7 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 	  TUNE_TRACE(printf("New best. mesh %d cao %d rcut %e time %e prec %e alpha %e\n", p_best.mesh, p_best.cao, p_best.rcut, time, error, p_best.alpha );)         ;
 	}
       }
-      if( it.mesh > 3.0*p_best.mesh )
-	break;
-
-      if( cao_last == cao_min)
+      if( (success_once == 1) && (it.mesh > 3.0*p_best.mesh) )
 	break;
     }
   if(d != NULL)
@@ -139,7 +132,7 @@ int Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision 
 
   TUNE_TRACE(printf("Using mesh %d cao %d rcut %e alpha %e with precision %e\n", p->mesh, p->cao, p->rcut, p->alpha, p->precision);)
     if( best_time < 1e100 )
-      return 0;
+      return best_time;
     else
       return -1;
 }  

@@ -21,32 +21,28 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
   interpolation_t *ret;
   ret = Init_array( 1, sizeof(interpolation_t));
 
-  ret->interpol = Init_array( ip + 2, sizeof(FLOAT_TYPE *));
+  ret->interpol = Init_array( (2* MaxInterpol + 1), sizeof(FLOAT_TYPE *));
 
   ret->interpol_d = NULL;
 
-  buf = Init_array( (ip+1) * (2* MaxInterpol + 1), sizeof(FLOAT_TYPE) );
-
-  for( i = 0; i <= ip; i++) {
-    ret->interpol[i] = buf + i * (2* MaxInterpol + 1);
+  for( i = 0; i < (2* MaxInterpol + 1); i++) {
+    ret->interpol[i] = Init_array( ip+2 , sizeof(FLOAT_TYPE));
   }
-  ret->interpol[ip+1] = NULL;
 
   if(derivatives) {
-    ret->interpol_d = Init_array( ip + 2, sizeof(FLOAT_TYPE *));
-    for( i = 0; i <= ip; i++) {
-      ret->interpol_d[i] = Init_array( 2* MaxInterpol + 1, sizeof(FLOAT_TYPE) );
+    ret->interpol_d = Init_array(  (2* MaxInterpol + 1), sizeof(FLOAT_TYPE *));
+    for( i = 0; i < (2* MaxInterpol + 1); i++) {
+      ret->interpol_d[i] = Init_array( ip + 2, sizeof(FLOAT_TYPE) );
     }
-    ret->interpol_d[ip+1] = NULL;
   }
 
   for(j=0;j<=ip;j++)
     for (i=-MaxInterpol; i<=MaxInterpol; i++)
       {
 	x=i/(2.0*dInterpol);
-	ret->interpol[j][i+MaxInterpol] = i_fct.U(j, x, ip+1);
+	ret->interpol[i+MaxInterpol][j] = i_fct.U(j, x, ip+1);
 	if(derivatives)
-	  ret->interpol_d[j][i+MaxInterpol] = i_fct.U_d(j, x, ip+1);
+	  ret->interpol_d[i+MaxInterpol][j] = i_fct.U_d(j, x, ip+1);
       }
   ret->U_hat = i_fct.U_hat;
   return ret;

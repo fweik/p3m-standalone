@@ -151,8 +151,8 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   #endif
 
   /* chargeassignment */
-  assign_charge_and_derivatives( s, p, d, 0, 1 );
-  assign_charge_and_derivatives( s, p, d, 1, 1 );
+  assign_charge_and_derivatives( s, p, d, 0);
+  assign_charge_and_derivatives( s, p, d, 1);
 
   #ifdef __detailed_timings
   timer = MPI_Wtime() - timer;
@@ -202,8 +202,6 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     timer = MPI_Wtime() - timer;
     t_force_assignment[3] = timer;
   #endif
-
-    Substract_self_forces(s, p, d, f);
 }
 
 void P3M_tune_aliasing_sums_AD_interlaced(int nx, int ny, int nz, 

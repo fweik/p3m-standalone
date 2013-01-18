@@ -5,9 +5,9 @@
 
 // @TODO: Make this more elegant
 
-#define CAO_MIN 3
+#define CAO_MIN 2
 #define CAO_MAX 7
 
-int Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
+FLOAT_TYPE Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
 
 #endif

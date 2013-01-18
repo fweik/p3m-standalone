@@ -153,7 +153,7 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   #endif
   
   /* chargeassignment */
-  assign_charge_and_derivatives( s, p, d, 0, 1 );
+  assign_charge_and_derivatives( s, p, d, 0);
 
   #ifdef __detailed_timings
   timer = MPI_Wtime() - timer;
