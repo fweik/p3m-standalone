@@ -1,5 +1,7 @@
 #define SQR(A) ((A)*(A))
 
+#include <cufft.h>
+
 __device__ float caf(int i, float x, int cao_value) {
   switch (cao_value) {
   case 1 : return 1.0;
@@ -95,7 +97,7 @@ __device__ inline void atomicadd(float* address, float value){
 #define r_ind(A,B,C) ((A)*m_size*m_size + (B)*m_size + (C))
 
 __global__ void assign_charges(const float * const pos, const float * const q,
-float *mesh, const int m_size, const int cao, const float pos_shift, const
+cufftComplex *mesh, const int m_size, const int cao, const float pos_shift, const
 float hi) {
       /** id of the particle **/
       int id = blockIdx.x;

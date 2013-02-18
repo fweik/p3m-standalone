@@ -262,7 +262,7 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
     t = MPI_Wtime();
     Realteil( s, p, f );
     t  = MPI_Wtime() - t;
-    printf("Realpart %lf sec\n", FLOAT_CAST t);
+    /* printf("Realpart %lf sec\n", FLOAT_CAST t); */
     //Realpart_neighborlist( s, p, d, f );
 
     //  Dipol(s, p);
@@ -270,7 +270,7 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
     t = MPI_Wtime();
     m->Kspace_force ( s, p, d, f );
     t  = MPI_Wtime() - t;
-    printf("Kpart %lf sec\n", FLOAT_CAST t);
+    /* printf("Kpart %lf sec\n", FLOAT_CAST t); */
 
 
     //#pragma omp parallel for private( i )

@@ -358,26 +358,29 @@ int main ( int argc, char **argv ) {
 	if( calc_est == 0 )
 	  estimate = method.Error ( system, &parameters );
 	error_k_est = method.Error_k ( system, &parameters);
-	FLOAT_TYPE Q_uncorr, Q_corr, Q_nonfluc;
-	Q_uncorr = Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data);
-	Q_corr = Generic_error_estimate( A_ad_dip, B_ad_dip, C_ewald_dip, system, &parameters, data);
+ 	/* FLOAT_TYPE Q_uncorr, Q_corr, Q_nonfluc; */
+	/* Q_uncorr = Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data); */
+	/* Q_corr = Generic_error_estimate( A_ad_dip, B_ad_dip, C_ewald_dip, system, &parameters, data); */
 	//	Q_corr_real = Realpart_corr_error(parameters.rcut, parameters.alpha);
-	FLOAT_TYPE corrected_est, corrected_total, rs_error;
-	corrected_est = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr - Q_corr ) / system->nparticles );
-	gen_err = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr ) / system->nparticles );
-	gen_err_dip = ((Q_corr > 0) - (Q_corr < 0)) * system->q2 / (system->length * SQR(system->length)) * SQRT( ( FLOAT_ABS(Q_corr) ) / system->nparticles );
-	rs_error =Realspace_error( system, &parameters );
-	corrected_total = SQRT( SQR(rs_error) + SQR(corrected_est));
+	/* FLOAT_TYPE corrected_est, corrected_total, rs_error; */
+	/* corrected_est = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr - Q_corr ) / system->nparticles ); */
+	/* gen_err = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr ) / system->nparticles ); */
+	/* gen_err_dip = ((Q_corr > 0) - (Q_corr < 0)) * system->q2 / (system->length * SQR(system->length)) * SQRT( ( FLOAT_ABS(Q_corr) ) / system->nparticles ); */
+	FLOAT_TYPE rs_error =Realspace_error( system, &parameters );
+	/* corrected_total = SQRT( SQR(rs_error) + SQR(corrected_est)); */
 
-	printf("Q_uncorr %e, Q_corr %e, Q_nonfluc %e\n", Q_uncorr, Q_corr, Q_nonfluc);
+	/* printf("Q_uncorr %e, Q_corr %e, Q_nonfluc %e\n", Q_uncorr, Q_corr, Q_nonfluc); */
 
-	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e\t %e\t %e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
-		 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime, FLOAT_CAST gen_err, FLOAT_CAST gen_err_dip, FLOAT_CAST corrected_total );
+	/* printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e\t %e\t %e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate, */
+	/* 	 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime, FLOAT_CAST gen_err, FLOAT_CAST gen_err_dip, FLOAT_CAST corrected_total ); */
 
-	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\t %e\t %e\n", 
+	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
+		 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime );
+
+	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\n", 
 		  FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , 
 		  FLOAT_CAST estimate, FLOAT_CAST Realspace_error( system, &parameters ), 
-		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est, FLOAT_CAST gen_err, FLOAT_CAST corrected_total );
+		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est);
         } else {
             printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles , FLOAT_CAST error.f_r, FLOAT_CAST error.f_k );
             fprintf ( fout,"% lf\t% e\t na\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles );

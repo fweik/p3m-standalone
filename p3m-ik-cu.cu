@@ -1,9 +1,9 @@
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <fftw3.h>
 #include <string.h>
+#include <cufft.h>
+
 
 // General typ definitions
 #include "types.h"
@@ -15,18 +15,20 @@
 // For realpart error
 #include "realpart.h"
 
-#include "p3m-ik.h"
+#include "p3m-ik-cu.h"
 
 #ifdef __detailed_timings
 #include <mpi.h>
 #endif
 
 
+cufftHandle forward_plan, backward_plan;
+
 // declaration of the method
 
-const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.",
+const method_t method_p3m_ik = { METHOD_P3M_ik_cu, "P3M with ik differentiation, not intelaced, GPU.",
                                  METHOD_FLAG_P3M | METHOD_FLAG_ik,
-                                 &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, &Error_ik, &Error_ik_k,
+                                 &Init_ik_cu, &Influence_function_berechnen_ik_cu, &P3M_ik_cu, &Error_ik_cu, &Error_ik_cu_k,
                                };
 
 // Forward declaration of local functions
@@ -324,3 +326,4 @@ void p3m_tune_aliasing_sums_ik ( int nx, int ny, int nz,
         }
     }
 }
+

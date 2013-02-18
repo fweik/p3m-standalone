@@ -129,7 +129,6 @@ void Influence_function_ad_i( system_t *s, parameters_t *p, data_t *d )
 	    }
 	}
     }
-  Init_self_forces(s, p, d);
 }
 
 
@@ -259,14 +258,14 @@ FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
   int mesh = p->mesh;
 
   for (nx=-mesh/2; nx<mesh/2; nx++) {
-      for (ny=-mesh/2; ny<mesh/2; ny++) {
-	for (nz=-mesh/2; nz<mesh/2; nz++) {
-	  if((nx!=0) || (ny!=0) || (nz!=0)) {
-	    P3M_tune_aliasing_sums_AD_interlaced(nx,ny,nz,s,p,&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
-	    he_q += (alias1  -  SQR(alias2) / (0.5*(alias3*alias4 + alias5*alias6)));
-	  }
+    for (ny=-mesh/2; ny<mesh/2; ny++) {
+      for (nz=-mesh/2; nz<mesh/2; nz++) {
+	if((nx!=0) || (ny!=0) || (nz!=0)) {
+	  P3M_tune_aliasing_sums_AD_interlaced(nx,ny,nz,s,p,&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
+	  he_q += (alias1  -  SQR(alias2) / (0.5*(alias3*alias4 + alias5*alias6)));
 	}
       }
+    }
   }
   he_q = fabs(he_q);
   return 2.0*s->q2*sqrt(he_q/(FLOAT_TYPE)s->nparticles) / SQR(s->length);

@@ -9,7 +9,7 @@
 extern int __detailed_timings;
 #endif
 
-#define DOUBLE_PREC
+#define DOUBLE_PREC 
 //#define LONG_DOUBLE_PREC
 
 #ifdef SINGLE_PREC
@@ -75,6 +75,7 @@ extern int __detailed_timings;
 #define FFTW_DESTROY_PLAN fftwl_destroy_plan
 #define ROUND roundl
 #define FLOOR floorl
+#define LOG logl
 #endif
 
 // !3
@@ -92,7 +93,7 @@ enum {
     METHOD_P3M_ad = 2,
     METHOD_P3M_ad_i = 3,
     METHOD_EWALD = 4,
-    METHOD_GREENS_ik = 5
+    METHOD_P3M_ik_cu = 5
 };
 
 // Container type for arrays of 3d-vectors

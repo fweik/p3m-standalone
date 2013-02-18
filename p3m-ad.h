@@ -5,6 +5,7 @@
 
 #include "types.h"
 
+#define P3M_AD_SELF_FORCES
 
 void Influence_function_berechnen_ad( system_t *, parameters_t *, data_t * );
 void P3M_ad( system_t *, parameters_t *, data_t *, forces_t * );
