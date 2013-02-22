@@ -296,6 +296,27 @@ void Write_exact_forces(system_t *s, char *forces_file) {
     fclose(fin);
 }
 
+void Write_system_cuda( system_t *s, parameters_t *p, char *filename) {
+    FILE *fp;
+    int i;
+
+    assert(filename != NULL);
+
+    fp=fopen(filename, "w");
+
+    if ((fp == NULL) || feof(fp)) {
+        fprintf(stderr, "Could not open '%s' for writing.\n", filename);
+        exit(127);
+    }
+  
+    fprintf(fp, "%d %d %d %lf %lf\n", s->nparticles, p->cao, p->mesh, p->alpha, s->length);
+
+    for(int i = 0; i < s->nparticles; i++) {
+      fprintf( fp, "%lf %lf %lf %lf %lf %lf %lf\n", FLOAT_CAST (s->p->x[i]), FLOAT_CAST (s->p->y[i]), FLOAT_CAST (s->p->z[i]), FLOAT_CAST (s->q[i]), FLOAT_CAST s->reference->f_k->x[i], FLOAT_CAST s->reference->f_k->y[i], FLOAT_CAST s->reference->f_k->z[i]);
+    }
+
+}
+
 void Write_system(system_t *s, char *filename)
 {
     /* Opens file 'filename' for reanding and reads system parameters,

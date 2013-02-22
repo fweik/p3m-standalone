@@ -192,7 +192,7 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
   #endif
 
 
-    /* Concolution */
+    /* Convolution */
     for ( i=0; i<Mesh; i++ )
         for ( j=0; j<Mesh; j++ )
             for ( k=0; k<Mesh; k++ ) {
