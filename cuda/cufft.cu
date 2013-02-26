@@ -26,6 +26,16 @@ typedef struct {
   double box;
 } data_t;
 
+typedef struct {
+  cufftHandle plan;
+  cufftDoubleComplex *charge_mesh;
+  cufftDoubleComplex *force_mesh;
+  double *g_hat_d;
+  double *pos_d;
+  double *q_d;
+  double *forces_d;
+} p3m_cuda_state_t;
+
 data_t *read_reference( char *filename ) {
   ifstream f;
   int i=0;
@@ -55,7 +65,7 @@ data_t *read_reference( char *filename ) {
     f >> d->f_z[i];
     i++;
   }
-  if(i != d->n)
+  if(i-1 != d->n)
     printf("Warning, not enought particles in file. (%d of %d)\n", i, d->n);
 
   return d;
@@ -166,7 +176,7 @@ __device__ double atomicAdd(double* address, double val)
     return __longlong_as_double(old);
 }
 
-__device__ float caf(int i, float x, int cao_value) {
+__device__ double caf(int i, double x, int cao_value) {
   switch (cao_value) {
   case 1 : return 1.0;
   case 2 : {
@@ -261,7 +271,7 @@ double hi) {
       nmp_y = wrap_index(nmp_y + threadIdx.y, m_size);
       nmp_z = wrap_index(nmp_z + threadIdx.z, m_size);
 
-      /* printf("id %d, m { %d %d %d }: weight = %lf, nmp[] = (%d %d %d), pos[] = (%lf %lf %lf)\n", id, threadIdx.x, threadIdx.y, threadIdx.z, caf(threadIdx.x, m_pos[0], cao)*caf(threadIdx.y, m_pos[1], cao)*caf(threadIdx.z, m_pos[2], cao)*q[id], nmp_x, nmp_y, nmp_z, pos[0], pos[1], pos[2]); */
+      /* printf("id %d, m { %d %d %d }: weight = %lf, nmp[] = (%d %d %d), pos[] = (%lf %lf %lf)\n", id, threadIdx.x, threadIdx.y, threadIdx.z, caf(threadIdx.x, m_pos[0], cao)*caf(threadIdx.y, m_pos[1], cao)*caf(threadIdx.z, m_pos[2], cao)*q[id], nmp_x, nmp_y, nmp_z, m_pos[0], m_pos[1], m_pos[2]); */
 
       atomicAdd( &(mesh[m_size*m_size*nmp_x +  m_size*nmp_y + nmp_z].x), caf(threadIdx.x, m_pos[0], cao)*caf(threadIdx.y, m_pos[1], cao)*caf(threadIdx.z, m_pos[2], cao)*q[id]);
 }
@@ -294,7 +304,7 @@ cufftDoubleComplex *mesh, const int m_size, const int cao, const double pos_shif
 
       /* printf("id %d, m { %d %d %d }: weight = %lf, nmp[] = (%d %d %d), pos[] = (%lf %lf %lf)\n", id, threadIdx.x, threadIdx.y, threadIdx.z, caf(threadIdx.x, m_pos[0], cao)*caf(threadIdx.y, m_pos[1], cao)*caf(threadIdx.z, m_pos[2], cao)*q[id], nmp_x, nmp_y, nmp_z, pos[0], pos[1], pos[2]); */
 
-      atomicAdd( &(force[id]), prefactor*mesh[m_size*m_size*nmp_x +  m_size*nmp_y + nmp_z].x*caf(threadIdx.x, m_pos[0], cao)*caf(threadIdx.y, m_pos[1], cao)*caf(threadIdx.z, m_pos[2], cao)*q[id]);
+      atomicAdd( &(force[id]), -prefactor*mesh[m_size*m_size*nmp_x +  m_size*nmp_y + nmp_z].x*caf(threadIdx.x, m_pos[0], cao)*caf(threadIdx.y, m_pos[1], cao)*caf(threadIdx.z, m_pos[2], cao)*q[id]);
 }
 
 __global__ void influence_function( double *G_hat, double box, int cao, int mesh, double alpha ) {
@@ -395,82 +405,81 @@ __global__ void apply_diff_op( cufftDoubleComplex *mesh, const int mesh_size, cu
 /* cufftDoubleComplex *mesh, const int m_size, const int cao, const double pos_shift, const */
 /* double hi) { */
 
-int main(void) {
-  cufftHandle plan;
-  cufftDoubleComplex *data, *force_mesh;
+p3m_cuda_state_t p3m_cuda_init( data_t *d ) {
+  p3m_cuda_state_t state;
+  double *g_hat_h = (double *)malloc(d->mesh*d->mesh*d->mesh*sizeof(double));
 
-  const double pos_h[6] = {  4.0,  5.0,  5.0, 6.0, 5.0, 5.0 }, q_h[2] = { -1.0, 1.0 };
-  double *pos_d, *q_d;
-  const int cao = 7;
-  const double box = 10.0;
+  cudaMalloc((void**)&(state.g_hat_d), sizeof(double)*d->mesh*d->mesh*d->mesh);
+  if (cudaGetLastError() != cudaSuccess){
+    fprintf(stderr, "p3m_cuda: Failed to allocate\n");
+  }
 
-  double forces_h[3][2], *forces_d;
+  cudaMalloc((void**)&(state.charge_mesh), sizeof(cufftDoubleComplex)*d->mesh*d->mesh*d->mesh);
+  if (cudaGetLastError() != cudaSuccess){
+    fprintf(stderr, "p3m_cuda: Failed to allocate\n");
+  }
 
+  cudaMalloc((void**)&(state.force_mesh), sizeof(cufftDoubleComplex)*d->mesh*d->mesh*d->mesh);
+  if (cudaGetLastError() != cudaSuccess){
+    fprintf(stderr, "p3m_cuda: Failed to allocate\n");
+  }
+
+  cudaMalloc((void**)&(state.pos_d), 3*d->n*sizeof(double));
+  if (cudaGetLastError() != cudaSuccess){
+    fprintf(stderr, "p3m_cuda: Failed to allocate\n");
+  }
+  cudaMalloc((void**)&(state.q_d), d->n*sizeof(double));
+  if (cudaGetLastError() != cudaSuccess){
+    fprintf(stderr, "p3m_cuda: Failed to allocate\n");
+  }
+  cudaMalloc((void**)&(state.forces_d), d->n*sizeof(double));
+  if (cudaGetLastError() != cudaSuccess){
+    fprintf(stderr, "p3m_cuda: Failed to allocate\n");
+  }
+
+  Influence_function_berechnen_ik( d->cao, d->mesh, d->box, d->alpha, g_hat_h );  
+
+  cudaMemcpy( state.g_hat_d, g_hat_h, d->mesh*d->mesh*d->mesh*sizeof(double), cudaMemcpyHostToDevice);
+
+  if (cufftPlan3d(&(state.plan), d->mesh, d->mesh, d->mesh, CUFFT_Z2Z) != CUFFT_SUCCESS){
+    fprintf(stderr, "CUFFT error: Plan creation failed");
+  }
+
+  return state;
+}
+
+int main(int argc, char **argv) {
   data_t *d;
+  p3m_cuda_state_t state;
+  double *forces_h;
+  
+  d = read_reference(argv[1]);
 
-  double *g_hat_d, *g_hat_h;
-  cudaMalloc((void**)&g_hat_d, sizeof(double)*N*N*N);
-  if (cudaGetLastError() != cudaSuccess){
-    fprintf(stderr, "Cuda error: Failed to allocate\n");
-    return 0;	
-  }
+  forces_h = (double*)malloc(3*d->n*sizeof(double));
 
-  d = read_reference("test.dat");
+  state = p3m_cuda_init(d);
 
-  for(int i =0; i<d->n; ++i) {
-    printf("pos %lf %lf %lf q %lf\n", d->pos[3*i+0], d->pos[3*i+1], d->pos[3*i+2], d->q[i]);
-  }
-
-  g_hat_h = (double *)malloc(N*N*N*sizeof(double));
-
-  cufftDoubleComplex *data_h = (cufftDoubleComplex *) malloc( N * N * N * sizeof(cufftDoubleComplex));
-
-  cudaMalloc((void**)&data, sizeof(cufftDoubleComplex)*N*N*N);
-  if (cudaGetLastError() != cudaSuccess){
-    fprintf(stderr, "Cuda error: Failed to allocate\n");
-    return 0;	
-  }
-
-  cudaMalloc((void**)&force_mesh, sizeof(cufftDoubleComplex)*N*N*N);
-  if (cudaGetLastError() != cudaSuccess){
-    fprintf(stderr, "Cuda error: Failed to allocate\n");
-    return 0;	
-  }
-
-  cudaMalloc((void**)&pos_d, sizeof(pos_h));
-  cudaMalloc((void**)&q_d, sizeof(q_h));
-  cudaMalloc((void**)&forces_d, sizeof(forces_h));
-
-  cudaMemcpy( pos_d, pos_h, sizeof(pos_h), cudaMemcpyHostToDevice);
-  cudaMemcpy( q_d, q_h, sizeof(q_h), cudaMemcpyHostToDevice);
+  cudaMemcpy( state.pos_d, d->pos, 3*d->n*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy( state.q_d, d->q, d->n*sizeof(double), cudaMemcpyHostToDevice);
 
   // prepare influence function
-  dim3 blockDim(N, N, 1);
-  dim3 thdDim( N, 1, 1);
+  dim3 blockDim(d->mesh, d->mesh, 1);
+  dim3 thdDim( d->mesh, 1, 1);
 
-  Influence_function_berechnen_ik( cao, N, box, 0.8, g_hat_h );
-
-  cudaMemcpy( g_hat_d, g_hat_h, N*N*N*sizeof(double), cudaMemcpyHostToDevice);
-\
   if (cudaThreadSynchronize() != cudaSuccess){
     fprintf(stderr, "Cuda error: Failed to synchronize\n");
     return 0;
   }
 
-  cudaMemset( data, 0, N*N*N*sizeof(cufftDoubleComplex));
+  cudaMemset( state.charge_mesh, 0, d->mesh*d->mesh*d->mesh*sizeof(cufftDoubleComplex));
   
-  dim3 caoBlock(cao, cao, cao);
+  dim3 caoBlock(d->cao, d->cao, d->cao);
 
-  assign_charges<<<2, caoBlock>>>( pos_d, q_d, data, N, cao, (cao-1)/2.0, N/box);
+  assign_charges<<<d->n, caoBlock>>>( state.pos_d, state.q_d, state.charge_mesh, d->mesh, d->cao,(double)((d->cao-1)/2), d->mesh/d->box);
 
   cudaThreadSynchronize();
 
-  if (cufftPlan3d(&plan, N, N, N, CUFFT_Z2Z) != CUFFT_SUCCESS){
-    fprintf(stderr, "CUFFT error: Plan creation failed");
-    return 0;
-  }
-
-  if (cufftExecZ2Z(plan, data, data, CUFFT_FORWARD) != CUFFT_SUCCESS){
+  if (cufftExecZ2Z(state.plan, state.charge_mesh, state.charge_mesh, CUFFT_FORWARD) != CUFFT_SUCCESS){
     fprintf(stderr, "CUFFT error: ExecZ2Z Forward failed\n");
     return 0;
   }
@@ -480,7 +489,7 @@ int main(void) {
     return 0;
   }
 
-  apply_influence_function<<<blockDim, thdDim>>>( data, N, g_hat_d);
+  apply_influence_function<<<blockDim, thdDim>>>( state.charge_mesh, d->mesh, state.g_hat_d);
 
   for(int dim = 0; dim < 3; dim++) {
     if (cudaThreadSynchronize() != cudaSuccess){
@@ -488,7 +497,7 @@ int main(void) {
       return 0;
     }
 
-    apply_diff_op<<<blockDim, thdDim>>>( data, N, force_mesh, box, dim);
+    apply_diff_op<<<blockDim, thdDim>>>( state.charge_mesh, d->mesh, state.force_mesh, d->box, dim);
 
     if (cudaThreadSynchronize() != cudaSuccess){
       fprintf(stderr, "Cuda error: Failed to synchronize diff_op\n");
@@ -496,7 +505,7 @@ int main(void) {
     }
 
     /* Use the CUFFT plan to transform the signal in place. */
-    if (cufftExecZ2Z(plan, force_mesh, force_mesh, CUFFT_INVERSE) != CUFFT_SUCCESS){
+    if (cufftExecZ2Z(state.plan, state.force_mesh, state.force_mesh, CUFFT_INVERSE) != CUFFT_SUCCESS){
       fprintf(stderr, "CUFFT error: ExecZ2Z Backward failed\n");
       return 0;
     }
@@ -506,21 +515,23 @@ int main(void) {
       return 0;
     }
 
-    cudaMemset(forces_d, 0, sizeof(forces_h));
+    cudaMemset(state.forces_d, 0, d->n*sizeof(double));
 
-    assign_forces<<< 2, caoBlock>>>( pos_d, q_d, force_mesh, N, cao, (cao-1)/2.0, N/box, forces_d, 1.0 / ( 2.0 *  box * box * box));
+    assign_forces<<< d->n, caoBlock>>>( state.pos_d, state.q_d, state.force_mesh, d->mesh, d->cao, (double)((d->cao-1)/2), d->mesh/d->box, state.forces_d, 1.0 / ( 2.0 *  d->box * d->box * d->box));
 
-    cudaMemcpy( forces_h[dim], forces_d, sizeof(forces_h), cudaMemcpyDeviceToHost);
+    cudaMemcpy( (forces_h + d->n*dim), state.forces_d, d->n*sizeof(double), cudaMemcpyDeviceToHost);
   }
 
-  cudaMemcpy( data_h, data, sizeof(cufftDoubleComplex)*N*N*N, cudaMemcpyDeviceToHost);
+  double rms = 0.0;
 
-  cufftDestroy(plan);
-  cudaFree(data);
-
-  printf("f_x = [%lf %lf]\n", forces_h[0][0], forces_h[0][1]); 
-  printf("f_y = [%lf %lf]\n", forces_h[1][0], forces_h[1][1]); 
-  printf("f_z = [%lf %lf]\n", forces_h[2][0], forces_h[2][1]); 
-
+  for(int i = 0; i < d->n; i++) {
+    printf("part %d, pos %lf %lf %lf\n", i, d->pos[3*i], d->pos[3*i+1], d->pos[3*i+2]);
+    printf("%lf %lf %lf\n", d->f_x[i], d->f_y[i], d->f_z[i]);
+    printf("%lf %lf %lf\n", forces_h[i + (0*d->n)], forces_h[i + (1*d->n)], forces_h[i + (2*d->n)]);
+    rms += SQR(d->f_x[i] -forces_h[i + (0*d->n)]);
+    rms += SQR(d->f_y[i] -forces_h[i + (1*d->n)]);
+    rms += SQR(d->f_z[i] -forces_h[i + (2*d->n)]);
+  }
+  printf("rms_k %e\n", sqrt(rms)/d->n);
 }
 

@@ -10,6 +10,9 @@ all: p3mstandalone
 profile_charge_assignment: $(OBJECTS) profiling/prof_charge_assignment.c
 	$(CC) $(CFLAGS) -o prof_ca profiling/prof_charge_assignment.c $(OBJECTS) $(LFLAGS)
 
+tuning4cuda: $(OBJECTS) Makefile tuning4cuda.c
+	$(CC) $(CFLAGS) -o tuning4cuda tuning4cuda.c $(OBJECTS) $(LFLAGS)
+
 test_tuning: $(OBJECTS) Makefile tuning_test.c
 	$(CC) $(CFLAGS) -o test_tuning tuning_test.c $(OBJECTS) $(LFLAGS)
 

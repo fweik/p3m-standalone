@@ -87,7 +87,7 @@ system_t *generate_madelung(int size, FLOAT_TYPE box) {
 
 system_t *generate_inner_box(int size, FLOAT_TYPE box) {
   FLOAT_TYPE lower_left = 0.25 * box;
-
+  puts("Generating inner box system.");
   int i,j;
   system_t *s;
   gsl_rng *rng = gsl_rng_alloc(gsl_rng_default);
