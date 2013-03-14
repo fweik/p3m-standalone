@@ -1,9 +1,13 @@
 CC=mpicc
-CFLAGS=-std=c99 -O3 -g -Wall
-#CFLAGS+=-Wall -O0 -g -pg
-LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 -lfftw3l -lm
+CFLAGS=-std=c99 -O3 -Wall -DNDEBUG -I/home/fweik/Base/include/valgrind
+CFLAGS+=-g
+LFLAGS=-L/home/fweik/Base/lib -L/usr/local/cuda/lib64 -lgsl -lgslcblas -lfftw3 -lfftw3l -lm -lcudart -lcufft 
 
-OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o statistics.o cubature.o tuning.o
+CUDA_COMPILER=nvcc
+CUDA_COMPILER_FLAGS=-arch=sm_30 -g -G
+CUDA_COMPILER_LFLAGS=-lcufft
+
+OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o statistics.o cubature.o tuning.o p3m_ik_cuda_i.o p3m-ik-cuda.o
 
 all: p3mstandalone
 
@@ -41,6 +45,9 @@ cubature.o:
 
 visit_writer.o:
 	gcc -I./tools -c tools/visit_writer.c
+
+p3m_ik_cuda_i.o:
+	$(CUDA_COMPILER) $(CUDA_COMPILER_FLAGS) -c -o p3m_ik_cuda_i.o cuda/p3m-ik.cu $(CUDA_COMPILER_LFLAGS)
 
 clean:
 	rm -rf *.o p3m

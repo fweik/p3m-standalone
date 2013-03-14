@@ -181,7 +181,8 @@ void Free_data(data_t *d) {
         FFTW_FREE(d->Qmesh);
 
     FREE_TRACE(puts("Free Fmesh.");)
-    Free_vector_array(d->Fmesh);
+    if(d->Fmesh != NULL)
+      Free_vector_array(d->Fmesh);
 
     FREE_TRACE(puts("Free dshift.");)
     if (d->nshift != NULL)

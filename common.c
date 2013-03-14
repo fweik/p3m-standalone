@@ -13,6 +13,10 @@
 #include "ewald.h"
 #include "p3m-common.h"
 
+#ifdef __VALGRIND_PROFILE_KSPACE_ONLY
+ #include <callgrind.h>
+#endif
+
 #ifdef __detailed_timings
 double t_charge_assignment[4];
 double t_force_assignment[4];
@@ -267,9 +271,18 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
 
     //  Dipol(s, p);
 
+    #ifdef __VALGRIND_PROFILE_KSPACE_ONLY
+    CALLGRIND_START_INSTRUMENTATION; 
+    #endif
+
     t = MPI_Wtime();
     m->Kspace_force ( s, p, d, f );
     t  = MPI_Wtime() - t;
+
+    #ifdef __VALGRIND_PROFILE_KSPACE_ONLY
+    CALLGRIND_STOP_INSTRUMENTATION;
+    #endif
+
     /* printf("Kpart %lf sec\n", FLOAT_CAST t); */
 
 

@@ -9,6 +9,9 @@
 extern int __detailed_timings;
 #endif
 
+// Limit valgrind profiling to interesting part
+#define __VALGRIND_PROFILE_KSPACE_ONLY
+
 #define DOUBLE_PREC 
 //#define LONG_DOUBLE_PREC
 
@@ -93,7 +96,7 @@ enum {
     METHOD_P3M_ad = 2,
     METHOD_P3M_ad_i = 3,
     METHOD_EWALD = 4,
-    METHOD_P3M_ik_cu = 5
+    METHOD_P3M_ik_cuda = 5
 };
 
 // Container type for arrays of 3d-vectors
@@ -233,6 +236,7 @@ typedef struct {
     neighbor_list_t *neighbor_list;
     // Self forces corrections
     FLOAT_TYPE *self_force_corrections;
+    void *method_data;
 } data_t;
 
 // Flags for method_t
