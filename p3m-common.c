@@ -264,14 +264,41 @@ FLOAT_TYPE C_ewald_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
 
 	/* printf("sin_term: %e\n", FLOAT_CAST SIN(kmd) / kmd); */
 
-	ret += EXP(- 2.0 * km2 / ( 4.0 * SQR(p->alpha)) ) / km2 * 0.67 * SIN(kmd)/kmd;
+	ret += EXP(- 2.0 * km2 / ( 4.0 * SQR(p->alpha)) ) / km2 * SIN(kmd)/kmd;
       }
     }
   }
   return 16.0 * SQR(PI) * ret;
 }
 
+FLOAT_TYPE C_ewald_water(int nx, int ny, int nz, system_t *s, parameters_t *p) {
+  int mx, my, mz;
+  int nmx, nmy, nmz;
+  FLOAT_TYPE km2;
+  FLOAT_TYPE ret = 0.0;
+  FLOAT_TYPE kmdHO, kmdHH, sin_term;
 
+  for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
+    nmx = nx + p->mesh*mx;
+    for (my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
+      nmy = ny + p->mesh*my;
+      for (mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
+	nmz = nz + p->mesh*mz;
+
+	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );
+
+	/* printf("sin_term: %e\n", FLOAT_CAST SIN(kmd) / kmd); */
+
+	kmdHO = 1.0 * SQRT(km2);
+	kmdHH = 1.63 * SQRT(km2);
+	sin_term = -0.67*SIN(kmdHO)/kmdHO + 0.34 * SIN(kmdHH)/kmdHH;
+
+	ret += EXP(- 2.0 * km2 / ( 4.0 * SQR(p->alpha)) ) / km2 * sin_term;
+      }
+    }
+  }
+  return 16.0 * SQR(PI) * ret;
+}
 
 FLOAT_TYPE A_const(int nx, int ny, int nz, system_t *s, parameters_t *p) {
   int mx, my, mz;

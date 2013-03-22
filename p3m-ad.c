@@ -309,7 +309,7 @@ FLOAT_TYPE A_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
 	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
 	kmd = SQRT(km2)*d;
 
-	sin_term = 0.67 * SIN(kmd) / kmd; 
+	sin_term = 1.0 * SIN(kmd) / kmd; 
 	/* sin_term = 1.0; */
 
 	U2m += U2 * sin_term;
@@ -321,6 +321,83 @@ FLOAT_TYPE A_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
   return U2m*U2km;
  
 }
+
+FLOAT_TYPE A_ad_water(int nx, int ny, int nz, system_t *s, parameters_t *p) {
+  int mx, my, mz;
+  int nmx, nmy, nmz;
+  FLOAT_TYPE fnmx,fnmy,fnmz;
+  FLOAT_TYPE km2;
+  FLOAT_TYPE U2, U2m = 0.0, U2km = 0.0;
+  FLOAT_TYPE mesh_i = 1.0/p->mesh;
+  FLOAT_TYPE d = 1.0;
+  FLOAT_TYPE sin_term = 0.0, kmdHO, kmdHH;
+
+  for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
+    nmx = nx + p->mesh*mx;
+    fnmx = nmx * mesh_i;
+    for (my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
+      nmy = ny + p->mesh*my;
+      fnmy = nmy * mesh_i;
+      for (mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
+	nmz = nz + p->mesh*mz;
+	fnmz = nmz * mesh_i;
+
+	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
+	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
+	/* sin_term = 1.0; */
+
+	kmdHO = 1.0 * SQRT(km2);
+	kmdHH = 1.63 * SQRT(km2);
+	sin_term = -0.67*SIN(kmdHO)/kmdHO + 0.34 * SIN(kmdHH)/kmdHH;
+
+	U2m += U2 * sin_term;
+	U2km += U2 * km2;
+	
+      }
+    }
+  }
+  return U2m*U2km;
+ 
+}
+
+FLOAT_TYPE B_ad_water(int nx, int ny, int nz, system_t *s, parameters_t *p) {
+  int mx, my, mz;
+  int nmx, nmy, nmz;
+  FLOAT_TYPE fnmx,fnmy,fnmz;
+  FLOAT_TYPE km2;
+  FLOAT_TYPE ret = 0.0;
+  FLOAT_TYPE U2;
+  FLOAT_TYPE mesh_i = 1.0/p->mesh;
+  FLOAT_TYPE d = 1.0;
+  FLOAT_TYPE sin_term = 0.0, kmdHH, kmdHO;
+  FLOAT_TYPE P3M_BRILLOUIN_LOCAL = P3M_BRILLOUIN;
+
+  for (mx = -P3M_BRILLOUIN_LOCAL; mx <= P3M_BRILLOUIN_LOCAL; mx++) {
+    nmx = nx + p->mesh*mx;
+    fnmx = nmx * mesh_i;
+    for (my = -P3M_BRILLOUIN_LOCAL; my <= P3M_BRILLOUIN_LOCAL; my++) {
+      nmy = ny + p->mesh*my;
+      fnmy = nmy * mesh_i;
+      for (mz = -P3M_BRILLOUIN_LOCAL; mz <= P3M_BRILLOUIN_LOCAL; mz++) {
+	nmz = nz + p->mesh*mz;
+	fnmz = nmz * mesh_i;
+
+	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
+
+	kmdHO = 1.0 * SQRT(km2);
+	kmdHH = 1.63 * SQRT(km2);
+	sin_term = -0.67*SIN(kmdHO)/kmdHO + 0.34 * SIN(kmdHH)/kmdHH;
+
+	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
+
+	ret += U2 * 4.0 * PI * EXP(- km2 / ( 4.0 * SQR(p->alpha))) * sin_term;
+      }
+    }
+  }
+  return ret;
+ 
+}
+
 
 FLOAT_TYPE B_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
   int mx, my, mz;
@@ -349,7 +426,7 @@ FLOAT_TYPE B_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
 
 	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
 
-        sin_term =  0.67 * SIN(kmd) / kmd;
+        sin_term =  1.0 * SIN(kmd) / kmd;
 
 	ret += U2 * 4.0 * PI * EXP(- km2 / ( 4.0 * SQR(p->alpha))) * sin_term;
       }

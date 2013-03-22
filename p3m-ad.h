@@ -20,6 +20,9 @@ FLOAT_TYPE B_ad(int nx, int ny, int nz, system_t *s, parameters_t *p);
 FLOAT_TYPE A_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p);
 FLOAT_TYPE B_ad_dip(int nx, int ny, int nz, system_t *s, parameters_t *p);
 
+FLOAT_TYPE A_ad_water(int nx, int ny, int nz, system_t *s, parameters_t *p);
+FLOAT_TYPE B_ad_water(int nx, int ny, int nz, system_t *s, parameters_t *p);
+
 extern const method_t method_p3m_ad;
 
 #endif

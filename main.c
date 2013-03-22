@@ -134,6 +134,7 @@ int main ( int argc, char **argv ) {
     add_param( "cdf", ARG_TYPE_STRING, ARG_OPTIONAL, &cdf_file, &params );
     add_param( "no_calculation", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "vtf_file", ARG_TYPE_STRING, ARG_OPTIONAL, &vtf_file, &params );
+    add_param( "rdf_species", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     #ifdef _OPENMP
     add_param( "threads", ARG_TYPE_INT, ARG_OPTIONAL, &nthreads, &params );
     #endif
@@ -198,37 +199,42 @@ int main ( int argc, char **argv ) {
 	rdf_max = system->length/2;
       printf("Using %d bins, %lf <= r <= %lf\n", rdf_bins, rdf_min, rdf_max);
       int bins = rdf_bins;
-      FLOAT_TYPE *rdf = radial_charge_distribution(rdf_min, rdf_max, rdf_bins, system);
+      FLOAT_TYPE *rdf = radial_distribution(rdf_min, rdf_max, rdf_bins, system);
       FLOAT_TYPE *c;
-      FLOAT_TYPE *rdf_sym = Init_array( 2*bins-1, 2*sizeof(FLOAT_TYPE));
-      c = low_pass_forward( bins, rdf, 0.3);
-      c = low_pass_backward(bins, c, 0.3);
-      rdf = c;
-      for(int i = 0; i < 2*bins; i++) {
-	rdf_sym[i] = c[i];
-      }
-      for(int i = bins; i < 2*bins-1; i++) {
-	rdf_sym[2*i] =  c[2*bins - 2] + (i-bins)*(c[2] - c[0]);
-	rdf_sym[2*i+1] = c[4*bins - 2*i - 1];
-      }
+      /* FLOAT_TYPE *rdf_sym = Init_array( 2*bins-1, 2*sizeof(FLOAT_TYPE)); */
+      /* c = low_pass_forward( bins, rdf, 0.3); */
+      /* c = low_pass_backward(bins, c, 0.3); */
+      /* rdf = c; */
+      /* for(int i = 0; i < 2*bins; i++) { */
+      /* 	rdf_sym[i] = c[i]; */
+      /* } */
+      /* for(int i = bins; i < 2*bins-1; i++) { */
+      /* 	rdf_sym[2*i] =  c[2*bins - 2] + (i-bins)*(c[2] - c[0]); */
+      /* 	rdf_sym[2*i+1] = c[4*bins - 2*i - 1]; */
+      /* } */
 
-      c = rdf_fft( 2*bins-1, rdf_sym);
-      FILE *rdf_out = fopen(rdf_file, "w"), *c_out = fopen("c_fft.dat", "w");
 
-      rshif_array(2*(2*bins-1), c, 2*bins);
+      FILE *rdf_out = fopen(rdf_file, "w");
+      /* FILE *c_out = fopen("c_fft.dat", "w"); */
+
+      /* rshif_array(2*(2*bins-1), c, 2*bins); */
 
       for(int i = 0; i<bins; i++)
 	fprintf(rdf_out, "%e %e\n", FLOAT_CAST rdf[2*i], FLOAT_CAST rdf[2*i+1]);
 
-      for(int i = 0; i<2*bins-1; i++)
-	/* fprintf(c_out, "%e %e\n", FLOAT_CAST rdf_sym[2*i], FLOAT_CAST rdf_sym[2*i+1] );  */
-	fprintf(c_out, "%d %e %e\n", i, FLOAT_CAST c[2*i], FLOAT_CAST c[2*i+1] );
+      /* for(int i = 0; i<2*bins-1; i++) */
+      /* 	/\* fprintf(c_out, "%e %e\n", FLOAT_CAST rdf_sym[2*i], FLOAT_CAST rdf_sym[2*i+1] );  *\/ */
+      /* 	fprintf(c_out, "%d %e %e\n", i, FLOAT_CAST c[2*i], FLOAT_CAST c[2*i+1] ); */
 
-      fclose(c_out);
+      /* fclose(c_out); */
       fclose(rdf_out);
       fftw_free(rdf);
-      fftw_free(c);
+      /* fftw_free(c); */
       puts("Done.");
+    }
+
+    if( param_isset("rdf_species", params) == 1) {
+      radial_distribution_species(0.0, 3.0, 200, system);
     }
 
     forces = Init_forces(system->nparticles);
@@ -284,10 +290,6 @@ int main ( int argc, char **argv ) {
         method = method_p3m_ad_i;
     }
 #endif
-#ifdef GREENS_IK_H
-    else if ( methodnr == method_greens_ik.method_id )
-        method = method_greens_ik;
-#endif
     else {
         fprintf ( stderr, "Method %d not know.", methodnr );
         exit ( 126 );
@@ -319,7 +321,7 @@ int main ( int argc, char **argv ) {
     /* Init_neighborlist ( system, &parameters, data ); */
     /* printf ( ".\n" ); */
 
-    FLOAT_TYPE gen_err, gen_err_dip;
+    FLOAT_TYPE gen_err_dip, gen_err;
 
     printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error-Est", "K-Error-Est Generic-K-Space-err" );
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
@@ -358,29 +360,29 @@ int main ( int argc, char **argv ) {
 	if( calc_est == 0 )
 	  estimate = method.Error ( system, &parameters );
 	error_k_est = method.Error_k ( system, &parameters);
- 	/* FLOAT_TYPE Q_uncorr, Q_corr, Q_nonfluc; */
-	/* Q_uncorr = Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data); */
-	/* Q_corr = Generic_error_estimate( A_ad_dip, B_ad_dip, C_ewald_dip, system, &parameters, data); */
-	//	Q_corr_real = Realpart_corr_error(parameters.rcut, parameters.alpha);
-	/* FLOAT_TYPE corrected_est, corrected_total, rs_error; */
-	/* corrected_est = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr - Q_corr ) / system->nparticles ); */
-	/* gen_err = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr ) / system->nparticles ); */
-	/* gen_err_dip = ((Q_corr > 0) - (Q_corr < 0)) * system->q2 / (system->length * SQR(system->length)) * SQRT( ( FLOAT_ABS(Q_corr) ) / system->nparticles ); */
-	FLOAT_TYPE rs_error =Realspace_error( system, &parameters );
-	/* corrected_total = SQRT( SQR(rs_error) + SQR(corrected_est)); */
+ 	FLOAT_TYPE Q_uncorr, Q_corr, Q_nonfluc;
+	Q_uncorr = Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data);
+	Q_corr = Generic_error_estimate( A_ad_water, B_ad_water, C_ewald_water, system, &parameters, data);
+
+	FLOAT_TYPE corrected_est, corrected_total, rs_error;
+	corrected_est = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr - Q_corr ) / system->nparticles );
+	gen_err = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr ) / system->nparticles );
+	gen_err_dip = ((Q_corr > 0) - (Q_corr < 0)) * system->q2 / (system->length * SQR(system->length)) * SQRT( ( FLOAT_ABS(Q_corr) ) / system->nparticles );
+	rs_error =Realspace_error( system, &parameters );
+	corrected_total = SQRT( SQR(rs_error) + SQR(corrected_est));
 
 	/* printf("Q_uncorr %e, Q_corr %e, Q_nonfluc %e\n", Q_uncorr, Q_corr, Q_nonfluc); */
 
-	/* printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e\t %e\t %e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate, */
-	/* 	 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime, FLOAT_CAST gen_err, FLOAT_CAST gen_err_dip, FLOAT_CAST corrected_total ); */
+	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e\t %e\t %e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
+		 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime, FLOAT_CAST gen_err, FLOAT_CAST gen_err_dip, FLOAT_CAST corrected_total );
 
-	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
-		 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime );
+	/* printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate, */
+	/* 	 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime ); */
 
-	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\n", 
+	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\t% e\n", 
 		  FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , 
 		  FLOAT_CAST estimate, FLOAT_CAST Realspace_error( system, &parameters ), 
-		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est);
+		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est, FLOAT_CAST corrected_total);
         } else {
             printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles , FLOAT_CAST error.f_r, FLOAT_CAST error.f_k );
             fprintf ( fout,"% lf\t% e\t na\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles );

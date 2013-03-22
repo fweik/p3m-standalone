@@ -6,6 +6,7 @@
 
 FLOAT_TYPE *radial_charge_distribution(FLOAT_TYPE r_min, FLOAT_TYPE r_max, int bins, system_t *s) {
   FLOAT_TYPE *rdf = Init_array( bins, 2*sizeof(FLOAT_TYPE));
+
   FLOAT_TYPE dr = (r_max - r_min) / bins, dx, dy, dz, r2, r, r_min2, r_max2;
   FLOAT_TYPE lengthi = 1.0/s->length;
   int n=0, bin;
@@ -107,6 +108,81 @@ FLOAT_TYPE *radial_distribution(FLOAT_TYPE r_min, FLOAT_TYPE r_max, int bins, sy
   }
   return rdf;
 }
+
+void radial_distribution_species(FLOAT_TYPE r_min, FLOAT_TYPE r_max, int bins, system_t *s) {
+  FLOAT_TYPE *rdf = Init_array( 4*bins, sizeof(FLOAT_TYPE));
+  char filename[8];
+  FLOAT_TYPE dr = (r_max - r_min) / bins, dx, dy, dz, r2, r, r_min2, r_max2;
+  FLOAT_TYPE lengthi = 1.0/s->length;
+  int n[4], bin;
+  FLOAT_TYPE r_in, r_out;
+  FLOAT_TYPE bin_volume;
+
+  memset(rdf, 0, 4*bins*sizeof(FLOAT_TYPE));
+  memset(  n, 0, 4*sizeof(int));
+
+  r_min2 = SQR(r_min);
+  r_max2 = SQR(r_max);
+
+  for(int i=0;i<s->nparticles;i++) {
+    for(int j=0;j<s->nparticles;j++) {
+      if(i==j)
+	continue;
+
+      dx = s->p->x[i] - s->p->x[j];
+      dx -= ROUND(dx*lengthi)*s->length;
+      dy = s->p->y[i] - s->p->y[j];
+      dy -= ROUND(dy*lengthi)*s->length;
+      dz = s->p->z[i] - s->p->z[j];
+      dz -= ROUND(dz*lengthi)*s->length;
+
+      r2 = SQR(dx) + SQR(dy) + SQR(dz);
+
+      if((r2 < r_min2) || (r2 > r_max2))
+	continue;
+
+      r = SQRT(r2);
+
+      bin = (int)((r - r_min)/dr);
+
+      if( (s->q[i] > 0.0) && (s->q[j] > 0.0)) {
+	/* printf("(%d, %d): ++ (%e, %e), at %lf\n", i, j, s->q[i], s->q[j], r); */
+	rdf[bin]++;
+	n[0]++;
+      }
+      if( (s->q[i] > 0.0) && (s->q[j] < 0.0)) {
+	/* printf("(%d, %d): +- (%e, %e), at %lf\n", i, j, s->q[i], s->q[j], r); */
+	rdf[bins+bin]++;
+	n[1]++;
+      }
+      if( (s->q[i] < 0.0) && (s->q[j] < 0.0)) {
+	rdf[2*bins+bin]++;
+	n[2]++;
+      }
+      if( (s->q[i] < 0.0) && (s->q[j] > 0.0)) {
+	rdf[3*bins+bin]++;
+	n[3]++;
+      }
+    }
+  }
+  FILE *f = fopen("rdf_+-.dat", "w");
+  for(int i=0;i<bins;i++) {
+    r_in = i*dr + r_min;
+    r_out = r_in + dr;
+
+    bin_volume = 4.0/3.0 * PI * (r_out *r_out*r_out - r_in * r_in * r_in );
+    fprintf( f, "%e ", 0.5 * (r_in + r_out));
+    fprintf( f, "%e ", rdf[i] / n[0] * bin_volume / (s->length *SQR(s->length)));
+    fprintf( f, "%e ", rdf[bins+i] / n[1] * bin_volume / (s->length *SQR(s->length)));
+    fprintf( f, "%e ", rdf[2*bins+i] / n[2] * bin_volume / (s->length *SQR(s->length)));
+    fprintf( f, "%e ", rdf[3*bins+i] / n[3] * bin_volume / (s->length *SQR(s->length)));
+    fprintf( f, "\n");
+  }
+  fclose(f);
+  fftw_free(rdf);
+}
+
+
 
 FLOAT_TYPE *low_pass_forward( int N, FLOAT_TYPE *data, FLOAT_TYPE alpha) {
   FLOAT_TYPE *ret = Init_array( N, 2*sizeof(FLOAT_TYPE));

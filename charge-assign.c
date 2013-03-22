@@ -7,16 +7,25 @@
 // #define CA_DEBUG
 
 inline static int wrap_mesh_index(int ind, int mesh) {
-  int ret;
-  if(ind < 0)
-    ret = ind + mesh;
+  if((ind > 0) && (ind < mesh))
+    return ind;
+  else if(ind < 0)
+    ind += mesh;
   else if(ind >= mesh)
-    ret = ind - mesh;
-  else 
-    ret = ind;
-  if((ret < 0) || (ret >= mesh))
-    return wrap_mesh_index(ret, mesh);
-  return ret;
+    ind -= mesh;
+
+  // mesh > cao/2 !
+  /* if((ret < 0) || (ret >= mesh)) */
+  /*   return wrap_mesh_index(ret, mesh); */
+  return ind;
+}
+
+inline static int int_floor(FLOAT_TYPE x)
+{
+  int i = (int)x; /* truncate */
+  int n = ( x != (FLOAT_TYPE)i );
+  int g = ( x < 0 );
+  return i - ( n & g ); /* i-1 if x<0 and x!=i */
 }
 
 void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
@@ -48,18 +57,18 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
 
     // Make sure parameter-set and data-set are compatible
 
-    double pos_shift;
+    FLOAT_TYPE pos_shift;
 
     /* Shift for odd charge assignment order */
-    pos_shift = (double)((p->cao-1)/2);
+    pos_shift = (FLOAT_TYPE)((p->cao-1)/2);
 
     for (id=0;id<s->nparticles;id++) {
         /* particle position in mesh coordinates */
         for (dim=0;dim<3;dim++) {
             pos    = s->p->fields[dim][id]*Hi - pos_shift + 0.5*ii;
-            nmp = (int) FLOOR(pos + 0.5);
+            nmp = int_floor(pos + 0.5);
 	    base[dim]  = wrap_mesh_index( nmp, d->mesh);
-            arg[dim] = (int) FLOOR((pos - nmp + 0.5)*MI2);
+            arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
             d->ca_ind[ii][3*id + dim] = base[dim];
         }
 	q = s->q[id];
@@ -161,9 +170,9 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
 	qLeni = q * Leni;
         for (dim=0;dim<3;dim++) {
 	  pos    = s->p->fields[dim][id]*Hi - pos_shift + 0.5*ii;
-	  nmp = (int) FLOOR(pos + 0.5);
+	  nmp = int_floor(pos + 0.5);
 	  base[dim]  = wrap_mesh_index( nmp, d->mesh);
-	  arg[dim] = (int) FLOOR((pos - nmp + 0.5)*MI2);
+	  arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
 	  d->ca_ind[ii][3*id + dim] = base[dim];
         }
 
