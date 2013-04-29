@@ -122,9 +122,11 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
   int ind = 0;
   int Mesh = p->mesh;
   FLOAT_TYPE Leni = 1.0/s->length;
-
   for ( NX=0; NX<Mesh; NX++ ) {
+    Dnx = d->Dn[NX];
     for ( NY=0; NY<Mesh; NY++ ) {
+      Dny = d->Dn[NY];
+#pragma omp parallel for private(NZ, ind, Zaehler, Nenner, Dnz, zwi)
       for ( NZ=0; NZ<Mesh; NZ++ ) {
 	ind = r_ind ( NX, NY, NZ );
 	  
@@ -135,8 +137,6 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
 	else {
 	  Aliasing_sums_ik ( s, p, d, NX, NY, NZ, Zaehler, &Nenner );
 		  
-	  Dnx = d->Dn[NX];
-	  Dny = d->Dn[NY];
 	  Dnz = d->Dn[NZ];
 	    
 	  zwi  = Dnx*Zaehler[0]*Leni + Dny*Zaehler[1]*Leni + Dnz*Zaehler[2]*Leni;
@@ -146,6 +146,7 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
       }
     }
   }
+#pragma omp barrier
 }
 
 

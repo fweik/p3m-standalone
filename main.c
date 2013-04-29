@@ -109,13 +109,13 @@ int main ( int argc, char **argv ) {
     add_param( "alphastep", ARG_TYPE_FLOAT, ARG_OPTIONAL, &alphastep, &params );
     add_param( "alpha", ARG_TYPE_FLOAT, ARG_OPTIONAL, &alpha, &params );
     add_param( "positions", ARG_TYPE_STRING, ARG_OPTIONAL, &pos_file, &params );
+    add_param( "error_k", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "forces", ARG_TYPE_STRING, ARG_OPTIONAL, &force_file, &params );
     add_param( "mesh", ARG_TYPE_INT, ARG_REQUIRED, &(parameters.mesh), &params );
     add_param( "cao", ARG_TYPE_INT, ARG_REQUIRED, &(parameters.cao), &params );
     add_param( "method", ARG_TYPE_INT, ARG_REQUIRED, &methodnr, &params );
     add_param( "mc", ARG_TYPE_INT, ARG_OPTIONAL, &P3M_BRILLOUIN, &params );
     add_param( "mc_est", ARG_TYPE_INT, ARG_OPTIONAL, &P3M_BRILLOUIN_TUNING, &params );
-    add_param( "error_k", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "no_estimate", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "outfile", ARG_TYPE_STRING, ARG_OPTIONAL, &out_file, &params );
     add_param( "particles", ARG_TYPE_INT, ARG_OPTIONAL, &npart, &params );
@@ -347,6 +347,9 @@ int main ( int argc, char **argv ) {
 	error_k =0.0;
 	for (i=0; i<system->nparticles; i++) {
 	  for (j=0;j<3;j++) {            
+	    /* printf("f_k_p3m [%lf, %lf, %lf] f_k_ewald [%lf, %lf %lf]\n", */
+	    /* 	    forces->f_k->fields[0][i],forces->f_k->fields[1][i],forces->f_k->fields[2][i], */
+	    /* 	    forces_ewald->f_k->fields[0][i],forces_ewald->f_k->fields[1][i],forces_ewald->f_k->fields[2][i]); */
 	    error_k   += SQR( forces->f_k->fields[j][i] - forces_ewald->f_k->fields[j][i] );
 	  }
 	}
@@ -361,8 +364,8 @@ int main ( int argc, char **argv ) {
 	  estimate = method.Error ( system, &parameters );
 	error_k_est = method.Error_k ( system, &parameters);
  	FLOAT_TYPE Q_uncorr, Q_corr, Q_nonfluc;
-	Q_uncorr = Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data);
-	Q_corr = Generic_error_estimate( A_ad_water, B_ad_water, C_ewald_water, system, &parameters, data);
+	/* Q_uncorr = Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data); */
+	/* Q_corr = Generic_error_estimate( A_ad_water, B_ad_water, C_ewald_water, system, &parameters, data); */
 
 	FLOAT_TYPE corrected_est, corrected_total, rs_error;
 	corrected_est = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr - Q_corr ) / system->nparticles );

@@ -112,6 +112,7 @@ void Influence_function_ad_i( system_t *s, parameters_t *p, data_t *d )
     {
       for (NY=0; NY<Mesh; NY++)
 	{
+#pragma omp parallel for private(NZ, ind, Zaehler, Nenner1, Nenner2, Nenner3, Nenner4)
 	  for (NZ=0; NZ<Mesh; NZ++)
 	    {
               ind = r_ind(NX,NY,NZ);
