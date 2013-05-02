@@ -98,6 +98,7 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
   int j,k,l;
   FLOAT_TYPE B;
   FLOAT_TYPE field_x, field_y, field_z;
+  int l_ind;
   FLOAT_TYPE *fmesh_x = d->Fmesh->fields[0], *fmesh_y = d->Fmesh->fields[1], *fmesh_z = d->Fmesh->fields[2];
   int mesh = d->mesh;
 
@@ -115,15 +116,16 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
 	for (i2=0; i2<cao; i2++) {
 	  l = wrap_mesh_index(base[2] + i2, mesh);
 	  B = force_prefac*(*cf_cnt++);
-	  field_x -= fmesh_x[c_ind(j,k,l)+ii]*B;
-	  field_y -= fmesh_y[c_ind(j,k,l)+ii]*B;
-	  field_z -= fmesh_z[c_ind(j,k,l)+ii]*B;
+	  l_ind = c_ind(j,k,l)+ii;
+	  field_x -= fmesh_x[l_ind]*B;
+	  field_y -= fmesh_y[l_ind]*B;
+	  field_z -= fmesh_z[l_ind]*B;
 	}
       }
     }
-    f->f_k->fields[0][i] = field_x;
-    f->f_k->fields[1][i] = field_y;
-    f->f_k->fields[2][i] = field_z;
+    f->f_k->fields[0][i] += field_x;
+    f->f_k->fields[1][i] += field_y;
+    f->f_k->fields[2][i] += field_z;
 
     if (ii==1) {
       f->f_k->fields[0][i] *= 0.5;
@@ -234,9 +236,9 @@ void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t 
 	}
       }
     }
-    f->f_k->fields[0][i] = force_x;
-    f->f_k->fields[1][i] = force_y;
-    f->f_k->fields[2][i] = force_z;
+    f->f_k->fields[0][i] += force_x;
+    f->f_k->fields[1][i] += force_y;
+    f->f_k->fields[2][i] += force_z;
     if (ii==1) {
       f->f_k->fields[0][i] *= 0.5;
       f->f_k->fields[1][i] *= 0.5;

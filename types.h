@@ -12,8 +12,8 @@ extern int __detailed_timings;
 // Limit valgrind profiling to interesting part
 // #define __VALGRIND_PROFILE_KSPACE_ONLY
 
-#define DOUBLE_PREC 
-//#define LONG_DOUBLE_PREC
+//#define DOUBLE_PREC 
+#define LONG_DOUBLE_PREC
 
 #ifdef SINGLE_PREC
 #define DIGITS 9
