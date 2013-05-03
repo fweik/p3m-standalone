@@ -12,8 +12,8 @@ extern int __detailed_timings;
 // Limit valgrind profiling to interesting part
 // #define __VALGRIND_PROFILE_KSPACE_ONLY
 
-//#define DOUBLE_PREC 
-#define LONG_DOUBLE_PREC
+#define DOUBLE_PREC 
+//#define LONG_DOUBLE_PREC
 
 #ifdef SINGLE_PREC
 #define DIGITS 9
@@ -260,6 +260,7 @@ enum {
 typedef struct {
     int  method_id;
     const char *method_name;
+    const char *method_name_short;
     char flags;
     data_t * ( *Init ) ( system_t *, parameters_t * );
     void ( *Influence_function ) ( system_t *, parameters_t *, data_t * );

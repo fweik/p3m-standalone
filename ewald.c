@@ -35,7 +35,7 @@
 
 // Method declaration
 
-const method_t method_ewald = { METHOD_EWALD, "Ewald summation.", 
+const method_t method_ewald = { METHOD_EWALD, "Ewald summation.", "ewald",
 				METHOD_FLAG_G_hat, 
 				&Ewald_init, &Ewald_compute_influence_function, &Ewald_k_space, &Ewald_estimate_error, &Ewald_error_k };
 

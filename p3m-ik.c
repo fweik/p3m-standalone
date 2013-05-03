@@ -24,7 +24,7 @@
 
 // declaration of the method
 
-const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.",
+const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.", "p3m-ik",
                                  METHOD_FLAG_P3M | METHOD_FLAG_ik,
                                  &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, &Error_ik, &Error_ik_k,
                                };
