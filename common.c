@@ -263,9 +263,11 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
       printf(" %e", MPI_Wtime() - t);
 #endif
 
-    t = MPI_Wtime();
-    Realteil( s, p, f );
-    t  = MPI_Wtime() - t;
+    if(p->rcut != 0.0) {
+      t = MPI_Wtime();
+      Realteil( s, p, f );
+      t  = MPI_Wtime() - t;
+    }
     /* printf("Realpart %lf sec\n", FLOAT_CAST t); */
     //Realpart_neighborlist( s, p, d, f );
 

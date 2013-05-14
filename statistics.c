@@ -172,10 +172,10 @@ void radial_distribution_species(FLOAT_TYPE r_min, FLOAT_TYPE r_max, int bins, s
 
     bin_volume = 4.0/3.0 * PI * (r_out *r_out*r_out - r_in * r_in * r_in );
     fprintf( f, "%e ", 0.5 * (r_in + r_out));
-    fprintf( f, "%e ", rdf[i] / n[0] * bin_volume / (s->length *SQR(s->length)));
-    fprintf( f, "%e ", rdf[bins+i] / n[1] * bin_volume / (s->length *SQR(s->length)));
-    fprintf( f, "%e ", rdf[2*bins+i] / n[2] * bin_volume / (s->length *SQR(s->length)));
-    fprintf( f, "%e ", rdf[3*bins+i] / n[3] * bin_volume / (s->length *SQR(s->length)));
+    fprintf( f, "%e ", rdf[i] / (n[0] * bin_volume) );
+    fprintf( f, "%e ", rdf[bins+i] / (n[1] * bin_volume) );
+    fprintf( f, "%e ", rdf[2*bins+i] / (n[2] * bin_volume) );
+    fprintf( f, "%e ", rdf[3*bins+i] / (n[3] * bin_volume) );
     fprintf( f, "\n");
   }
   fclose(f);
@@ -233,4 +233,9 @@ void rshif_array( int N, FLOAT_TYPE *data, int shift ) {
     data[i] = buf[i];
 
   fftw_free(buf);
+}
+
+double *make_even( int N, FLOAT_TYPE *data ) {
+  FLOAT_TYPE *new = Init_array( 2*N, sizeof(FLOAT_TYPE));
+  
 }

@@ -135,6 +135,7 @@ int main ( int argc, char **argv ) {
     add_param( "no_calculation", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
     add_param( "vtf_file", ARG_TYPE_STRING, ARG_OPTIONAL, &vtf_file, &params );
     add_param( "rdf_species", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params );
+    add_param( "no_reference_force", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     #ifdef _OPENMP
     add_param( "threads", ARG_TYPE_INT, ARG_OPTIONAL, &nthreads, &params );
     #endif
@@ -266,9 +267,13 @@ int main ( int argc, char **argv ) {
       Read_exact_forces( system, force_file );
       puts("Done.");
     } else {
-      puts("Calculating reference forces.");
-      printf("Reference precision %e\n.", FLOAT_CAST Calculate_reference_forces( system, &parameters ));
-      puts("Done.");
+      if(param_isset("no_reference_force", params) !=1) {
+	puts("Calculating reference forces.");
+	printf("Reference precision %e\n.", FLOAT_CAST Calculate_reference_forces( system, &parameters ));
+	puts("Done.");
+      } else {
+	puts("Skipping reference force calculation.");
+      }
     }
 
     if ( methodnr == method_ewald.method_id )
