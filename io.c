@@ -289,8 +289,9 @@ void Write_exact_forces(system_t *s, char *forces_file) {
     }
 
     for (i=0;i<s->nparticles;i++) {
-        fprintf(fin, "%d\t%lf\t%lf\t%lf\n",
-                i, FLOAT_CAST s->reference->f->x[i], FLOAT_CAST s->reference->f->y[i], FLOAT_CAST s->reference->f->z[i]);
+        fprintf(fin, "%d\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+                i, FLOAT_CAST s->reference->f->x[i], FLOAT_CAST s->reference->f->y[i], FLOAT_CAST s->reference->f->z[i],
+		FLOAT_CAST s->reference->f_k->x[i], FLOAT_CAST s->reference->f_k->y[i], FLOAT_CAST s->reference->f_k->z[i]);
     }
 
     fclose(fin);
