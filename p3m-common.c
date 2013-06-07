@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <fftw3.h>
+#include <string.h>
 
 #include "p3m-common.h"
+#include "charge-assign.h"
 
 #include "common.h"
 #include "interpol.h"
@@ -362,10 +364,130 @@ FLOAT_TYPE B_const(int nx, int ny, int nz, system_t *s, parameters_t *p) {
 
 
 #define NTRANS(N) (N<0) ? (N + d->mesh) : N
+#define NT(N) (N<0) ? (N + mesh) : N
+
+FLOAT_TYPE *Error_map(system_t *s, forces_t *f, forces_t *f_ref, int mesh, int cao) {
+  system_t *s2 = Init_system(s->nparticles);
+  s2->length = s->length;
+
+  parameters_t param;
+  param.mesh = mesh;
+  param.cao = cao;
+
+  interpolation_t *inter = Init_interpolation( cao - 1, 0 );
+
+  FLOAT_TYPE dF;
+  FLOAT_TYPE *error_mesh = Init_array( mesh*mesh*mesh, 2*sizeof(FLOAT_TYPE));
+  memset( error_mesh, 0, 2*mesh*mesh*mesh*sizeof(FLOAT_TYPE));
+
+  for(int i = 0; i<s->nparticles; i++) {
+    dF = 0;
+    for(int j = 0; j<3; j++) {
+      dF += SQR(f_ref->f_k->fields[j][i] - f->f_k->fields[j][i]);
+      s2->p->fields[j][i] = s->p->fields[j][i];
+    }
+    s2->q[i] = dF;
+  }
+  assign_charge_nocf(s2, &param, error_mesh, mesh, inter);
+
+  return error_mesh;
+}
+
+FLOAT_TYPE Generic_error_estimate_inhomo(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, parameters_t *p, int mesh, int cao) {
+  puts("Generic_error_estimate_inhomo():");
+  // The Hockney-Eastwood pair-error functional.
+  FLOAT_TYPE Q_HE = 0.0;
+  // Linear index for G, this breaks notation, but G is calculated anyway, so this is convinient.
+  int ind = 0;
+  FLOAT_TYPE a,b,c;
+  int nx, ny, nz;
+  puts("Init Qmesh.");
+  FLOAT_TYPE *Qmesh = Init_array( mesh*mesh*mesh*2, sizeof(FLOAT_TYPE));
+  FLOAT_TYPE *Kmesh = Init_array( mesh*mesh*mesh*2, sizeof(FLOAT_TYPE));
+  puts("Plan FFT.");
+  printf("Mesh size %d, Mesh %p\n", mesh, Qmesh);
+  FFTW_PLAN forward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX*) Qmesh, (FFTW_COMPLEX*) Kmesh, FFTW_FORWARD, FFTW_MEASURE);
+  FFTW_PLAN backward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX*) Kmesh, (FFTW_COMPLEX*)Kmesh, FFTW_BACKWARD, FFTW_MEASURE);
+  FLOAT_TYPE K2;
+  parameters_t param;
+  param.mesh = mesh;
+  param.alpha = p->alpha;
+  param.cao = cao;
+  param.cao3 = cao*cao*cao;
+
+  puts("Init interpolation.");
+  interpolation_t *inter = Init_interpolation( cao - 1, 0 );
+
+  memset( Qmesh, 0, mesh*mesh*mesh*2 * sizeof(FLOAT_TYPE));
+  memset( Kmesh, 0, mesh*mesh*mesh*2 * sizeof(FLOAT_TYPE));
+
+  puts("Assign charge.");
+  assign_charge_q2(s, &param, Qmesh, mesh, inter);
+  
+  puts("Exec FFT.");
+  FFTW_EXECUTE(forward_plan);
+
+  puts("Convolute.");
+  for (nx=-mesh/2; nx<mesh/2; nx++) {
+    for (ny=-mesh/2; ny<mesh/2; ny++) {
+      for (nz=-mesh/2; nz<mesh/2; nz++) {
+	if((nx!=0) || (ny!=0) || (nz!=0)) {
+	  ind = 2*(mesh*mesh*NT(nx) + mesh*NT(ny) + NT(nz));
+
+	  a = A(nx,ny,nz,s,&param);
+	  b = B(nx,ny,nz,s,&param);
+	  c = C(nx,ny,nz,s,&param);
+
+	  K2 = (c - b*b/a);
+
+	  Kmesh[ind + 0] *= K2;
+	  Kmesh[ind + 1] *= K2;
+
+	  /* printf("A\t%e\tB\t%e\tC\t%e\n", FLOAT_CAST a , FLOAT_CAST b, FLOAT_CAST c); */
+	  /* printf("B/A\t%e\tG_hat\t%e\n", FLOAT_CAST (b / a), FLOAT_CAST G_hat); */
+	  /* printf("Q_HE\t%lf\tQ_opt\t%lf\n", FLOAT_CAST Q_HE, FLOAT_CAST Q_opt); */
+	} else
+	  Kmesh[ind + 0] = Kmesh[ind + 1] = 0;
+      }
+    }
+  }
+  /* printf("Final Q_HE\t%lf\tQ_opt\t%lf\n", Q_HE, Q_opt); */
+  /* printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / V); */
+
+  puts("Back fft.");
+
+  
+
+  FFTW_EXECUTE(backward_plan);
+  
+  FILE *error_out = fopen("inhomo_error.dat", "w");
+
+  for (nx=0; nx<mesh; nx++) {
+    for (ny=0; ny<mesh; ny++) {
+      for (nz=0; nz<mesh; nz++) {
+	ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
+	Qmesh[ind + 0] *= Kmesh[ind + 0]; 
+	Qmesh[ind + 1] *= Kmesh[ind + 1]; 
+	fprintf(error_out, "%d %d %d %e %e %e %e\n", nx, ny, nz, Qmesh[ind],Qmesh[ind+1], Kmesh[ind],Kmesh[ind+1]);
+      }
+    }
+  }
+
+
+  fflush(error_out);
+
+  puts("Output written.");
+
+  FFTW_FREE(Qmesh);
+
+  return  Q_HE;
+ 
+}
+
 
 FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, parameters_t *p, data_t *d) {
   // The Hockney-Eastwood pair-error functional.
-  FLOAT_TYPE Q_HE = 0.0, Q_opt=0.0;
+  FLOAT_TYPE Q_HE = 0.0;
   // Linear index for G, this breaks notation, but G is calculated anyway, so this is convinient.
   int ind = 0;
   // Convinience variable to hold the current value of the influence function.

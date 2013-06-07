@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 #include "generate_system.h"
 
@@ -130,11 +131,42 @@ system_t *generate_random_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge
   return s;
 }
 
+system_t *generate_gaussian_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge ) {
+  int i,j;
+  system_t *s;
+  FLOAT_TYPE q2 = 0.0;
+  gsl_rng *rng = gsl_rng_alloc(gsl_rng_default);
+  FLOAT_TYPE x;
+
+  s = Init_system(size);
+  s->length = box;
+  s->q2 = 0.0;
+
+  for(i=0;i<size;i++) {
+    for(j=0;j<3;j++) {
+      while(FLOAT_ABS(x = box/2 + gsl_ran_gaussian(rng,0.5)) >= box) 
+	printf("%lf\n", x);
+      s->p->fields[j][i] = x;
+    }
+    s->q[i] = (1.0 - 2.0 * (i%2)) * max_charge;
+    q2 += s->q[i] * s->q[i];
+  }
+  s->q2 = q2;
+
+  gsl_rng_free (rng);
+
+  return s;
+}
+
+
 system_t *generate_system( int form_factor, int size, FLOAT_TYPE box, FLOAT_TYPE max_charge ) {
   srand48(42);
   switch(form_factor) {
   case FORM_FACTOR_RANDOM: 
     return generate_random_system( size, box, max_charge );
+    break;
+  case FORM_FACTOR_GAUSSIAN: 
+    return generate_gaussian_system( size, box, max_charge );
     break;
   case FORM_FACTOR_INNER_BOX:
     return generate_inner_box(size, box);

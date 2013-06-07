@@ -48,15 +48,12 @@
 #include "statistics.h"
 #include "common.h"
 
+#include "inhomogenous_error.h"
+
 // #define WRITE_FORCES
 
 // #define FORCE_DEBUG
 // #define CA_DEBUG
-
-void usage ( char *name ) {
-    fprintf ( stderr, "usage: %s <positions> <forces> <alpha_min> <alpha_max> <alpha_step> <method>\n", name );
-}
-
 
 static FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {
   /* compute the k space part of the error estimate */
@@ -94,8 +91,13 @@ int main ( int argc, char **argv ) {
     FLOAT_TYPE rdf_min, rdf_max;
     int rdf_bins;
 
+    int inhomo_error_mesh = 64;
+    int inhomo_error_cao = 5;
+
     FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est;
     int i,j, calc_k_error, calc_est;
+
+    int error_map_mesh=64, error_map_cao=1;
 
     #ifdef _OPENMP
     int nthreads;
@@ -139,6 +141,11 @@ int main ( int argc, char **argv ) {
     #ifdef _OPENMP
     add_param( "threads", ARG_TYPE_INT, ARG_OPTIONAL, &nthreads, &params );
     #endif
+    add_param( "inhomo_mesh", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_error_mesh, &params);
+    add_param( "inhomo_cao", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_error_cao, &params);
+    add_param( "error_map", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
+    add_param( "error_map_mesh", ARG_TYPE_INT, ARG_OPTIONAL, &error_map_mesh, &params);
+    add_param( "error_map_cao", ARG_TYPE_INT, ARG_OPTIONAL, &error_map_cao, &params);
 
     parse_parameters( argc - 1, argv + 1, params );
 
@@ -186,6 +193,8 @@ int main ( int argc, char **argv ) {
       }
       puts("Done.");
     }
+
+    /* inhomo_error(system, NULL, 100); */
 
     if( param_isset("vtf_file", params) == 1) 
       write_vtf( vtf_file, system );
@@ -352,13 +361,27 @@ int main ( int argc, char **argv ) {
 	error_k =0.0;
 	for (i=0; i<system->nparticles; i++) {
 	  for (j=0;j<3;j++) {            
-	    /* printf("f_k_p3m [%lf, %lf, %lf] f_k_ewald [%lf, %lf %lf]\n", */
-	    /* 	    forces->f_k->fields[0][i],forces->f_k->fields[1][i],forces->f_k->fields[2][i], */
-	    /* 	    forces_ewald->f_k->fields[0][i],forces_ewald->f_k->fields[1][i],forces_ewald->f_k->fields[2][i]); */
 	    error_k   += SQR( forces->f_k->fields[j][i] - forces_ewald->f_k->fields[j][i] );
 	  }
 	}
 	error_k = SQRT(error_k) / SQRT(system->nparticles);
+	if(param_isset("error_map", params)) {
+	  puts("Writing error map.");
+	  FLOAT_TYPE *error_map;
+	  error_map = Error_map(system, forces, forces_ewald, error_map_mesh, error_map_cao);
+	  FILE *error_out = fopen("error_map.dat", "w");
+	  int nx,ny,nz;
+	  int ind;
+	  for (nx=0; nx<error_map_mesh; nx++) {
+	    for (ny=0; ny<error_map_mesh; ny++) {
+	      for (nz=0; nz<error_map_mesh; nz++) {
+		ind = 2*((error_map_mesh*error_map_mesh*nx) + error_map_mesh*(ny) + (nz));
+		fprintf(error_out, "%d %d %d %e\n", nx, ny, nz, error_map[ind]);
+	      }
+	    }
+	  }
+	  FFTW_FREE(error_map);
+	}
       }
 
       ewald_error_k_est = compute_error_estimate_k( system, &parameters_ewald, parameters_ewald.alpha);
@@ -368,21 +391,14 @@ int main ( int argc, char **argv ) {
 	if( calc_est == 0 )
 	  estimate = method.Error ( system, &parameters );
 	error_k_est = method.Error_k ( system, &parameters);
- 	FLOAT_TYPE Q_uncorr, Q_corr, Q_nonfluc;
-	/* Q_uncorr = Generic_error_estimate( A_ad, B_ad, C_ewald, system, &parameters, data); */
-	/* Q_corr = Generic_error_estimate( A_ad_water, B_ad_water, C_ewald_water, system, &parameters, data); */
 
-	FLOAT_TYPE corrected_est, corrected_total, rs_error;
-	corrected_est = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr - Q_corr ) / system->nparticles );
-	gen_err = system->q2 / (system->length * SQR(system->length)) * SQRT( ( Q_uncorr ) / system->nparticles );
-	gen_err_dip = ((Q_corr > 0) - (Q_corr < 0)) * system->q2 / (system->length * SQR(system->length)) * SQRT( ( FLOAT_ABS(Q_corr) ) / system->nparticles );
-	rs_error =Realspace_error( system, &parameters );
-	corrected_total = SQRT( SQR(rs_error) + SQR(corrected_est));
+	FLOAT_TYPE err_inhomo = Generic_error_estimate_inhomo(A_ad, B_ad, C_ewald, system, &parameters, inhomo_error_mesh, inhomo_error_cao);
+	FLOAT_TYPE rs_error = Realspace_error( system, &parameters );
 
 	/* printf("Q_uncorr %e, Q_corr %e, Q_nonfluc %e\n", Q_uncorr, Q_corr, Q_nonfluc); */
 
-	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e\t %e\t %e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
-		 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime, FLOAT_CAST gen_err, FLOAT_CAST gen_err_dip, FLOAT_CAST corrected_total );
+	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
+		 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime, FLOAT_CAST err_inhomo );
 
 	/* printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate, */
 	/* 	 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime ); */
@@ -390,7 +406,7 @@ int main ( int argc, char **argv ) {
 	fprintf ( fout,"% lf\t% e\t% e\t% e\t% e\t% e\t% e\t% e\n", 
 		  FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , 
 		  FLOAT_CAST estimate, FLOAT_CAST Realspace_error( system, &parameters ), 
-		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est, FLOAT_CAST corrected_total);
+		  FLOAT_CAST error_k_est, FLOAT_CAST error_k, FLOAT_CAST ewald_error_k_est, FLOAT_CAST err_inhomo);
         } else {
             printf ( "%8lf\t%8e\t na\t%8e\t%8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles , FLOAT_CAST error.f_r, FLOAT_CAST error.f_k );
             fprintf ( fout,"% lf\t% e\t na\n", FLOAT_CAST parameters.alpha, FLOAT_CAST error.f / system->nparticles );

@@ -51,19 +51,19 @@ void print_parameter(cmd_parameter_t *it) {
   if(it->is_set) 
       switch(it->type) {
         case ARG_TYPE_INT:
-	  printf("'%s' = %d", it->parameter, *(it->value.i));
+	  printf("'%s' = %d, ", it->parameter, *(it->value.i));
 	  break;
         case ARG_TYPE_FLOAT:
-	  printf("'%s' = %lf", it->parameter, FLOAT_CAST *(it->value.f));
+	  printf("'%s' = %lf, ", it->parameter, FLOAT_CAST *(it->value.f));
 	  break;
         case ARG_TYPE_STRING:
-	  printf("'%s' = '%s'", it->parameter, *(it->value.c));
+	  printf("'%s' = '%s', ", it->parameter, *(it->value.c));
 	  break;
         case ARG_TYPE_NONE:
-          printf("'%s' is set", it->parameter);
+          printf("'%s' is set, ", it->parameter);
       }      
   else
-    printf("'%s' = not set", it->parameter);
+    printf("'%s' = not set, ", it->parameter);
 }
 
 int cmd_parameter_t_cmp ( cmd_parameter_t **a, cmd_parameter_t **b ) {
@@ -142,27 +142,27 @@ void parse_parameters( int argc, char **argv, cmd_parameters_t params) {
 
     it = bsearch(&s, params.required, params.n_req, sizeof(cmd_parameter_t *), (__compar_fn_t)cmd_parameter_t_cmp);
     if(it == NULL)
-          it = bsearch(&s, params.optional, params.n_opt, sizeof(cmd_parameter_t *), (__compar_fn_t)cmd_parameter_t_cmp);
+      it = bsearch(&s, params.optional, params.n_opt, sizeof(cmd_parameter_t *), (__compar_fn_t)cmd_parameter_t_cmp);
     if(it != NULL) {
       switch((*it)->type) {
-        case ARG_TYPE_INT:
-	  *((*it)->value.i) = atoi(*(++argv));
-	  (*it)->is_set = 1;
-	  argc--;
-	  break;
-        case ARG_TYPE_FLOAT:
-	  *((*it)->value.f) = atof(*(++argv));
-	  (*it)->is_set = 1;	       
-	  argc--;
-	  break;
-        case ARG_TYPE_STRING:
-	  *((*it)->value.c) = *(++argv);
-	  (*it)->is_set = 1;
-	  argc--;
-	  break;
-        case ARG_TYPE_NONE:
-	  (*it)->is_set = 1;
-	  break;
+      case ARG_TYPE_INT:
+	*((*it)->value.i) = atoi(*(++argv));
+	(*it)->is_set = 1;
+	argc--;
+	break;
+      case ARG_TYPE_FLOAT:
+	*((*it)->value.f) = atof(*(++argv));
+	(*it)->is_set = 1;	       
+	argc--;
+	break;
+      case ARG_TYPE_STRING:
+	*((*it)->value.c) = *(++argv);
+	(*it)->is_set = 1;
+	argc--;
+	break;
+      case ARG_TYPE_NONE:
+	(*it)->is_set = 1;
+	break;
       }      
     } else {
       printf("Unknown parameter '%s'\n", *argv);
@@ -178,10 +178,11 @@ void parse_parameters( int argc, char **argv, cmd_parameters_t params) {
       printf("Required parameter '%s' missing.\n", params.required[i]->parameter);
       exit(-1);
     } else {
-      print_parameter(params.required[i]); printf(", ");
+      print_parameter(params.required[i]);
     }
   for(i=0;i<params.n_opt;i++)
-      print_parameter(params.optional[i]); printf(", ");
+    if(params.optional[i]->is_set)
+      print_parameter(params.optional[i]);
 
   printf("\n");
 }

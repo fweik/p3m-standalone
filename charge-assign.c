@@ -90,6 +90,117 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
     }
 }
 
+void assign_charge_q2(system_t *s, parameters_t *p, FLOAT_TYPE *Qmesh, int mesh, interpolation_t *inter)
+{
+    int dim, i0, i1, i2, id;
+    FLOAT_TYPE tmp0, tmp1;
+    /* position of a particle in local mesh units */
+    FLOAT_TYPE pos;
+    /* 1d-index of nearest mesh point */
+    int nmp;
+    /* index for caf interpolation grid */
+    int arg[3];
+    /* index, index jumps for rs_mesh array */
+    FLOAT_TYPE cur_ca_frac_val;
+    // Mesh coordinates of the closest mesh point
+    int base[3];
+    int i,j,k;
+    FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
+
+    FLOAT_TYPE Hi = (double)p->mesh/(double)s->length;
+
+    FLOAT_TYPE **interpol = inter->interpol;
+    FLOAT_TYPE q2;
+    const int cao = p->cao;
+
+    // Make sure parameter-set and data-set are compatible
+
+    FLOAT_TYPE pos_shift;
+
+    /* Shift for odd charge assignment order */
+    pos_shift = (FLOAT_TYPE)((p->cao-1)/2);
+
+    for (id=0;id<s->nparticles;id++) {
+        /* particle position in mesh coordinates */
+        for (dim=0;dim<3;dim++) {
+            pos    = s->p->fields[dim][id]*Hi - pos_shift;
+            nmp = int_floor(pos + 0.5);
+	    base[dim]  = wrap_mesh_index( nmp, mesh);
+            arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
+        }
+	q2 = SQR(s->q[id]);
+	for (i0=0; i0<cao; i0++) {
+	  i = wrap_mesh_index(base[0] + i0, mesh);
+	  tmp0 = q2 * interpol[arg[0]][i0];
+	  for (i1=0; i1<cao; i1++) {
+	    tmp1 = tmp0 * interpol[arg[1]][i1];
+	    j = wrap_mesh_index(base[1] + i1, mesh);
+	    for (i2=0; i2<cao; i2++) {
+	      cur_ca_frac_val = tmp1 * interpol[arg[2]][i2];
+	      k = wrap_mesh_index(base[2] + i2, mesh);
+	      Qmesh[2*(mesh*mesh*i+mesh*j+k)] += cur_ca_frac_val;
+	    }
+	  }
+	} 
+    }
+}
+
+void assign_charge_nocf(system_t *s, parameters_t *p, FLOAT_TYPE *Qmesh, int mesh, interpolation_t *inter)
+{
+  int dim, i0, i1, i2, id;
+  FLOAT_TYPE tmp0, tmp1;
+  /* position of a particle in local mesh units */
+  FLOAT_TYPE pos;
+  /* 1d-index of nearest mesh point */
+  int nmp;
+  /* index for caf interpolation grid */
+  int arg[3];
+  /* index, index jumps for rs_mesh array */
+  FLOAT_TYPE cur_ca_frac_val;
+  // Mesh coordinates of the closest mesh point
+  int base[3];
+  int i,j,k;
+  FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
+
+  FLOAT_TYPE Hi = (double)p->mesh/(double)s->length;
+
+  FLOAT_TYPE **interpol = inter->interpol;
+  FLOAT_TYPE q;
+  const int cao = p->cao;
+
+  // Make sure parameter-set and data-set are compatible
+
+  FLOAT_TYPE pos_shift;
+
+  /* Shift for odd charge assignment order */
+  pos_shift = (FLOAT_TYPE)((p->cao-1)/2);
+
+  for (id=0;id<s->nparticles;id++) {
+    /* particle position in mesh coordinates */
+    for (dim=0;dim<3;dim++) {
+      pos    = s->p->fields[dim][id]*Hi - pos_shift;
+      nmp = int_floor(pos + 0.5);
+      base[dim]  = wrap_mesh_index( nmp, mesh);
+      arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
+    }
+    q = s->q[id];
+    for (i0=0; i0<cao; i0++) {
+      i = wrap_mesh_index(base[0] + i0, mesh);
+      tmp0 = q * interpol[arg[0]][i0];
+      for (i1=0; i1<cao; i1++) {
+	tmp1 = tmp0 * interpol[arg[1]][i1];
+	j = wrap_mesh_index(base[1] + i1, mesh);
+	for (i2=0; i2<cao; i2++) {
+	  cur_ca_frac_val = tmp1 * interpol[arg[2]][i2];
+	  k = wrap_mesh_index(base[2] + i2, mesh);
+	  Qmesh[2*(mesh*mesh*i+mesh*j+k)] += cur_ca_frac_val;
+	}
+      }
+    } 
+  }
+}
+
+
 // assign the forces obtained from k-space
 void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii) {
   int i,i0,i1,i2;

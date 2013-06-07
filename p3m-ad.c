@@ -105,7 +105,6 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
     return;
   }
   /* bei Zahlen >= Mesh/2 wird noch Mesh abgezogen! */
-#pragma omp parallel for private(ind, Zaehler, Nenner1, Nenner2)
   for (NX=0; NX<Mesh; NX++)
     {
       for (NY=0; NY<Mesh; NY++)
@@ -127,7 +126,6 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
 	    }
 	}
     }
-  #pragma omp barrier
   #ifdef P3M_AD_SELF_FORCES
   Init_self_forces( s, p, d);
   #else
@@ -201,13 +199,13 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   /* Force assignment */
   assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0 );
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_force_assignment[2] = timer;
-  #endif
-    #ifdef P3M_AD_SELF_FORCES
-    Substract_self_forces(s,p,d,f);
-    #endif
+#ifdef __detailed_timings
+  timer = MPI_Wtime() - timer;
+  t_force_assignment[2] = timer;
+#endif
+#ifdef P3M_AD_SELF_FORCES
+  Substract_self_forces(s,p,d,f);
+#endif
   return;
 }
 
@@ -507,3 +505,4 @@ FLOAT_TYPE Error_ad( system_t *s, parameters_t *p ) {
   //  printf("system size %d box %lf\n", s->nparticles, s->length);
   return SQRT( SQR ( real ) + SQR ( recp ) );
 }
+
