@@ -145,6 +145,55 @@ void assign_charge_q2(system_t *s, parameters_t *p, FLOAT_TYPE *Qmesh, int mesh,
     }
 }
 
+/* // assign the forces obtained from k-space */
+/* void assign_q2(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, FLOAT_TYPE *Fmesh, forces_t *f) { */
+/*   int i,i0,i1,i2; */
+/*   FLOAT_TYPE *cf_cnt; */
+/*   int *base; */
+/*   int j,k,l; */
+/*   FLOAT_TYPE B; */
+/*   FLOAT_TYPE field_x, field_y, field_z; */
+/*   int l_ind; */
+/*   FLOAT_TYPE *fmesh_x = d->Fmesh->fields[0], *fmesh_y = d->Fmesh->fields[1], *fmesh_z = d->Fmesh->fields[2]; */
+/*   int mesh = d->mesh; */
+
+/*   const int cao = p->cao; */
+
+/*   for (id=0;id<s->nparticles;id++) { */
+/*     /\* particle position in mesh coordinates *\/ */
+/*     for (dim=0;dim<3;dim++) { */
+/*       pos    = s->p->fields[dim][id]*Hi - pos_shift; */
+/*       nmp = int_floor(pos + 0.5); */
+/*       base[dim]  = wrap_mesh_index( nmp, mesh); */
+/*       arg[dim] = int_floor((pos - nmp + 0.5)*MI2); */
+/*     } */
+/*     q2 = SQR(s->q[id]); */
+
+/*   for (i=0; i<s->nparticles; i++) { */
+/*     field_x = field_y = field_z = 0; */
+/*     base = d->ca_ind[ii] + 3*i; */
+/*     for (i0=0; i0<cao; i0++) { */
+/*       j = wrap_mesh_index(base[0] + i0, mesh); */
+/*       for (i1=0; i1<cao; i1++) { */
+/* 	k = wrap_mesh_index(base[1] + i1, mesh); */
+/* 	for (i2=0; i2<cao; i2++) { */
+/* 	  l = wrap_mesh_index(base[2] + i2, mesh); */
+/* 	  B = force_prefac*(*cf_cnt++); */
+/* 	  l_ind = c_ind(j,k,l)+ii; */
+/* 	  field_x -= fmesh_x[l_ind]*B; */
+/* 	  field_y -= fmesh_y[l_ind]*B; */
+/* 	  field_z -= fmesh_z[l_ind]*B; */
+/* 	} */
+/*       } */
+/*     } */
+/*     f->f_k->fields[0][i] += field_x; */
+/*     f->f_k->fields[1][i] += field_y; */
+/*     f->f_k->fields[2][i] += field_z; */
+/*   } */
+
+/* } */
+
+
 void assign_charge_nocf(system_t *s, parameters_t *p, FLOAT_TYPE *Qmesh, int mesh, interpolation_t *inter)
 {
   int dim, i0, i1, i2, id;

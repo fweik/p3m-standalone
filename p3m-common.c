@@ -387,6 +387,7 @@ FLOAT_TYPE *Error_map(system_t *s, forces_t *f, forces_t *f_ref, int mesh, int c
       s2->p->fields[j][i] = s->p->fields[j][i];
     }
     s2->q[i] = dF;
+
   }
   assign_charge_nocf(s2, &param, error_mesh, mesh, inter);
 
@@ -394,10 +395,7 @@ FLOAT_TYPE *Error_map(system_t *s, forces_t *f, forces_t *f_ref, int mesh, int c
 }
 
 FLOAT_TYPE Generic_error_estimate_inhomo(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, parameters_t *p, int mesh, int cao) {
-  puts("Generic_error_estimate_inhomo():");
-  // The Hockney-Eastwood pair-error functional.
-  FLOAT_TYPE Q_HE = 0.0;
-  // Linear index for G, this breaks notation, but G is calculated anyway, so this is convinient.
+  printf("Generic_error_estimate_inhomo(mesh %d cao %d):", mesh, cao);
   int ind = 0;
   FLOAT_TYPE a,b,c;
   int nx, ny, nz;
@@ -415,72 +413,66 @@ FLOAT_TYPE Generic_error_estimate_inhomo(R3_to_R A, R3_to_R B, R3_to_R C, system
   param.cao = cao;
   param.cao3 = cao*cao*cao;
 
-  puts("Init interpolation.");
+  /* puts("Init interpolation."); */
   interpolation_t *inter = Init_interpolation( cao - 1, 0 );
 
   memset( Qmesh, 0, mesh*mesh*mesh*2 * sizeof(FLOAT_TYPE));
   memset( Kmesh, 0, mesh*mesh*mesh*2 * sizeof(FLOAT_TYPE));
 
-  puts("Assign charge.");
+  /* puts("Assign charge."); */
   assign_charge_q2(s, &param, Qmesh, mesh, inter);
   
-  puts("Exec FFT.");
+  /* puts("Exec FFT."); */
   FFTW_EXECUTE(forward_plan);
 
-  puts("Convolute.");
-  for (nx=-mesh/2; nx<mesh/2; nx++) {
-    for (ny=-mesh/2; ny<mesh/2; ny++) {
-      for (nz=-mesh/2; nz<mesh/2; nz++) {
-	if((nx!=0) || (ny!=0) || (nz!=0)) {
-	  ind = 2*(mesh*mesh*NT(nx) + mesh*NT(ny) + NT(nz));
+  int tn[3];
 
-	  a = A(nx,ny,nz,s,&param);
-	  b = B(nx,ny,nz,s,&param);
-	  c = C(nx,ny,nz,s,&param);
+  FLOAT_TYPE sum = 0.0;
 
-	  K2 = (c - b*b/a);
+  /* puts("Convolute."); */
+  for (nx=0; nx<mesh; nx++) {
+    tn[0] = (nx >= mesh/2) ? (nx - mesh) : nx;
+    for (ny=0; ny<mesh; ny++) {
+      tn[1] = (ny >= mesh/2) ? (ny - mesh) : ny;
+      for (nz=0; nz<mesh; nz++) {
+	tn[2] = (nz >= mesh/2) ? (nz - mesh) : nz;
+	ind = 2*(mesh*mesh*nx + mesh*ny + nz);
 
-	  Kmesh[ind + 0] *= K2;
-	  Kmesh[ind + 1] *= K2;
+	if( (tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0) ) 
+	  K2 = 0.0;
+	else {
+	  c = C(tn[0],tn[1],tn[2],s,&param);
+	  a = A(tn[0],tn[1],tn[2],s,&param);
+	  b = B(tn[0],tn[1],tn[2],s,&param);
+	  K2 = c - b*b/a;
+	}
 
-	  /* printf("A\t%e\tB\t%e\tC\t%e\n", FLOAT_CAST a , FLOAT_CAST b, FLOAT_CAST c); */
-	  /* printf("B/A\t%e\tG_hat\t%e\n", FLOAT_CAST (b / a), FLOAT_CAST G_hat); */
-	  /* printf("Q_HE\t%lf\tQ_opt\t%lf\n", FLOAT_CAST Q_HE, FLOAT_CAST Q_opt); */
-	} else
-	  Kmesh[ind + 0] = Kmesh[ind + 1] = 0;
+	Kmesh[ind + 0] *= K2;
+	Kmesh[ind + 1] *= K2;
+	  
       }
     }
   }
   /* printf("Final Q_HE\t%lf\tQ_opt\t%lf\n", Q_HE, Q_opt); */
   /* printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / V); */
 
-  puts("Back fft.");
-
-  
+  /* puts("Back fft."); */
 
   FFTW_EXECUTE(backward_plan);
   
-  FILE *error_out = fopen("inhomo_error.dat", "w");
-
   for (nx=0; nx<mesh; nx++) {
     for (ny=0; ny<mesh; ny++) {
       for (nz=0; nz<mesh; nz++) {
 	ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
-	Qmesh[ind + 0] *= Kmesh[ind + 0]; 
-	Qmesh[ind + 1] *= Kmesh[ind + 1]; 
-	fprintf(error_out, "%d %d %d %e %e %e %e\n", nx, ny, nz, Qmesh[ind],Qmesh[ind+1], Kmesh[ind],Kmesh[ind+1]);
+	sum += 	Kmesh[ind];
       }
     }
   }
 
-
-  fflush(error_out);
-
-  puts("Output written.");
-
   FFTW_FREE(Qmesh);
+  FFTW_FREE(Kmesh);
 
-  return  Q_HE;
+  return  sum;
  
 }
 

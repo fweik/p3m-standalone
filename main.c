@@ -376,7 +376,7 @@ int main ( int argc, char **argv ) {
 	    for (ny=0; ny<error_map_mesh; ny++) {
 	      for (nz=0; nz<error_map_mesh; nz++) {
 		ind = 2*((error_map_mesh*error_map_mesh*nx) + error_map_mesh*(ny) + (nz));
-		fprintf(error_out, "%d %d %d %e\n", nx, ny, nz, error_map[ind]);
+		fprintf(error_out, "%d %d %d %e\n", nx, ny, nz, FLOAT_CAST error_map[ind]);
 	      }
 	    }
 	  }
