@@ -1,7 +1,6 @@
 CC=mpicc
-CFLAGS=-Wall -O3 -DNDEBUG
+CFLAGS=-Wall -O0 -g
 CFLAGS+=-std=c99
-CFLAGS+=-ffast-math
 LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 -lfftw3l -lm
 
 CUDA_COMPILER=nvcc

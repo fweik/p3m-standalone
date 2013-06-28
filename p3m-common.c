@@ -247,119 +247,52 @@ FLOAT_TYPE C_ewald(int nx, int ny, int nz, system_t *s, parameters_t *p) {
   return 16.0 * SQR(PI) * ret;
 }
 
-FLOAT_TYPE C_ewald_dip(int nx, int ny, int nz, system_t *s, parameters_t *p) {
-  int mx, my, mz;
-  int nmx, nmy, nmz;
-  FLOAT_TYPE km2;
-  FLOAT_TYPE ret = 0.0;
-  FLOAT_TYPE kmd;
-
-  for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
-    nmx = nx + p->mesh*mx;
-    for (my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
-      nmy = ny + p->mesh*my;
-      for (mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
-	nmz = nz + p->mesh*mz;
-
-	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );
-	kmd = 1.0 * SQRT(km2);
-
-	/* printf("sin_term: %e\n", FLOAT_CAST SIN(kmd) / kmd); */
-
-	ret += EXP(- 2.0 * km2 / ( 4.0 * SQR(p->alpha)) ) / km2 * SIN(kmd)/kmd;
-      }
-    }
-  }
-  return 16.0 * SQR(PI) * ret;
+FLOAT_TYPE K2(int nx, int ny, int nz, FLOAT_TYPE l) {
+  return SQR(2.0*PI/l) * ( SQR ( nx ) + SQR ( ny ) + SQR ( nz ) ); 
 }
 
-FLOAT_TYPE C_ewald_water(int nx, int ny, int nz, system_t *s, parameters_t *p) {
-  int mx, my, mz;
-  int nmx, nmy, nmz;
-  FLOAT_TYPE km2;
-  FLOAT_TYPE ret = 0.0;
-  FLOAT_TYPE kmdHO, kmdHH, sin_term;
-
-  for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
-    nmx = nx + p->mesh*mx;
-    for (my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
-      nmy = ny + p->mesh*my;
-      for (mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
-	nmz = nz + p->mesh*mz;
-
-	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );
-
-	/* printf("sin_term: %e\n", FLOAT_CAST SIN(kmd) / kmd); */
-
-	kmdHO = 1.0 * SQRT(km2);
-	kmdHH = 1.63 * SQRT(km2);
-	sin_term = -0.67*SIN(kmdHO)/kmdHO + 0.34 * SIN(kmdHH)/kmdHH;
-
-	ret += EXP(- 2.0 * km2 / ( 4.0 * SQR(p->alpha)) ) / km2 * sin_term;
-      }
-    }
-  }
-  return 16.0 * SQR(PI) * ret;
+FLOAT_TYPE G(int nx, int ny, int nz, FLOAT_TYPE l, FLOAT_TYPE alpha) {
+  FLOAT_TYPE k2 = K2(nx, ny, nz, l);
+  return (4*PI/k2) * EXP(-k2/(4*alpha*alpha));
 }
 
-FLOAT_TYPE A_const(int nx, int ny, int nz, system_t *s, parameters_t *p) {
-  int mx, my, mz;
-  int nmx, nmy, nmz;
-  FLOAT_TYPE fnmx,fnmy,fnmz;
-  FLOAT_TYPE km2;
-  FLOAT_TYPE U4, U4km = 0.0;
-  FLOAT_TYPE mesh_i = 1.0/p->mesh;
+FLOAT_TYPE C(int nx, int ny, int nz, FLOAT_TYPE l, FLOAT_TYPE alpha) {
+  FLOAT_TYPE k2 = K2(nx, ny, nz,l);
+  FLOAT_TYPE g = G(nx,ny,nz,l,alpha);
 
-  for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
-    nmx = nx + p->mesh*mx;
-    fnmx = nmx * mesh_i;
-    for (my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
-      nmy = ny + p->mesh*my;
-      fnmy = nmy * mesh_i;
-      for (mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
-	nmz = nz + p->mesh*mz;
-	fnmz = nmz * mesh_i;
-
-	U4 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 4*p->cao);
-	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
-
-	U4km += U4 * km2;
-      }
-    }
-  }
-  return U4km;
- 
+  return k2 * g * g;
 }
 
-FLOAT_TYPE B_const(int nx, int ny, int nz, system_t *s, parameters_t *p) {
-  int mx, my, mz;
-  int nmx, nmy, nmz;
-  FLOAT_TYPE fnmx,fnmy,fnmz;
-  FLOAT_TYPE km2;
-  FLOAT_TYPE ret = 0.0;
-  FLOAT_TYPE U2;
-  FLOAT_TYPE mesh_i = 1.0/p->mesh;
 
-  for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
-    nmx = nx + p->mesh*mx;
-    fnmx = nmx * mesh_i;
-    for (my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
-      nmy = ny + p->mesh*my;
-      fnmy = nmy * mesh_i;
-      for (mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
-	nmz = nz + p->mesh*mz;
-	fnmz = nmz * mesh_i;
 
-	km2 = SQR(2.0*PI/s->length) * ( SQR ( nmx ) + SQR ( nmy ) + SQR ( nmz ) );	
+FLOAT_TYPE U2(int nx, int ny, int nz, int m, int p) {
+  return pow(sinc(nx/m)*sinc(ny/m)*sinc(nz/m), 2*p);
+}
 
-	U2 = my_power(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2*p->cao);
-
-	ret += U2 * 4.0 * PI * EXP(- km2 / ( 4.0 * SQR(p->alpha)));
+FLOAT_TYPE A(int nx, int ny, int nz, FLOAT_TYPE l, FLOAT_TYPE alpha, int m, int mc, int p) {
+  FLOAT_TYPE Um = 0, Umk = 0, u2;
+  for(int nmx = -mc; nmx <=mc; nmx++){
+    for(int nmy = -mc; nmy <=mc; nmy++){
+      for(int nmz = -mc; nmz <=mc; nmz++){
+	u2 = U2(nx+nmx, ny+nmy, nz+nmz, m, p);
+	Um += u2;
+	Umk += K2(nx+nmx, ny+nmy, nz+nmz,l) * u2;
       }
     }
   }
-  return ret;
- 
+  return Um*Umk;
+}
+
+FLOAT_TYPE B(int nx, int ny, int nz, FLOAT_TYPE l, FLOAT_TYPE alpha, int m, int mc, int p) {
+  FLOAT_TYPE u2gk2 = 0.0;
+  for(int nmx = -mc; nmx <=mc; nmx++){
+    for(int nmy = -mc; nmy <=mc; nmy++){
+      for(int nmz = -mc; nmz <=mc; nmz++){
+	u2gk2 = U2(nx+nmx, ny+nmy, nz+nmz, m, p) * G(nx,ny,nz,l,alpha)  * K2(nx+nmx, ny+nmy, nz+nmz,l);
+      }
+    }
+  }
+  return u2gk2;
 }
 
 
@@ -394,7 +327,7 @@ FLOAT_TYPE *Error_map(system_t *s, forces_t *f, forces_t *f_ref, int mesh, int c
   return error_mesh;
 }
 
-FLOAT_TYPE Generic_error_estimate_inhomo(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, parameters_t *p, int mesh, int cao) {
+FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh, int cao, int mc) {
   printf("Generic_error_estimate_inhomo(mesh %d cao %d):", mesh, cao);
   int ind = 0;
   FLOAT_TYPE a,b,c;
@@ -421,6 +354,16 @@ FLOAT_TYPE Generic_error_estimate_inhomo(R3_to_R A, R3_to_R B, R3_to_R C, system
 
   /* puts("Assign charge."); */
   assign_charge_q2(s, &param, Qmesh, mesh, inter);
+
+  FLOAT_TYPE h = s->length / p->mesh;
+
+  for (nx=0; nx<mesh; nx++) {
+    for (ny=0; ny<mesh; ny++) {
+      for (nz=0; nz<mesh; nz++) {
+	
+      }
+    }
+  }  
   
   /* puts("Exec FFT."); */
   FFTW_EXECUTE(forward_plan);
@@ -441,36 +384,37 @@ FLOAT_TYPE Generic_error_estimate_inhomo(R3_to_R A, R3_to_R B, R3_to_R C, system
 	if( (tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0) ) 
 	  K2 = 0.0;
 	else {
-	  c = C(tn[0],tn[1],tn[2],s,&param);
-	  a = A(tn[0],tn[1],tn[2],s,&param);
-	  b = B(tn[0],tn[1],tn[2],s,&param);
+	  a = A(tn[0], tn[1], tn[2], s->length, param.alpha, param.mesh, mc, param.cao);
+	  b = B(tn[0], tn[1], tn[2], s->length, param.alpha, param.mesh, mc, param.cao);
+	  c = C(tn[0], tn[1], tn[2], s->length, param.alpha);
 	  K2 = c - b*b/a;
 	}
 
-	Kmesh[ind + 0] *= K2;
-	Kmesh[ind + 1] *= K2;
+	Kmesh[ind + 0] = K2;
+	Kmesh[ind + 1] = K2;
 	  
       }
     }
   }
-  /* printf("Final Q_HE\t%lf\tQ_opt\t%lf\n", Q_HE, Q_opt); */
-  /* printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / V); */
-
   /* puts("Back fft."); */
 
   FFTW_EXECUTE(backward_plan);
+
+  FILE *inhomo_out = fopen("inhomo.dat", "w");
   
   for (nx=0; nx<mesh; nx++) {
     for (ny=0; ny<mesh; ny++) {
       for (nz=0; nz<mesh; nz++) {
 	ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
-	sum += 	Kmesh[ind];
+	fprintf( inhomo_out, "%d %d %d %e %e\n", nx, ny, nz, Kmesh[ind], Kmesh[ind+1]);
       }
     }
   }
 
   FFTW_FREE(Qmesh);
   FFTW_FREE(Kmesh);
+
+  fclose(inhomo_out);
 
   return  sum;
  
