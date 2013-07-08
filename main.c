@@ -392,7 +392,9 @@ int main ( int argc, char **argv ) {
 	  estimate = method.Error ( system, &parameters );
 	error_k_est = method.Error_k ( system, &parameters);
 
-	FLOAT_TYPE err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, P3M_BRILLOUIN);
+	FLOAT_TYPE err_inhomo = 0.0;
+	err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, P3M_BRILLOUIN);
+	
 	FLOAT_TYPE rs_error = Realspace_error( system, &parameters );
 
 	/* printf("Q_uncorr %e, Q_corr %e, Q_nonfluc %e\n", Q_uncorr, Q_corr, Q_nonfluc); */

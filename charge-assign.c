@@ -242,6 +242,7 @@ void assign_charge_nocf(system_t *s, parameters_t *p, FLOAT_TYPE *Qmesh, int mes
 	for (i2=0; i2<cao; i2++) {
 	  cur_ca_frac_val = tmp1 * interpol[arg[2]][i2];
 	  k = wrap_mesh_index(base[2] + i2, mesh);
+	  /* printf("assignment %d %d %d cf %e\n", i, j, k, cur_ca_frac_val); */
 	  Qmesh[2*(mesh*mesh*i+mesh*j+k)] += cur_ca_frac_val;
 	}
       }
