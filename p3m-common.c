@@ -297,6 +297,10 @@ FLOAT_TYPE U2(int nx, int ny, int nz, int m, int p) {
   return pow(sinc(nx/m)*sinc(ny/m)*sinc(nz/m), 2*p);
 }
 
+FLOAT_TYPE U(int nx, int ny, int nz, int m, int p) {
+  return pow(sinc(nx/m)*sinc(ny/m)*sinc(nz/m), p);
+}
+
 FLOAT_TYPE A(int nx, int ny, int nz, FLOAT_TYPE l, FLOAT_TYPE alpha, int m, int mc, int p) {
   FLOAT_TYPE Um = 0, Umk = 0, u2;
   int nmx,nmy,nmz;
@@ -384,12 +388,13 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   FFTW_PLAN forward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX*) Qmesh, (FFTW_COMPLEX*) Kmesh, FFTW_FORWARD, FFTW_MEASURE);
   FFTW_PLAN backward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX*) Kmesh, (FFTW_COMPLEX*)Kmesh, FFTW_BACKWARD, FFTW_MEASURE);
   FFTW_PLAN kernel_backward_plan[3];
-  for(int i = 0; i < 3; i++) {
+  for(int i = 0; i < 4; i++) {
     Kernel[i] = Init_array( 2*mesh*mesh*mesh, sizeof(FLOAT_TYPE));
+    printf("Kernel[%d] at %p\n", i, Kernel[i]);
     kernel_backward_plan[i] = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX *) Kernel[i], (FFTW_COMPLEX *) Kernel[i],FFTW_BACKWARD, FFTW_MEASURE);
   }
 
-  FFTW_PLAN kernel_forward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh,(FFTW_COMPLEX *) Kernel[0], (FFTW_COMPLEX *) Kernel[0],FFTW_FORWARD, FFTW_MEASURE);
+  FFTW_PLAN kernel_forward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh,(FFTW_COMPLEX *) Kernel[3], (FFTW_COMPLEX *) Kernel[3],FFTW_FORWARD, FFTW_MEASURE);
   
   FLOAT_TYPE K2;
   parameters_t param;
@@ -412,6 +417,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   FLOAT_TYPE h = s->length / p->mesh;
   int nmx,nmy,nmz;
 
+  /* Homogenous part */
+
   for (nx=0; nx<mesh; nx++) {
     tn[0] = (nx >= mesh/2) ? (nx - mesh) : nx;
     for (ny=0; ny<mesh; ny++) {
@@ -423,7 +430,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	if( (tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0) ) 
 	  K2 = 0.0;
 	else {
-	  K2 = 2*PI*U2(tn[0],tn[1],tn[2], mesh, param.cao)*B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao)/A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao) - Gm(tn[0],tn[1],tn[2],s->length, param.alpha, mesh, 1);
+	  K2 = 2*PI*U2(tn[0],tn[1],tn[2], mesh, param.cao)*B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao)/A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao) - Gm(tn[0],tn[1],tn[2],s->length, param.alpha, mesh, 0);
 	}
 
 	Kernel[0][ind + 0] = 0;
@@ -449,11 +456,62 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	for(int i = 0; i < 3; i++) {
 	  kr += SQR(Kernel[i][ind + 0]);
 	}
-	Kernel[0][ind + 0] = kr;
-	Kernel[1][ind + 1] = 0;
+	printf("ind %d, size %d\n", ind, 2*mesh*mesh*mesh);
+	Kernel[3][ind + 0] = kr;
+	Kernel[3][ind + 1] = 0;
       }
     }
   }
+
+  /* Inhomogemous paprt */
+
+  for(int mx = -mc; mx <=mc; mx++)
+    for(int my = -mc; my <=mc; my++)
+      for(int mz = -mc; mz <=mc; mz++) {
+	if((mx == 0) && (my==0) && (mz==0))
+	  continue;
+	for (nx=0; nx<mesh; nx++) {
+	  tn[0] = (nx >= mesh/2) ? (nx - mesh) : nx;
+	  for (ny=0; ny<mesh; ny++) {
+	    tn[1] = (ny >= mesh/2) ? (ny - mesh) : ny;
+	    for (nz=0; nz<mesh; nz++) {
+	      tn[2] = (nz >= mesh/2) ? (nz - mesh) : nz;
+	      ind = 2*(mesh*mesh*nx + mesh*ny + nz);
+
+	      if( (tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0) ) 
+		K2 = 0.0;
+	      else {
+		K2 = 2*PI*U(tn[0],tn[1],tn[2], mesh, param.cao)*U(-tn[0]-mx*mesh,-tn[1]-my*mesh,-tn[2]-mz*mesh, mesh, param.cao)*B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao)/A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
+	      }
+
+	      Kernel[0][ind + 0] = 0;
+	      Kernel[0][ind + 1] = -tn[0]/s->length*K2;
+	      Kernel[1][ind + 0] = 0;
+	      Kernel[1][ind + 1] = -tn[1]/s->length*K2;
+	      Kernel[2][ind + 0] = 0;
+	      Kernel[2][ind + 1] = -tn[2]/s->length*K2;	  
+	    }
+	  }
+	}
+
+	for(int i = 0; i < 3; i++)
+	  FFTW_EXECUTE(kernel_backward_plan[i]);
+
+	FLOAT_TYPE kr;  
+
+	for (nx=0; nx<mesh; nx++) {
+	  for (ny=0; ny<mesh; ny++) {
+	    for (nz=0; nz<mesh; nz++) {
+	      ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
+	      kr = 0;
+	      for(int i = 0; i < 3; i++) {
+		kr += SQR(Kernel[i][ind + 0]);
+	      }
+	      Kernel[3][ind + 0] += kr;
+	    }
+	  }
+	}
+      }
 
   FFTW_EXECUTE(kernel_forward_plan);
   
