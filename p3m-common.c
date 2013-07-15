@@ -382,7 +382,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   puts("Init Qmesh.");
   FLOAT_TYPE *Qmesh = Init_array( mesh*mesh*mesh*2, sizeof(FLOAT_TYPE));
   FLOAT_TYPE *Kmesh = Init_array( mesh*mesh*mesh*2, sizeof(FLOAT_TYPE));
-  FLOAT_TYPE *Kernel[3];
+  FLOAT_TYPE *Kernel[4];
   puts("Plan FFT.");
   printf("Mesh size %d, Mesh %p\n", mesh, Qmesh);
   FFTW_PLAN forward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX*) Qmesh, (FFTW_COMPLEX*) Kmesh, FFTW_FORWARD, FFTW_MEASURE);
@@ -391,7 +391,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   for(int i = 0; i < 4; i++) {
     Kernel[i] = Init_array( 2*mesh*mesh*mesh, sizeof(FLOAT_TYPE));
     printf("Kernel[%d] at %p\n", i, Kernel[i]);
-    kernel_backward_plan[i] = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX *) Kernel[i], (FFTW_COMPLEX *) Kernel[i],FFTW_BACKWARD, FFTW_MEASURE);
+    if(i < 3)
+      kernel_backward_plan[i] = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX *) Kernel[i], (FFTW_COMPLEX *) Kernel[i],FFTW_BACKWARD, FFTW_MEASURE);
   }
 
   FFTW_PLAN kernel_forward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh,(FFTW_COMPLEX *) Kernel[3], (FFTW_COMPLEX *) Kernel[3],FFTW_FORWARD, FFTW_MEASURE);
@@ -456,7 +457,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	for(int i = 0; i < 3; i++) {
 	  kr += SQR(Kernel[i][ind + 0]);
 	}
-	printf("ind %d, size %d\n", ind, 2*mesh*mesh*mesh);
 	Kernel[3][ind + 0] = kr;
 	Kernel[3][ind + 1] = 0;
       }
@@ -523,8 +523,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
     for (ny=0; ny<mesh; ny++) {
       for (nz=0; nz<mesh; nz++) {
   	ind = 2*(mesh*mesh*nx + mesh*ny + nz);
-	Kmesh[ind + 0] *= Kernel[0][ind];
-	Kmesh[ind + 1] *= Kernel[0][ind];
+	Kmesh[ind + 0] *= Kernel[3][ind];
+	Kmesh[ind + 1] *= Kernel[3][ind];
       }
     }
   }
