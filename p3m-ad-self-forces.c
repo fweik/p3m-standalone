@@ -5,8 +5,15 @@
 
 #include <math.h>
 
-#define P3M_SELF_BRILLOUIN 1
+#define P3M_AD_FAST_SELF_FORCE
 
+#ifdef P3M_AD_FAST_SELF_FORCE
+#warning P3M_AD_FAST_SELF_FORCES
+#warning Will produce unaccurate results!
+#define P3M_SELF_BRILLOUIN 0
+#else
+#define P3M_SELF_BRILLOUIN 1
+#endif
 /* This is an implementation of equation (9) of
    V. Ballenegger et al., Computer Physics Communications 182(2011)
    The directional indices of the coefficent \beta are called p,q,r
@@ -39,6 +46,9 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
 	true_ny = d->nshift[ny];
 	true_nz = d->nshift[nz];
 	//	printf("n[] = (%d %d %d), true_n[] = (%d %d %d)\n", nx, ny, nz, true_nx, true_ny, true_nz);
+	#ifdef _OPENMP
+#pragma omp parallel for private(U, U_shiftx) reduction( + : theSumOverK ) collapse(3)
+#endif
 	for (mx=-P3M_BRILLOUIN_LOCAL; mx<=P3M_BRILLOUIN_LOCAL; mx++) {
 	  for (my=-P3M_BRILLOUIN_LOCAL; my<=P3M_BRILLOUIN_LOCAL; my++) {
 	    for (mz=-P3M_BRILLOUIN_LOCAL; mz<=P3M_BRILLOUIN_LOCAL; mz++) {
@@ -55,6 +65,9 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
 	    }
 	  }
 	}
+#ifdef _OPENMP
+#pragma omp barrier
+#endif
       }
  
   switch(dir) {

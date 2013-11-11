@@ -18,6 +18,7 @@
 #include "p3m-ik.h"
 #include "p3m-ad.h"
 #include "p3m-ad-i.h"
+#include "p3m-ik-real.h"
 
 #include "ewald.h"
 
@@ -268,8 +269,6 @@ int main ( int argc, char **argv ) {
 	puts("Done.");
       }
 
-    if(param_isset("no_calculation", params) == 1)
-      return 0;
 
     if(param_isset("forces", params) == 1) {
       printf("Reading reference forces from '%s'.\n", force_file);
@@ -304,6 +303,10 @@ int main ( int argc, char **argv ) {
         method = method_p3m_ad_i;
     }
 #endif
+#ifdef P3M_IK_REAL_H
+    else if ( methodnr == method_p3m_ik_r.method_id )
+        method = method_p3m_ik_r;
+#endif
     else {
         fprintf ( stderr, "Method %d not know.", methodnr );
         exit ( 126 );
@@ -322,14 +325,18 @@ int main ( int argc, char **argv ) {
       fout = fopen ( "out.dat","w" );
     }
 
-    printf ( "Init" );
-    fflush(stdout);
-    data = method.Init ( system, &parameters );
-    printf ( ".\n" );
+    if(param_isset("no_calculation", params) != 1) {
+      printf ( "Init" );
+      fflush(stdout);
+      data = method.Init ( system, &parameters );
+      printf ( ".\n" );
+    }
 
-    printf ( "Init Ewald" );
-    data_ewald = method_ewald.Init ( system, &parameters_ewald );
-    printf ( ".\n" );
+    if(param_isset("no_reference_force", params) !=1) {
+      printf ( "Init Ewald" );
+      data_ewald = method_ewald.Init ( system, &parameters_ewald );
+      printf ( ".\n" );
+    }
 
     /* printf ( "Init neighborlist" ); */
     /* Init_neighborlist ( system, &parameters, data ); */
@@ -341,14 +348,16 @@ int main ( int argc, char **argv ) {
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
       parameters_ewald.alpha = parameters.alpha;
 
-      method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
+      if(param_isset("no_calculation", params) != 1) {
+	method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
-      wtime = MPI_Wtime();
+	wtime = MPI_Wtime();
 
-      Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
+	Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 
-      wtime = MPI_Wtime() - wtime;
+	wtime = MPI_Wtime() - wtime;
 
+      }
       error_k =0.0;
       if(calc_k_error == 1) {
 	puts("kerror");
@@ -393,7 +402,7 @@ int main ( int argc, char **argv ) {
 	error_k_est = method.Error_k ( system, &parameters);
 
 	FLOAT_TYPE err_inhomo = 0.0;
-	err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, P3M_BRILLOUIN);
+	/* err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, P3M_BRILLOUIN); */
 	
 	FLOAT_TYPE rs_error = Realspace_error( system, &parameters );
 

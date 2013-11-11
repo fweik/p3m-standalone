@@ -51,6 +51,8 @@ extern int __detailed_timings;
 #define FFTW_EXECUTE fftw_execute
 #define FFTW_COMPLEX fftw_complex
 #define FFTW_PLAN_DFT_3D fftw_plan_dft_3d
+#define FFTW_PLAN_DFT_R2C_3D fftw_plan_dft_r2c_3d
+#define FFTW_PLAN_DFT_C2R_3D fftw_plan_dft_c2r_3d
 #define FFTW_PLAN fftw_plan
 #define FFTW_DESTROY_PLAN fftw_destroy_plan
 #define ROUND round
@@ -74,6 +76,8 @@ extern int __detailed_timings;
 #define FFTW_EXECUTE fftwl_execute
 #define FFTW_COMPLEX fftwl_complex
 #define FFTW_PLAN_DFT_3D fftwl_plan_dft_3d
+#define FFTW_PLAN_DFT_R2C_3D fftw_plan_dft_r2c_3d
+#define FFTW_PLAN_DFT_C2R_3D fftw_plan_dft_c2r_3d
 #define FFTW_PLAN fftwl_plan
 #define FFTW_DESTROY_PLAN fftwl_destroy_plan
 #define ROUND roundl
@@ -96,7 +100,8 @@ enum {
     METHOD_P3M_ad = 2,
     METHOD_P3M_ad_i = 3,
     METHOD_EWALD = 4,
-    METHOD_P3M_ik_cuda = 5
+    METHOD_P3M_ik_cuda = 5,
+    METHOD_P3M_ik_r = 6
 };
 
 // Container type for arrays of 3d-vectors

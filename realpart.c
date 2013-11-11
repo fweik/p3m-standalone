@@ -131,8 +131,9 @@ FLOAT_TYPE Realpart_corr_error(FLOAT_TYPE rcut, FLOAT_TYPE alpha) {
   FLOAT_TYPE xmax[6] = { 2*rcut, 2*rcut, 2*rcut, 2*rcut, 2*rcut, 2*rcut };
   FLOAT_TYPE val,err;
 
-  adapt_integrate(1, rp_error_integrand, param, 3, xmin, xmax, 0, 0, 1e-4, &val, &err);
+  /* adapt_integrate(1, rp_error_integrand, param, 3, xmin, xmax, 0, 0, 1e-4, &val, &err); */
 
+  return 0;
 }
 
 void Realteil( system_t *s, parameters_t *p, forces_t *f )

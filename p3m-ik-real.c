@@ -15,7 +15,7 @@
 // For realpart error
 #include "realpart.h"
 
-#include "p3m-ik.h"
+#include "p3m-ik-real.h"
 
 #ifdef __detailed_timings
 #include <mpi.h>
@@ -24,20 +24,20 @@
 
 // declaration of the method
 
-const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.", "p3m-ik",
+const method_t method_p3m_ik_r = { METHOD_P3M_ik_r, "P3M with ik differentiation, not intelaced, real input.", "p3m-ik-r",
                                  METHOD_FLAG_P3M | METHOD_FLAG_ik,
-                                 &Init_ik, &Influence_function_berechnen_ik, &P3M_ik, &Error_ik, &Error_ik_k,
+                                 &Init_ik_r, &Influence_function_berechnen_ik_r, &P3M_ik_r, &Error_ik_r, &Error_ik_k_r,
                                };
 
 // Forward declaration of local functions
 
 static void forward_fft ( data_t * );
 static void backward_fft ( data_t * );
-static void p3m_tune_aliasing_sums_ik ( int, int, int,
+static void p3m_tune_aliasing_sums_ik_r ( int, int, int,
                                         const system_t *, const parameters_t *,
                                         FLOAT_TYPE *, FLOAT_TYPE * );
 
-FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p );
+FLOAT_TYPE p3m_k_space_error_ik_r ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p );
 
 inline void forward_fft ( data_t *d ) {
     FFTW_EXECUTE ( d->forward_plan[0] );
@@ -49,20 +49,20 @@ inline void backward_fft ( data_t *d ) {
         FFTW_EXECUTE ( d->backward_plan[i] );
 }
 
-FLOAT_TYPE Error_ik_k( system_t *s, parameters_t *p ) {
-  return p3m_k_space_error_ik( 1.0, s, p );
+FLOAT_TYPE Error_ik_k_r( system_t *s, parameters_t *p ) {
+  return p3m_k_space_error_ik_r( 1.0, s, p );
 }
 
-data_t *Init_ik ( system_t *s, parameters_t *p ) {
+data_t *Init_ik_r ( system_t *s, parameters_t *p ) {
     int l;
     int mesh = p->mesh;
 
-    data_t *d = Init_data ( &method_p3m_ik, s, p );
+    data_t *d = Init_data ( &method_p3m_ik_r, s, p );
 
     d->forward_plans = 1;
     d->backward_plans = 3;
 
-    d->forward_plan[0] = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) d->Qmesh, ( FFTW_COMPLEX * ) d->Qmesh, FFTW_FORWARD, FFTW_PATIENT );
+    d->forward_plan[0] = FFTW_PLAN_DFT_R2C_3D ( mesh, mesh, mesh, d->Qmesh, (FFTW_COMPLEX *)d->Qmesh, FFTW_PATIENT );
 
     for ( l=0;l<3;l++ ) {
         d->backward_plan[l] = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) ( d->Fmesh->fields[l] ), ( FFTW_COMPLEX * ) ( d->Fmesh->fields[l] ), FFTW_BACKWARD, FFTW_PATIENT );
@@ -70,8 +70,16 @@ data_t *Init_ik ( system_t *s, parameters_t *p ) {
     return d;
 }
 
+static void c2r_pad_input(int mesh, FLOAT_TYPE *in) {
+  int ind_in = 0, ind_out = 0;
+  for(int i = 0; i < mesh*mesh*mesh; i++) {
+    in[ind_out++] = in[2*ind_in++];
+    if((ind_in % mesh) == 0)
+      ind_out += 2;
+  }  
+}
 
-void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY, int NZ,
+void Aliasing_sums_ik_r ( system_t *s, parameters_t *p, data_t *d, int NX, int NY, int NZ,
                         FLOAT_TYPE *Zaehler, FLOAT_TYPE *Nenner ) {
     FLOAT_TYPE S1,S2,S3;
     FLOAT_TYPE fak1,fak2,zwi;
@@ -113,7 +121,7 @@ void Aliasing_sums_ik ( system_t *s, parameters_t *p, data_t *d, int NX, int NY,
 }
 
 /* Calculate influence function */
-void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d ) {
+void Influence_function_berechnen_ik_r ( system_t *s, parameters_t *p, data_t *d ) {
 
   int    NX,NY,NZ;
   FLOAT_TYPE Dnx,Dny,Dnz;
@@ -137,7 +145,7 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
 	else if ( ( NX% ( Mesh/2 ) == 0 ) && ( NY% ( Mesh/2 ) == 0 ) && ( NZ% ( Mesh/2 ) == 0 ) )
 	  d->G_hat[ind]=0.0;
 	else {
-	  Aliasing_sums_ik ( s, p, d, NX, NY, NZ, Zaehler, &Nenner );
+	  Aliasing_sums_ik_r ( s, p, d, NX, NY, NZ, Zaehler, &Nenner );
 		  
 	  Dnz = d->Dn[NZ];
 	    
@@ -157,7 +165,7 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
 /* Calculates k-space part of the force, using ik-differentiation.
  */
 
-void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
+void P3M_ik_r ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     /* Loop counters */
     int i, j, k, l;
     /* helper variables */
@@ -180,6 +188,8 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 
     /* chargeassignment */
     assign_charge ( s, p, d, 0 );
+
+    c2r_pad_input( p->mesh, d->Qmesh );
 
   #ifdef __detailed_timings
   timer = MPI_Wtime() - timer;
@@ -251,12 +261,12 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 
 // Functions for error estimate.
 
-FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
+FLOAT_TYPE Error_ik_r( system_t *s, parameters_t *p) {
   FLOAT_TYPE real;
   FLOAT_TYPE recp;
 
   real = Realspace_error( s, p );
-  recp = p3m_k_space_error_ik( 1.0, s, p);
+  recp = p3m_k_space_error_ik_r( 1.0, s, p);
 
   //  printf("p3m ik error for mesh %d rcut %lf cao %d alpha %lf : real %e recp %e\n", p->mesh, p->rcut, p->cao, p->alpha, real, recp);
   //printf("system size %d box %lf\n", s->nparticles, s->length);
@@ -265,7 +275,7 @@ FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
   return SQRT( SQR( real ) + SQR( recp ) );
 }
 
-FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
+FLOAT_TYPE p3m_k_space_error_ik_r ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
   // Mesh loop counters 
     int  nx, ny, nz;
     // The pair force error Q
@@ -276,9 +286,6 @@ FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const pa
     int mesh = p->mesh;
     FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
 
-#ifdef _OPENMP
-#pragma omp parallel for private(ctan_x, ctan_y, n2, cs, alias1, alias2, ny, nz) reduction( + : he_q )
-#endif
     for ( nx=-mesh/2; nx<mesh/2; nx++ ) {
         ctan_x = analytic_cotangent_sum ( nx, meshi,p->cao );
         for ( ny=-mesh/2; ny<mesh/2; ny++ ) {
@@ -287,21 +294,18 @@ FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const pa
                 if ( ( nx!=0 ) || ( ny!=0 ) || ( nz!=0 ) ) {
                     n2 = SQR ( nx ) + SQR ( ny ) + SQR ( nz );
                     cs = analytic_cotangent_sum ( nz, meshi ,p->cao ) *ctan_y;
-                    p3m_tune_aliasing_sums_ik ( nx,ny,nz, s, p, &alias1,&alias2 );
+                    p3m_tune_aliasing_sums_ik_r ( nx,ny,nz, s, p, &alias1,&alias2 );
                     he_q += ( alias1  -  SQR ( alias2/cs ) / n2 );
                 }
             }
         }
     }
-#ifdef _OPENMP
-#pragma omp barrier
-#endif
     he_q = fabs(he_q);
     return 2.0*s->q2*SQRT ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
 }
 
 
-void p3m_tune_aliasing_sums_ik ( int nx, int ny, int nz,
+static void p3m_tune_aliasing_sums_ik_r ( int nx, int ny, int nz,
                                  const system_t *s, const parameters_t *p,
                                  FLOAT_TYPE *alias1, FLOAT_TYPE *alias2 ) {
 

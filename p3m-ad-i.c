@@ -108,11 +108,11 @@ void Influence_function_ad_i( system_t *s, parameters_t *p, data_t *d )
   int ind = 0;
   int Mesh= d->mesh;
 
+#pragma omp parallel for private(NZ, ind, Zaehler, Nenner1, Nenner2, Nenner3, Nenner4) collapse(3)
   for (NX=0; NX<Mesh; NX++)
     {
       for (NY=0; NY<Mesh; NY++)
 	{
-#pragma omp parallel for private(NZ, ind, Zaehler, Nenner1, Nenner2, Nenner3, Nenner4)
 	  for (NZ=0; NZ<Mesh; NZ++)
 	    {
               ind = r_ind(NX,NY,NZ);
@@ -256,6 +256,9 @@ FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
   FLOAT_TYPE alias1, alias2, alias3, alias4, alias5, alias6;
   int mesh = p->mesh;
 
+#ifdef _OPENMP
+#pragma omp parallel for private(ny,nz,alias1, alias2, alias3, alias4,alias5, alias6) reduction(+ : he_q)
+#endif
   for (nx=-mesh/2; nx<mesh/2; nx++) {
     for (ny=-mesh/2; ny<mesh/2; ny++) {
       for (nz=-mesh/2; nz<mesh/2; nz++) {
@@ -266,6 +269,9 @@ FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
       }
     }
   }
+#ifdef _OPENMP
+#pragma omp barrier
+#endif
   he_q = fabs(he_q);
   return 2.0*s->q2*sqrt(he_q/(FLOAT_TYPE)s->nparticles) / SQR(s->length);
 }

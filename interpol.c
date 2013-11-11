@@ -50,6 +50,14 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
 
 //@TODO: remove memleak
 void Free_interpolation(interpolation_t *i) {
+  for( int j = 0; j < (2*MaxInterpol+1); j++)
+    FFTW_FREE(i->interpol[j]);
+  FFTW_FREE(i->interpol);
+  if(i->interpol_d != NULL) {
+    for( int j = 0; j < (2*MaxInterpol+1); j++)
+      FFTW_FREE(i->interpol_d[j]);
+    FFTW_FREE(i->interpol_d);
+  }
 
   FFTW_FREE(i);
 }

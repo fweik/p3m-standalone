@@ -105,6 +105,9 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
     return;
   }
   /* bei Zahlen >= Mesh/2 wird noch Mesh abgezogen! */
+#ifdef _OPENMP
+#pragma omp parallel for private(ind, Zaehler, Nenner1, Nenner2) collapse(3)
+#endif
   for (NX=0; NX<Mesh; NX++)
     {
       for (NY=0; NY<Mesh; NY++)
@@ -126,6 +129,10 @@ void Influence_function_berechnen_ad( system_t *s, parameters_t *p, data_t *d )
 	    }
 	}
     }
+  #ifdef _OPENMP
+  #pragma omp barrier
+  #endif
+  
   #ifdef P3M_AD_SELF_FORCES
   Init_self_forces( s, p, d);
   #else
