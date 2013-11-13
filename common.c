@@ -14,7 +14,7 @@
 #include "p3m-common.h"
 
 #ifdef __VALGRIND_PROFILE_KSPACE_ONLY
- #include <callgrind.h>
+ #include <valgrind/callgrind.h>
 #endif
 
 #ifdef __detailed_timings

@@ -202,7 +202,7 @@ void P3M_ik_r ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     /* chargeassignment */
   assign_charge ( s, p, d, 0 );
 
-  c2r_pad_input( p->mesh, d->Qmesh );
+  /* c2r_pad_input( p->mesh, d->Qmesh ); */
 
   /* for(int i = 0; i < Mesh*Mesh*(Mesh/2+1); i++) */
   /*   printf("d->Qmesh[%d] = %lf\n", i, d->Qmesh[i]); */
@@ -268,9 +268,9 @@ void P3M_ik_r ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     /* for(int i = 0; i < 2*Mesh*Mesh*Mesh; i++) */
     /*   printf("d->Fmesh[0][%d] = %lf\n", i, d->Fmesh->fields[0][i]); */
 
-    r2c_pad_input(p->mesh, d->Fmesh->fields[0]);
-    r2c_pad_input(p->mesh, d->Fmesh->fields[1]);
-    r2c_pad_input(p->mesh, d->Fmesh->fields[2]);
+    /* r2c_pad_input(p->mesh, d->Fmesh->fields[0]); */
+    /* r2c_pad_input(p->mesh, d->Fmesh->fields[1]); */
+    /* r2c_pad_input(p->mesh, d->Fmesh->fields[2]); */
 
   #ifdef __detailed_timings
     timer = MPI_Wtime() - timer;

@@ -4,6 +4,8 @@
 #include <string.h>
 #include <mpi.h>
 
+#include <valgrind/callgrind.h>
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -11,6 +13,8 @@
 #include "types.h"
 
 #include "p3m-common.h"
+
+
 
 // Methods
 
@@ -151,7 +155,10 @@ int main ( int argc, char **argv ) {
     parse_parameters( argc - 1, argv + 1, params );
 
     calc_k_error = param_isset( "error_k", params );
-    calc_est = param_isset( "estimate", params );
+    calc_est = 0;
+
+    if(param_isset("no_estimate", params) == 1)
+      calc_est = 1;
 
     parameters.cao3 = parameters.cao*parameters.cao*parameters.cao;
     parameters.ip = parameters.cao - 1;
@@ -357,6 +364,8 @@ int main ( int argc, char **argv ) {
 
 	wtime = MPI_Wtime() - wtime;
 
+	CALLGRIND_STOP_INSTRUMENTATION;
+
       }
       error_k =0.0;
       if(calc_k_error == 1) {
@@ -397,10 +406,10 @@ int main ( int argc, char **argv ) {
       error = Calculate_errors ( system, forces );
 
       if ( method.Error != NULL ) {
-	if( calc_est == 0 )
+	if( calc_est == 0 ) {
 	  estimate = method.Error ( system, &parameters );
-	error_k_est = method.Error_k ( system, &parameters);
-
+	  error_k_est = method.Error_k ( system, &parameters);
+	}
 	FLOAT_TYPE err_inhomo = 0.0;
 	/* err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, P3M_BRILLOUIN); */
 	

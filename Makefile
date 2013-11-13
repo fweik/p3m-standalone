@@ -1,5 +1,5 @@
 CC=mpicc
-CFLAGS=-Wall -O3 -fopenmp
+CFLAGS=-Wall -O3 -g -I/home/fweik/Base/include
 CFLAGS+=-std=c99
 LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 -lfftw3l -lm
 
