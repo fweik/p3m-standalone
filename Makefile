@@ -1,5 +1,5 @@
 CC=mpicc
-CFLAGS=-Wall -O3 -g -I/home/fweik/Base/include
+CFLAGS=-Wall -O3 -g -pg -I/home/fweik/Base/include
 CFLAGS+=-std=c99
 LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 -lfftw3l -lm
 
@@ -34,6 +34,9 @@ dipolar_system: $(OBJECTS) Makefile dipolar_system.c
 
 test: $(OBJECTS) Makefile test.c
 	$(CC) $(CFLAGS) -o test test.c $(OBJECTS) $(LFLAGS)
+
+time_method: $(OBJECTS) Makefile time_method.c
+	$(CC) $(CFLAGS) -o time_method time_method.c $(OBJECTS) $(LFLAGS)
 
 makefile.dep : *.[ch] Makefile
 	for i in *.[c]; do $(CC) -MM $(CFLAGS) "$${i}"; done > $@

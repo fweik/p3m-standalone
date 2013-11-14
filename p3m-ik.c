@@ -159,7 +159,7 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
 
 void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     /* Loop counters */
-    int i, j, k, l;
+    int i, j, k;
     /* helper variables */
     FLOAT_TYPE T1;
     FLOAT_TYPE dop;
@@ -196,6 +196,8 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
    timer = MPI_Wtime();
   #endif
 
+   double q_r, q_i;
+
 
     /* Convolution */
     for ( i=0; i<Mesh; i++ )
@@ -204,25 +206,21 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
                 c_index = c_ind ( i,j,k );
 
                 T1 = d->G_hat[r_ind ( i,j,k ) ];
-                d->Qmesh[c_index] *= T1;
-                d->Qmesh[c_index+1] *= T1;
+		q_r = -2.0*PI*Leni*d->Qmesh[c_index] *T1;
+		q_i = 2.0*PI*Leni*d->Qmesh[c_index+1] *T1;
+
+		dop = d->Dn[i];	 
+		d->Fmesh->fields[0][c_index]   =  dop*q_r;
+		d->Fmesh->fields[0][c_index+1] =  dop*q_i;
+
+		dop = d->Dn[j];
+		d->Fmesh->fields[1][c_index]   =  dop*q_r;
+		d->Fmesh->fields[1][c_index+1] =  dop*q_i;
+
+		dop = d->Dn[k];
+		d->Fmesh->fields[2][c_index]   =  dop*q_r;
+		d->Fmesh->fields[2][c_index+1] =  dop*q_i;
  
-                for ( l=0;l<3;l++ ) {
-		  /* choose the right component of k */
-                    switch ( l ) {
-                    case 0:
-                        dop = d->Dn[i];
-                        break;
-                    case 1:
-                        dop = d->Dn[j];
-                        break;
-                    case 2:
-                        dop = d->Dn[k];
-                        break;
-                    }
-                    d->Fmesh->fields[l][c_index]   =  -2.0*PI*Leni*dop*d->Qmesh[c_index+1];
-                    d->Fmesh->fields[l][c_index+1] =   2.0*PI*Leni*dop*d->Qmesh[c_index];
-                }
             }
 
   #ifdef __detailed_timings

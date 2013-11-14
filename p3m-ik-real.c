@@ -227,6 +227,7 @@ void P3M_ik_r ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
    /*   for(int j = 0; j < Mesh; j++) */
    /*     d->G_hat[r_ind( i, j, Mesh/2)] = d->G_hat[r_ind(i,j,0)]; */
 
+   double q_r, q_i;
 
    /* Convolution */
    for ( i=0; i<Mesh; i++ )
@@ -235,31 +236,26 @@ void P3M_ik_r ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 	 c_index = 2*((Mesh/2+1)*Mesh * i + (Mesh/2+1) * j + k);
 	 
 	 T1 = d->G_hat[r_ind ( i,j,k ) ];
-	 d->Qmesh[c_index] *= T1;
-	 d->Qmesh[c_index+1] *= T1;
- 
-	 for ( l=0;l<3;l++ ) {
-	   /* choose the right component of k */
-	   switch ( l ) {
-	   case 0:
-	     dop = d->Dn[i];
-	     break;
-	   case 1:
-	     dop = d->Dn[j];
-	     break;
-	   case 2:
-	     dop = d->Dn[k];
-	     break;
-	   }
-	   d->Fmesh->fields[l][c_index]   =  -2.0*PI*Leni*dop*d->Qmesh[c_index+1];
-	   d->Fmesh->fields[l][c_index+1] =   2.0*PI*Leni*dop*d->Qmesh[c_index];
-	 }
-       }
 
+	 q_r = d->Qmesh[c_index] *T1;
+	 q_i = d->Qmesh[c_index+1] *T1;
+
+	 dop = d->Dn[i];	 
+	 d->Fmesh->fields[0][c_index]   =  -2.0*PI*Leni*dop*q_r;
+	 d->Fmesh->fields[0][c_index+1] =   2.0*PI*Leni*dop*q_i;
+
+	 dop = d->Dn[j];
+	 d->Fmesh->fields[1][c_index]   =  -2.0*PI*Leni*dop*q_r;
+	 d->Fmesh->fields[1][c_index+1] =   2.0*PI*Leni*dop*q_i;
+
+	 dop = d->Dn[k];
+	 d->Fmesh->fields[2][c_index]   =  -2.0*PI*Leni*dop*q_r;
+	 d->Fmesh->fields[2][c_index+1] =   2.0*PI*Leni*dop*q_i;
+       }
 #ifdef __detailed_timings
-   timer = MPI_Wtime() - timer;
-   t_convolution[0] = timer;
-   timer = MPI_Wtime();
+timer = MPI_Wtime() - timer;
+t_convolution[0] = timer;
+timer = MPI_Wtime();
 #endif
 
     /* Backward Fast Fourier Transformation */
