@@ -14,7 +14,7 @@ const int smooth_numbers[] = {4, 5, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 3
 
 const int smooth_numbers_n = 122;
 
-#define TUNE_DEBUG
+//#define TUNE_DEBUG
 
 #ifdef TUNE_DEBUG
   #include <stdio.h>
@@ -102,11 +102,18 @@ FLOAT_TYPE Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE pre
 
       TUNE_TRACE(puts("Starting timing..."););
 
-      time = MPI_Wtime();
+      const int samples = 100;
+      double avg = 0;
 
-      m->Kspace_force( s, &it, d, f );
-
-      time = MPI_Wtime() - time;
+      for(int i = 0; i < samples; i++ ) {
+	time = MPI_Wtime();
+	m->Kspace_force( s, &it, d, f );
+        time = MPI_Wtime() - time;
+	/* printf("run %d time %lf\n", i+1, time);  */
+        avg += time;
+      }
+      avg /= samples;
+      time = avg;
 
       TUNE_TRACE(printf("\n mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time, error, it.alpha ););
 	
