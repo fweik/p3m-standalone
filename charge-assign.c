@@ -417,6 +417,96 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
 
 }
 
+// assign the forces obtained from k-space
+void assign_forces_interlacing(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f) {
+  int i,i0,i1,i2;
+  FLOAT_TYPE *cf_cnt1, *cf_cnt2;
+  int *base1, *base2;
+  int j1,k1,l1,j2,k2,l2;
+  FLOAT_TYPE B1, B2;
+  FLOAT_TYPE field_x, field_y, field_z;
+  int l_ind1, l_ind2;
+  FLOAT_TYPE *fmesh_x = d->Fmesh->fields[0], *fmesh_y = d->Fmesh->fields[1], *fmesh_z = d->Fmesh->fields[2];
+  int mesh = d->mesh;
+
+  const int cao = p->cao;
+
+  cf_cnt1 = d->cf[0];
+  cf_cnt2 = d->cf[1];
+
+  for (i=0; i<s->nparticles; i++) {
+    field_x = field_y = field_z = 0;
+    base1 = d->ca_ind[0] + 3*i;
+    base2 = d->ca_ind[1] + 3*i;
+    for (i0=0; i0<cao; i0++) {
+      j1 = wrap_mesh_index(base1[0] + i0, mesh);
+      j2 = wrap_mesh_index(base2[0] + i0, mesh);
+      for (i1=0; i1<cao; i1++) {
+	k1 = wrap_mesh_index(base1[1] + i1, mesh);
+	k2 = wrap_mesh_index(base2[1] + i1, mesh);
+	for (i2=0; i2<cao; i2++) {
+	  l1 = wrap_mesh_index(base1[2] + i2, mesh);
+	  l2 = wrap_mesh_index(base2[2] + i2, mesh);
+	  B1 = 0.5*force_prefac*(*cf_cnt1++);
+	  B2 = 0.5*force_prefac*(*cf_cnt2++);
+	  l_ind1 = c_ind(j1,k1,l1);
+	  l_ind2 = c_ind(j2,k2,l2);
+	  field_x -= fmesh_x[l_ind1]*B1 + fmesh_x[l_ind2+1]*B2;
+	  field_y -= fmesh_y[l_ind1]*B1 + fmesh_y[l_ind2+1]*B2;
+	  field_z -= fmesh_z[l_ind1]*B1 + fmesh_z[l_ind2+1]*B2;
+	}
+      }
+    }
+    f->f_k->fields[0][i] += field_x;
+    f->f_k->fields[1][i] += field_y;
+    f->f_k->fields[2][i] += field_z;
+
+  }
+
+}
+
+
+
+void assign_forces_real(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f) {
+  int i,i0,i1,i2;
+  FLOAT_TYPE *cf_cnt;
+  int *base;
+  int j,k,l;
+  FLOAT_TYPE B;
+  FLOAT_TYPE field_x, field_y, field_z;
+  int l_ind;
+  FLOAT_TYPE *fmesh_x = d->Fmesh->fields[0], *fmesh_y = d->Fmesh->fields[1], *fmesh_z = d->Fmesh->fields[2];
+  int mesh = d->mesh;
+
+  const int cao = p->cao;
+
+  cf_cnt = d->cf[0];
+
+  for (i=0; i<s->nparticles; i++) {
+    field_x = field_y = field_z = 0;
+    base = d->ca_ind[0] + 3*i;
+    for (i0=0; i0<cao; i0++) {
+      j = wrap_mesh_index(base[0] + i0, mesh);
+      for (i1=0; i1<cao; i1++) {
+	k = wrap_mesh_index(base[1] + i1, mesh);
+	for (i2=0; i2<cao; i2++) {
+	  l = wrap_mesh_index(base[2] + i2, mesh);
+	  B = force_prefac*(*cf_cnt++);
+	  l_ind = mesh*(mesh+2) * j + (mesh+2) * k + l;
+	  field_x -= fmesh_x[l_ind]*B;
+	  field_y -= fmesh_y[l_ind]*B;
+	  field_z -= fmesh_z[l_ind]*B;
+	}
+      }
+    }
+    f->f_k->fields[0][i] += field_x;
+    f->f_k->fields[1][i] += field_y;
+    f->f_k->fields[2][i] += field_z;
+
+  }
+
+}
+
 
 void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int ii)
 {

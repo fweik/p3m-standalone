@@ -194,19 +194,10 @@ void P3M_ik_r ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     memset ( d->Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof ( FLOAT_TYPE ) );
 
     /* chargeassignment */
-    assign_charge ( s, p, d, 0 );
-
-    c2r_pad_input( p->mesh, d->Qmesh );
-
-    /* for(int i = 0; i < Mesh*Mesh*(Mesh/2+1); i++) */
-    /*   printf("d->Qmesh[%d] = %lf\n", i, d->Qmesh[i]); */
+    assign_charge_real ( s, p, d );
 
     /* Forward Fast Fourier Transform */
     forward_fft(d);
-
-    /* for(int i = 0; i < Mesh; i++) */
-    /*   for(int j = 0; j < Mesh; j++) */
-    /*     d->G_hat[r_ind( i, j, Mesh/2)] = d->G_hat[r_ind(i,j,0)]; */
 
     double q_r, q_i;
 
@@ -222,31 +213,24 @@ void P3M_ik_r ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
 	  q_i = d->Qmesh[c_index+1] *T1;
 
 	  dop = d->Dn[i];	 
-	  d->Fmesh->fields[0][c_index]   =  -2.0*PI*Leni*dop*q_r;
-	  d->Fmesh->fields[0][c_index+1] =   2.0*PI*Leni*dop*q_i;
+	  d->Fmesh->fields[0][c_index]   =  -2.0*PI*Leni*dop*q_i;
+	  d->Fmesh->fields[0][c_index+1] =   2.0*PI*Leni*dop*q_r;
 
 	  dop = d->Dn[j];
-	  d->Fmesh->fields[1][c_index]   =  -2.0*PI*Leni*dop*q_r;
-	  d->Fmesh->fields[1][c_index+1] =   2.0*PI*Leni*dop*q_i;
+	  d->Fmesh->fields[1][c_index]   =  -2.0*PI*Leni*dop*q_i;
+	  d->Fmesh->fields[1][c_index+1] =   2.0*PI*Leni*dop*q_r;
 
 	  dop = d->Dn[k];
-	  d->Fmesh->fields[2][c_index]   =  -2.0*PI*Leni*dop*q_r;
-	  d->Fmesh->fields[2][c_index+1] =   2.0*PI*Leni*dop*q_i;
+	  d->Fmesh->fields[2][c_index]   =  -2.0*PI*Leni*dop*q_i;
+	  d->Fmesh->fields[2][c_index+1] =   2.0*PI*Leni*dop*q_r;
 	}
       }
     }
     /* Backward Fast Fourier Transformation */
     backward_fft(d);
 
-    /* for(int i = 0; i < 2*Mesh*Mesh*Mesh; i++) */
-    /*   printf("d->Fmesh[0][%d] = %lf\n", i, d->Fmesh->fields[0][i]); */
-
-    r2c_pad_input(p->mesh, d->Fmesh->fields[0]);
-    r2c_pad_input(p->mesh, d->Fmesh->fields[1]);
-    r2c_pad_input(p->mesh, d->Fmesh->fields[2]);
-
     /* Force assignment */
-    assign_forces ( 1.0/ ( 2.0*s->length*s->length*s->length ),s,p,d,f,0 );
+    assign_forces_real ( 1.0/ ( 2.0*s->length*s->length*s->length ),s,p,d,f);
 
 }
 

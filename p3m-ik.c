@@ -206,20 +206,20 @@ void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
                 c_index = c_ind ( i,j,k );
 
                 T1 = d->G_hat[r_ind ( i,j,k ) ];
-		q_r = -2.0*PI*Leni*d->Qmesh[c_index] *T1;
-		q_i = 2.0*PI*Leni*d->Qmesh[c_index+1] *T1;
+		q_r = 2.0*PI*Leni*d->Qmesh[c_index] *T1;
+		q_i = -2.0*PI*Leni*d->Qmesh[c_index+1] *T1;
 
 		dop = d->Dn[i];	 
-		d->Fmesh->fields[0][c_index]   =  dop*q_r;
-		d->Fmesh->fields[0][c_index+1] =  dop*q_i;
+		d->Fmesh->fields[0][c_index]   =  dop*q_i;
+		d->Fmesh->fields[0][c_index+1] =  dop*q_r;
 
 		dop = d->Dn[j];
-		d->Fmesh->fields[1][c_index]   =  dop*q_r;
-		d->Fmesh->fields[1][c_index+1] =  dop*q_i;
+		d->Fmesh->fields[1][c_index]   =  dop*q_i;
+		d->Fmesh->fields[1][c_index+1] =  dop*q_r;
 
 		dop = d->Dn[k];
-		d->Fmesh->fields[2][c_index]   =  dop*q_r;
-		d->Fmesh->fields[2][c_index+1] =  dop*q_i;
+		d->Fmesh->fields[2][c_index]   =  dop*q_i;
+		d->Fmesh->fields[2][c_index+1] =  dop*q_r;
  
             }
 
