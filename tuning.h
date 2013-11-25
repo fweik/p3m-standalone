@@ -8,6 +8,14 @@
 #define CAO_MIN 2
 #define CAO_MAX 7
 
-FLOAT_TYPE Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
+#define N_TUNING_SAMPLES 100
+
+typedef struct {
+  double avg;
+  double sgm;
+  int n;
+} timing_t;
+
+timing_t Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
 
 #endif

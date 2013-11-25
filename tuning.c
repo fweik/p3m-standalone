@@ -14,8 +14,6 @@ const int smooth_numbers[] = {4, 5, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 3
 
 const int smooth_numbers_n = 122;
 
-#define TUNE_DEBUG
-
 #ifdef TUNE_DEBUG
   #include <stdio.h>
   #define TUNE_TRACE(A) A
@@ -23,7 +21,7 @@ const int smooth_numbers_n = 122;
   #define TUNE_TRACE(A) 
 #endif
 
-FLOAT_TYPE Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision ) {
+timing_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision ) {
   //Parameter iteraters, best parameter set
   parameters_t it, p_best;
   // Array to store forces
@@ -41,6 +39,8 @@ FLOAT_TYPE Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE pre
   int mesh_it_min=0, mesh_it_max=smooth_numbers_n, mesh_it;
   int success_once = 0;
   int cao_min, cao_max, cao_limit, cao_last;
+
+  timing_t ret = { -1, 0, N_TUNING_SAMPLES };
 
   p_best.mesh = smooth_numbers[mesh_it_max] + 1;
   p_best.cao = CAO_MAX + 1;
@@ -102,11 +102,19 @@ FLOAT_TYPE Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE pre
 
       TUNE_TRACE(puts("Starting timing..."););
 
+      double avg = 0, sgm = 0;
+      for(int i = 0; i < N_TUNING_SAMPLES; i++) {
       time = MPI_Wtime();
 
       m->Kspace_force( s, &it, d, f );
 
       time = MPI_Wtime() - time;
+      avg += time;
+      sgm += time*time;
+      }
+
+      avg /= N_TUNING_SAMPLES;
+      sgm = sqrt(sgm/N_TUNING_SAMPLES - avg*avg);
 
       TUNE_TRACE(printf("\n mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time, error, it.alpha ););
 	
@@ -114,6 +122,9 @@ FLOAT_TYPE Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE pre
 	p_best = it;
 	p_best.precision = error;
 	best_time = time;
+	ret.avg = avg;
+	ret.sgm = sgm;
+	ret.n = N_TUNING_SAMPLES;
 	TUNE_TRACE(printf("New best. mesh %d cao %d rcut %e time %e prec %e alpha %e\n", p_best.mesh, p_best.cao, p_best.rcut, time, error, p_best.alpha );)         ;
       }
     }
@@ -126,17 +137,14 @@ FLOAT_TYPE Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE pre
   Free_forces(f);
 
   if( success_once == 0 )
-    return -1;
+    return ret;
 
   *p = p_best;
   p->ip = p->cao - 1;
   p->cao3 = p->cao * p->cao * p->cao;
 
   TUNE_TRACE(printf("Using mesh %d cao %d rcut %e alpha %e with precision %e time %e\n", p->mesh, p->cao, p->rcut, p->alpha, p->precision, best_time);)
-    if( best_time < 1e100 )
-      return best_time;
-    else
-      return -1;
+  return ret;
 }
 
 

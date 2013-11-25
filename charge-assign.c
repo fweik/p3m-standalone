@@ -354,7 +354,6 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
 
 }
 
-
 void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int ii)
 {
     int dim, i0, i1, i2;
