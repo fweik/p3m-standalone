@@ -14,7 +14,7 @@
 
 #include "p3m-common.h"
 
-
+#include "parameters.h"
 
 // Methods
 
@@ -59,6 +59,8 @@
 
 // #define FORCE_DEBUG
 // #define CA_DEBUG
+
+#define ERROR_MAP_2D_PLANE 0.5
 
 static FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {
   /* compute the k space part of the error estimate */
@@ -358,6 +360,8 @@ int main ( int argc, char **argv ) {
       if(param_isset("no_calculation", params) != 1) {
 	method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
+	CALLGRIND_START_INSTRUMENTATION;
+
 	wtime = MPI_Wtime();
 
 	Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
@@ -388,13 +392,18 @@ int main ( int argc, char **argv ) {
 	  FLOAT_TYPE *error_map;
 	  error_map = Error_map(system, forces, forces_ewald, error_map_mesh, error_map_cao);
 	  FILE *error_out = fopen("error_map.dat", "w");
+	  FILE *error_out_2d = fopen("error_map_2d.dat", "w");
 	  int nx,ny,nz;
+	  int nx_2d_plane = ERROR_MAP_2D_PLANE * error_map_mesh;
 	  int ind;
+	  printf("2d cut plane is nx = %d\n", nx_2d_plane);
 	  for (nx=0; nx<error_map_mesh; nx++) {
 	    for (ny=0; ny<error_map_mesh; ny++) {
 	      for (nz=0; nz<error_map_mesh; nz++) {
 		ind = 2*((error_map_mesh*error_map_mesh*nx) + error_map_mesh*(ny) + (nz));
 		fprintf(error_out, "%d %d %d %e\n", nx, ny, nz, FLOAT_CAST error_map[ind]);
+		if(nx == nx_2d_plane)
+		  fprintf(error_out_2d, "%d %d %e\n", ny, nz, FLOAT_CAST error_map[ind]);
 	      }
 	    }
 	  }
