@@ -34,7 +34,7 @@ void add_param( char *name, int type, int reqopt, void *value, cmd_parameters_t 
     list = params->optional;
     params->n_opt = n;
   }
-  else if(reqopt == ARG_REQUIRED) {
+  else {
     n = params->n_req;
     params->required = realloc(params->required, ++n * sizeof(cmd_parameter_t *));
     list = params->required;

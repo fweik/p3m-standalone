@@ -80,14 +80,14 @@ int main ( int argc, char **argv ) {
 
     FLOAT_TYPE alphamin,alphamax,alphastep;
     FLOAT_TYPE alpha;
-    FLOAT_TYPE wtime;
+    FLOAT_TYPE wtime = 0;
 
     FILE* fout;
     
     system_t *system;
     method_t method;
     parameters_t parameters, parameters_ewald;
-    data_t *data, *data_ewald;
+    data_t *data = NULL, *data_ewald = NULL;
     forces_t *forces, *forces_ewald;
     char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL, *sys_out = NULL, *rdf_file = NULL, *vtf_file = NULL, *cdf_file = NULL;
     error_t error;
@@ -101,7 +101,7 @@ int main ( int argc, char **argv ) {
     int inhomo_error_mesh = 64;
     int inhomo_error_cao = 5;
 
-    FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est;
+    FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est = 0;
     int i,j, calc_k_error, calc_est;
 
     int error_map_mesh=64, error_map_cao=1;
@@ -220,7 +220,7 @@ int main ( int argc, char **argv ) {
       printf("Using %d bins, %lf <= r <= %lf\n", rdf_bins, rdf_min, rdf_max);
       int bins = rdf_bins;
       FLOAT_TYPE *rdf = radial_distribution(rdf_min, rdf_max, rdf_bins, system);
-      FLOAT_TYPE *c;
+      /* FLOAT_TYPE *c; */
       /* FLOAT_TYPE *rdf_sym = Init_array( 2*bins-1, 2*sizeof(FLOAT_TYPE)); */
       /* c = low_pass_forward( bins, rdf, 0.3); */
       /* c = low_pass_backward(bins, c, 0.3); */
@@ -333,7 +333,7 @@ int main ( int argc, char **argv ) {
     } else {
       fout = fopen ( "out.dat","w" );
     }
-
+ 
     if(param_isset("no_calculation", params) != 1) {
       printf ( "Init" );
       fflush(stdout);
