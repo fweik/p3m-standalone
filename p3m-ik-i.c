@@ -177,6 +177,8 @@ void P3M_ik_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     assign_charge( s, p, d, 0 );
     assign_charge( s, p, d, 1 );
 
+  /* assign_charge_interlacing( s, p, d ); */
+
   #ifdef __detailed_timings
   timer = MPI_Wtime() - timer;
   t_charge_assignment[1] = timer;
@@ -239,8 +241,10 @@ void P3M_ik_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 
 
     /* force assignment */
-    assign_forces ( 1.0 / ( 2.0*s->length*s->length*s->length ), s, p, d, f, 0 );
-    assign_forces ( 1.0 / ( 2.0*s->length*s->length*s->length ), s, p, d, f, 1 );
+    /* assign_forces ( 1.0 / ( 2.0*s->length*s->length*s->length ), s, p, d, f, 0 ); */
+    /* assign_forces ( 1.0 / ( 2.0*s->length*s->length*s->length ), s, p, d, f, 1 ); */
+
+   assign_forces_interlacing ( 1.0 / ( 2.0*s->length*s->length*s->length ), s, p, d, f );
 
   #ifdef __detailed_timings
     timer = MPI_Wtime() - timer;

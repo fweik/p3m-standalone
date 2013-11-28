@@ -14,6 +14,8 @@ const int smooth_numbers[] = {4, 5, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 3
 
 const int smooth_numbers_n = 122;
 
+//#define TUNE_DEBUG
+
 #ifdef TUNE_DEBUG
   #include <stdio.h>
   #define TUNE_TRACE(A) A
