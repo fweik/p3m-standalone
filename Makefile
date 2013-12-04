@@ -1,5 +1,5 @@
 CC=mpicc
-CFLAGS=-Wall -O3 -I/home/fweik/Base/include -DNDEBUG
+CFLAGS=-Wall -O3 -I/home/fweik/Base/include -DNDEBUG -fopenmp
 CFLAGS+=-std=c99
 LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 -lfftw3l -lm
 
@@ -7,7 +7,7 @@ CUDA_COMPILER=nvcc
 CUDA_COMPILER_FLAGS=-arch=sm_30 -g -G
 CUDA_COMPILER_LFLAGS=-lcufft
 
-OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o statistics.o cubature.o tuning.o inhomogenous_error.o p3m-ik-real.o parameters.o
+OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o statistics.o cubature.o tuning.o inhomogenous_error.o p3m-ik-real.o parameters.o p3m-ad-real.o
 
 all: p3mstandalone
 

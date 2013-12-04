@@ -576,6 +576,75 @@ void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int 
     }
 }
 
+void assign_charge_and_derivatives_real(system_t *s, parameters_t *p, data_t *d)
+{
+    int dim, i0, i1, i2;
+    int id;
+    FLOAT_TYPE tmp0, tmp1, tmp2;
+    FLOAT_TYPE tmp0_x, tmp1_y, tmp2_z;
+    /* position of a particle in local mesh units */
+    FLOAT_TYPE pos;
+    /* 1d-index of nearest mesh point */
+    int nmp;
+    /* index for caf interpolation grid */
+    int arg[3];
+    /* index, index jumps for rs_mesh array */
+    FLOAT_TYPE cur_ca_frac_val;
+    int cf_cnt;
+
+    int base[3];
+    int i,j,k;
+    int Mesh = p->mesh;
+    FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
+
+    FLOAT_TYPE Hi = (double)Mesh/s->length;
+    FLOAT_TYPE Leni = 1.0/s->length;
+    FLOAT_TYPE q, qLeni;
+
+    double pos_shift;
+
+    pos_shift = (double)((p->cao-1)/2);
+    /* particle position in mesh coordinates */
+    for (id=0;id<s->nparticles;id++) {
+        cf_cnt = id*p->cao3;
+	q = s->q[id] ;
+	qLeni = q * Leni;
+        for (dim=0;dim<3;dim++) {
+	  pos    = s->p->fields[dim][id]*Hi - pos_shift;
+	  nmp = int_floor(pos + 0.5);
+	  base[dim]  = wrap_mesh_index( nmp, d->mesh);
+	  arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
+	  d->ca_ind[0][3*id + dim] = base[dim];
+        }
+
+        for (i0=0; i0<p->cao; i0++) {
+	  i = wrap_mesh_index(base[0] + i0, d->mesh);
+	  tmp0 = d->inter->interpol[arg[0]][i0];
+	  tmp0_x = d->inter->interpol_d[arg[0]][i0];
+	  for (i1=0; i1<p->cao; i1++) {
+	    j = wrap_mesh_index(base[1] + i1, d->mesh);
+	    tmp1 = d->inter->interpol[arg[1]][i1];
+	    tmp1_y = d->inter->interpol_d[arg[1]][i1];
+	    for (i2=0; i2<p->cao; i2++) {
+	      k = wrap_mesh_index(base[2] + i2, d->mesh);
+	      tmp2 = d->inter->interpol[arg[2]][i2];
+	      tmp2_z = d->inter->interpol_d[arg[2]][i2];
+	      cur_ca_frac_val = q * tmp0 * tmp1 * tmp2;
+	      d->cf[0][cf_cnt] = cur_ca_frac_val ;
+
+	      d->dQdx[0][cf_cnt] = tmp0_x * tmp1 * tmp2 * qLeni;
+	      d->dQdy[0][cf_cnt] = tmp0 * tmp1_y * tmp2 * qLeni;
+	      d->dQdz[0][cf_cnt] = tmp0 * tmp1 * tmp2_z * qLeni;
+
+	      d->Qmesh[Mesh*(Mesh+2) * i + (Mesh+2) * j + k] += cur_ca_frac_val;
+	      cf_cnt++;
+	    }
+	  }
+        }
+    }
+}
+
+
 // assign the forces obtained from k-space
 void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii)
 {
@@ -617,3 +686,42 @@ void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t 
     }
   }
 }
+
+// assign the forces obtained from k-space
+void assign_forces_ad_real(double force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f)
+{
+  int i,i0,i1,i2;
+  int cf_cnt=0;
+  int *base;
+  int j,k,l;
+  FLOAT_TYPE B;
+  FLOAT_TYPE force_x, force_y, force_z;
+  int cao = p->cao;
+  int mesh = p->mesh;
+
+  cf_cnt=0;
+  for (i=0; i<s->nparticles; i++) {
+    force_x = force_y = force_z = 0.0;
+    base = d->ca_ind[0] + 3*i;
+    cf_cnt = i*p->cao3;
+    for (i0=0; i0<cao; i0++) {
+      j = wrap_mesh_index(base[0] + i0, d->mesh);
+      for (i1=0; i1<cao; i1++) {
+	k = wrap_mesh_index(base[1] + i1, d->mesh);
+	for (i2=0; i2<cao; i2++) {
+	  l = wrap_mesh_index(base[2] + i2, d->mesh);
+
+	  B = force_prefac*d->Qmesh[mesh*(mesh+2) * j + (mesh+2) * k + l];
+	  force_x -= B*d->dQdx[0][cf_cnt];
+	  force_y -= B*d->dQdy[0][cf_cnt];
+	  force_z -= B*d->dQdz[0][cf_cnt];
+	  cf_cnt++;
+	}
+      }
+    }
+    f->f_k->fields[0][i] += force_x;
+    f->f_k->fields[1][i] += force_y;
+    f->f_k->fields[2][i] += force_z;
+  }
+}
+

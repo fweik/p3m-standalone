@@ -101,7 +101,8 @@ enum {
     METHOD_P3M_ad_i = 3,
     METHOD_EWALD = 4,
     METHOD_P3M_ik_cuda = 5,
-    METHOD_P3M_ik_r = 6
+    METHOD_P3M_ik_r = 6,
+    METHOD_P3M_ad_r = 7
 };
 
 // Container type for arrays of 3d-vectors

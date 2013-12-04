@@ -80,7 +80,9 @@ void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
   fak1 = 2.0/SQR(s->length);
   fak2 = SQR(PI/(p->alpha*s->length));
 
-#pragma omp parallel for collapse(3) private(n_sqr)
+#ifdef _OPENMP
+  #pragma omp parallel for collapse(3) private(n_sqr)
+#endif 
   for (nx=0; nx <= kmax; nx++)
     for (ny=0; ny <= kmax; ny++)
       for (nz=0; nz <= kmax; nz++) {
@@ -123,16 +125,19 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
 	  rhohat_re = 0.0;
 	  rhohat_im = 0.0;
           ghat = d->G_hat[r_ind(abs(nx), abs(ny), abs(nz))];          
-          
+#ifdef _OPENMP          
 #pragma omp parallel for private(kr) reduction( + : rhohat_re ) reduction( + : rhohat_im )
+#endif
 	  for (i=0; i<s->nparticles; i++) {
             kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
 	    rhohat_re += s->q[i] * COS(kr);
 	    rhohat_im += s->q[i] * -SIN(kr);
           }
+#ifdef _OPENMP
 #pragma omp barrier
 
 #pragma omp parallel for private(kr, force_factor)
+#endif
 	  for (i=0; i<s->nparticles; i++) {
 	    kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
 	     
@@ -144,7 +149,9 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
             f->f_k->z[i] += nz * force_factor;
 	  }
 	}
+#ifdef _OPENMP
 #pragma omp barrier
+#endif
   /* compute energy */
   energy += ghat*(SQR(rhohat_re) + SQR(rhohat_im));
 

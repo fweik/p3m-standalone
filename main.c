@@ -23,6 +23,7 @@
 #include "p3m-ad.h"
 #include "p3m-ad-i.h"
 #include "p3m-ik-real.h"
+#include "p3m-ad-real.h"
 
 #include "ewald.h"
 
@@ -148,8 +149,10 @@ int main ( int argc, char **argv ) {
     #ifdef _OPENMP
     add_param( "threads", ARG_TYPE_INT, ARG_OPTIONAL, &nthreads, &params );
     #endif
+    add_param( "inhomo_error", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     add_param( "inhomo_mesh", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_error_mesh, &params);
     add_param( "inhomo_cao", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_error_cao, &params);
+    add_param( "inhomo_output", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     add_param( "error_map", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     add_param( "error_map_mesh", ARG_TYPE_INT, ARG_OPTIONAL, &error_map_mesh, &params);
     add_param( "error_map_cao", ARG_TYPE_INT, ARG_OPTIONAL, &error_map_cao, &params);
@@ -316,6 +319,10 @@ int main ( int argc, char **argv ) {
     else if ( methodnr == method_p3m_ik_r.method_id )
         method = method_p3m_ik_r;
 #endif
+#ifdef P3M_AD_R_H
+    else if ( methodnr == method_p3m_ad_r.method_id )
+        method = method_p3m_ad_r;
+#endif
     else {
         fprintf ( stderr, "Method %d not know.", methodnr );
         exit ( 126 );
@@ -351,7 +358,7 @@ int main ( int argc, char **argv ) {
     /* Init_neighborlist ( system, &parameters, data ); */
     /* printf ( ".\n" ); */
 
-    FLOAT_TYPE gen_err_dip, gen_err;
+    int inhomo_write = param_isset("inhomo_output", params);
 
     printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error-Est", "K-Error-Est Generic-K-Space-err" );
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
@@ -419,8 +426,11 @@ int main ( int argc, char **argv ) {
 	  estimate = method.Error ( system, &parameters );
 	  error_k_est = method.Error_k ( system, &parameters);
 	}
+
 	FLOAT_TYPE err_inhomo = 0.0;
-	/* err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, P3M_BRILLOUIN); */
+	if(param_isset("inhomo_error", params)) {
+	  err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, P3M_BRILLOUIN, inhomo_write);
+	}
 	
 	FLOAT_TYPE rs_error = Realspace_error( system, &parameters );
 
