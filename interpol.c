@@ -12,7 +12,6 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
 {
   FLOAT_TYPE dInterpol=(FLOAT_TYPE)MaxInterpol;
   FLOAT_TYPE x;
-  FLOAT_TYPE *buf;
   long   i,j;
 
   interpolation_function_t i_fct = ip_bspline;

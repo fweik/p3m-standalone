@@ -26,7 +26,7 @@ int main(void) {
   double time_nlist, time_n2;
   
   for(i = 1000;i <= 10000;i+=1000) {
-    s = generate_system( FORM_FACTOR_RANDOM, i, 10.0*pow( i, 1.0/3.0), 1.0);
+    s = generate_system( SYSTEM_RANDOM, i, 10.0*pow( i, 1.0/3.0), 1.0);
     f = Init_forces(i);
     
     d.neighbor_list = malloc(i*sizeof(neighbor_list_t));

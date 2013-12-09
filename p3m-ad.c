@@ -334,7 +334,6 @@ FLOAT_TYPE A_ad_water(int nx, int ny, int nz, system_t *s, parameters_t *p) {
   FLOAT_TYPE km2;
   FLOAT_TYPE U2, U2m = 0.0, U2km = 0.0;
   FLOAT_TYPE mesh_i = 1.0/p->mesh;
-  FLOAT_TYPE d = 1.0;
   FLOAT_TYPE sin_term = 0.0, kmdHO, kmdHH;
 
   for (mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
@@ -373,7 +372,6 @@ FLOAT_TYPE B_ad_water(int nx, int ny, int nz, system_t *s, parameters_t *p) {
   FLOAT_TYPE ret = 0.0;
   FLOAT_TYPE U2;
   FLOAT_TYPE mesh_i = 1.0/p->mesh;
-  FLOAT_TYPE d = 1.0;
   FLOAT_TYPE sin_term = 0.0, kmdHH, kmdHO;
   FLOAT_TYPE P3M_BRILLOUIN_LOCAL = P3M_BRILLOUIN;
 

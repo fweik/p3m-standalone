@@ -4,8 +4,6 @@
 #include <string.h>
 #include <mpi.h>
 
-#include <valgrind/callgrind.h>
-
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -53,14 +51,6 @@
 
 #include "statistics.h"
 #include "common.h"
-
-#include "inhomogenous_error.h"
-
-// #define WRITE_FORCES
-
-// #define FORCE_DEBUG
-// #define CA_DEBUG
-
 #define ERROR_MAP_2D_PLANE 0.5
 
 static FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {
@@ -102,6 +92,7 @@ int main ( int argc, char **argv ) {
     int inhomo_error_mesh = 64;
     int inhomo_error_cao = 5;
     int inhomo_mc = 0;
+    char *inhomo_output = NULL;
 
     FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est = 0;
     int i,j, calc_k_error, calc_est;
@@ -154,7 +145,7 @@ int main ( int argc, char **argv ) {
     add_param( "inhomo_mesh", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_error_mesh, &params);
     add_param( "inhomo_cao", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_error_cao, &params);
     add_param( "inhomo_mc", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_mc, &params);
-    add_param( "inhomo_output", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
+    add_param( "inhomo_output", ARG_TYPE_STRING, ARG_OPTIONAL, &inhomo_output, &params);
     add_param( "error_map", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     add_param( "error_map_mesh", ARG_TYPE_INT, ARG_OPTIONAL, &error_map_mesh, &params);
     add_param( "error_map_cao", ARG_TYPE_INT, ARG_OPTIONAL, &error_map_cao, &params);
@@ -184,27 +175,27 @@ int main ( int argc, char **argv ) {
       exit(1);
     }
 
-    if( !(param_isset("positions", params) == 1) &&
-	!((param_isset("box", params) == 1) && (param_isset("particles", params))) ) {
+    if( !param_isset("positions", params) &&
+	!(param_isset("box", params) && param_isset("particles", params)))  {
       puts("Need to provide either 'positions' or 'box' and 'particles'.");
       exit(1);
     }
 
-    if( param_isset("positions", params) == 1) {
+    if( param_isset("positions", params)) {
     // Inits the system and reads particle data and parameters from file.
       puts("Reading file");
       system = Read_system ( &parameters, pos_file );
       puts("Done.");
     } else {
       puts("Generating system.");
-      if( !(param_isset("charge", params) == 1)) {
+      if( !param_isset("charge", params)) {
 	charge=1.0;
       }
       if(param_isset("system_type", params)) {
 	printf("Using system type %d\n", form_factor);
 	system = generate_system( form_factor, npart, length, charge);
       } else {
-	system = generate_system( FORM_FACTOR_RANDOM, npart, length, charge);
+	system = generate_system( SYSTEM_RANDOM, npart, length, charge);
       }
       puts("Done.");
     }
@@ -360,8 +351,6 @@ int main ( int argc, char **argv ) {
     /* Init_neighborlist ( system, &parameters, data ); */
     /* printf ( ".\n" ); */
 
-    int inhomo_write = param_isset("inhomo_output", params);
-
     printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error-Est", "K-Error-Est Generic-K-Space-err" );
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
       parameters_ewald.alpha = parameters.alpha;
@@ -369,15 +358,12 @@ int main ( int argc, char **argv ) {
       if(param_isset("no_calculation", params) != 1) {
 	method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
-	CALLGRIND_START_INSTRUMENTATION;
-
 	wtime = MPI_Wtime();
 
 	Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 
 	wtime = MPI_Wtime() - wtime;
 
-	CALLGRIND_STOP_INSTRUMENTATION;
 
       }
       error_k =0.0;
@@ -431,7 +417,7 @@ int main ( int argc, char **argv ) {
 
 	FLOAT_TYPE err_inhomo = 0.0;
 	if(param_isset("inhomo_error", params)) {
-	  err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, inhomo_mc, inhomo_write);
+	  err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, inhomo_mc, inhomo_output);
 	}
 	
 	FLOAT_TYPE rs_error = Realspace_error( system, &parameters );

@@ -11,7 +11,7 @@
 #include <math.h>
 
 int main(void) {
-  system_t *system = generate_system( FORM_FACTOR_RANDOM, 200, 10.0, 1.0);
+  system_t *system = generate_system( SYSTEM_RANDOM, 200, 10.0, 1.0);
   parameters_t parameters;
   forces_t *forces;
   FLOAT_TYPE ref_prec = -1.0;

@@ -111,7 +111,6 @@ FLOAT_TYPE *radial_distribution(FLOAT_TYPE r_min, FLOAT_TYPE r_max, int bins, sy
 
 void radial_distribution_species(FLOAT_TYPE r_min, FLOAT_TYPE r_max, int bins, system_t *s) {
   FLOAT_TYPE *rdf = Init_array( 4*bins, sizeof(FLOAT_TYPE));
-  char filename[8];
   FLOAT_TYPE dr = (r_max - r_min) / bins, dx, dy, dz, r2, r, r_min2, r_max2;
   FLOAT_TYPE lengthi = 1.0/s->length;
   int n[4], bin;
@@ -235,7 +234,4 @@ void rshif_array( int N, FLOAT_TYPE *data, int shift ) {
   fftw_free(buf);
 }
 
-double *make_even( int N, FLOAT_TYPE *data ) {
-  FLOAT_TYPE *new = Init_array( 2*N, sizeof(FLOAT_TYPE));
-  
-}
+

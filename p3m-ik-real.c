@@ -70,27 +70,6 @@ data_t *Init_ik_r ( system_t *s, parameters_t *p ) {
     return d;
 }
 
-static void c2r_pad_input(int mesh, FLOAT_TYPE *in) {
-  int ind_in = 0, ind_out = 0;
-  for(int i = 0; i < mesh*mesh*mesh; i++) {
-    in[ind_out++] = in[2*ind_in++];
-    if((ind_in % mesh) == 0) {
-      in[ind_out++] = 0;
-      in[ind_out++] = 0;
-    }
-  }  
-}
-
-static void r2c_pad_input(int mesh, FLOAT_TYPE *in) {
-  int ind_out = mesh*mesh*(mesh + 2) - 1;
-  for(int i = mesh*mesh*mesh - 1; i >= 0 ; i--) {
-    if((ind_out+1) % (mesh+2) == 0)
-       ind_out -= 2;
-    in[2*i] = in[ind_out--];
-    in[2*i+1] = 0;
-  }  
-}
-
 void Aliasing_sums_ik_r ( system_t *s, parameters_t *p, data_t *d, int NX, int NY, int NZ,
                         FLOAT_TYPE *Zaehler, FLOAT_TYPE *Nenner ) {
     FLOAT_TYPE S1,S2,S3;

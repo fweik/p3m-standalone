@@ -160,21 +160,20 @@ system_t *generate_gaussian_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_char
 
 
 system_t *generate_system( int form_factor, int size, FLOAT_TYPE box, FLOAT_TYPE max_charge ) {
-  srand48(42);
   switch(form_factor) {
-  case FORM_FACTOR_RANDOM: 
+  case SYSTEM_RANDOM: 
     return generate_random_system( size, box, max_charge );
     break;
-  case FORM_FACTOR_GAUSSIAN: 
+  case SYSTEM_GAUSSIAN: 
     return generate_gaussian_system( size, box, max_charge );
     break;
-  case FORM_FACTOR_INNER_BOX:
+  case SYSTEM_INNER_BOX:
     return generate_inner_box(size, box);
     break;
-  case FORM_FACTOR_MADELUNG:
+  case SYSTEM_MADELUNG:
     return generate_madelung(size,box);
     break;
-  case FORM_FACTOR_SEPERATED_DIPOLE:
+  case SYSTEM_SEPARATED_DIPOLE:
     return generate_seperated_dipole(size,box);
     break;
   default:

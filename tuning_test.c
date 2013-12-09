@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     fprintf(sys_params, "%d %lf %lf\n", i, FLOAT_CAST (double)(i)/(box*box*box), FLOAT_CAST box);
     fflush(sys_params);
 
-    s = generate_system( FORM_FACTOR_RANDOM, i, box, charge);
+    s = generate_system( SYSTEM_RANDOM, i, box, charge);
 
     for(int j = 0; j < 6; j++) {
       memset(&p, 0, sizeof(parameters_t));

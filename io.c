@@ -51,8 +51,8 @@ void Read_exact_forces(system_t *s, char *filename)
 {
     FILE *fp;
     int i, ret_val;
-    FLOAT_TYPE E_Coulomb;
     double buf[6];
+    int taw;
 
     printf("npart %d\n", s->nparticles);
 
@@ -64,8 +64,7 @@ void Read_exact_forces(system_t *s, char *filename)
     }
 
     for (i=0; i<s->nparticles; i++) {
-        ret_val = fscanf(fp,"%d\t%lf\t%lf\t%lf\n",
-			 &E_Coulomb, buf, buf + 1, buf + 2);
+        ret_val = fscanf(fp,"%d\t%lf\t%lf\t%lf\n", &taw, buf, buf + 1, buf + 2);
 	s->reference->f->x[i] = buf[0];
 	s->reference->f->y[i] = buf[1];
 	s->reference->f->z[i] = buf[2];
@@ -159,7 +158,6 @@ void Write_exact_forces(system_t *s, char *forces_file) {
 
 void Write_system_cuda( system_t *s, parameters_t *p, char *filename) {
     FILE *fp;
-    int i;
 
     assert(filename != NULL);
 

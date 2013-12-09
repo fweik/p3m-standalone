@@ -5,8 +5,6 @@
 
 #include <math.h>
 
-#define P3M_AD_FAST_SELF_FORCE
-
 #ifdef P3M_AD_FAST_SELF_FORCE
 #warning P3M_AD_FAST_SELF_FORCES
 #warning Will produce unaccurate results!
@@ -100,7 +98,9 @@ void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
 	/* printf("b(%d, %d, %d) = (%e, %e, %e)\n", m[0], m[1], m[2], FLOAT_CAST d->self_force_corrections[indp-3],  */
 	/*        FLOAT_CAST d->self_force_corrections[indp-2], FLOAT_CAST d->self_force_corrections[indp-1]);  */
       }
+#ifdef _OPENMP
 #pragma omp barrier
+#endif
 }
 
 void Substract_self_forces( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {

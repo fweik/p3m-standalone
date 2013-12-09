@@ -75,7 +75,7 @@ int main ( int argc, char **argv ) {
 
     parameters.rcut = atof(argv[3]);
 
-    system = generate_system( FORM_FACTOR_RANDOM, nparticles, boxl, 1.0);
+    system = generate_system( SYSTEM_RANDOM, nparticles, boxl, 1.0);
 
     Calculate_reference_forces( system, &parameters );
 

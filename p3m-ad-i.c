@@ -108,7 +108,9 @@ void Influence_function_ad_i( system_t *s, parameters_t *p, data_t *d )
   int ind = 0;
   int Mesh= d->mesh;
 
+#ifdef _OPENMP
 #pragma omp parallel for private(NZ, ind, Zaehler, Nenner1, Nenner2, Nenner3, Nenner4) collapse(3)
+#endif
   for (NX=0; NX<Mesh; NX++)
     {
       for (NY=0; NY<Mesh; NY++)

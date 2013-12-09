@@ -18,7 +18,7 @@ int P3M_BRILLOUIN_TUNING = 1;
 
 FLOAT_TYPE sinc(FLOAT_TYPE d)
 {
-  double PId = PI*d;
+  FLOAT_TYPE PId = PI*d;
   return (d == 0.0) ? 1.0 : SIN(PId)/PId;
 }
 
@@ -294,11 +294,11 @@ FLOAT_TYPE C(int nx, int ny, int nz, FLOAT_TYPE l, FLOAT_TYPE alpha, int mc, int
 
 
 FLOAT_TYPE U2(int nx, int ny, int nz, int m, int p) {
-  return pow(sinc(nx/m)*sinc(ny/m)*sinc(nz/m), 2*p);
+  return pow(sinc((FLOAT_TYPE)(nx)/m)*sinc((FLOAT_TYPE)(ny)/m)*sinc((FLOAT_TYPE)(nz)/m), 2*p);
 }
 
 FLOAT_TYPE U(int nx, int ny, int nz, int m, int p) {
-  return pow(sinc(nx/m)*sinc(ny/m)*sinc(nz/m), p);
+  return pow(sinc((FLOAT_TYPE)(nx)/m)*sinc((FLOAT_TYPE)(ny)/m)*sinc((FLOAT_TYPE)(nz)/m), p);
 }
 
 FLOAT_TYPE A(int nx, int ny, int nz, FLOAT_TYPE l, FLOAT_TYPE alpha, int m, int mc, int p) {
@@ -369,12 +369,12 @@ FLOAT_TYPE *Error_map(system_t *s, forces_t *f, forces_t *f_ref, int mesh, int c
   for(int i = 0; i < 2*mesh*mesh*mesh; i++)
     dF_total_mesh += error_mesh[i];
 
-  printf("dF_total %e dF_total_mesh %e\n", dF_total, dF_total_mesh);
+  printf("dF_total %e dF_total_mesh %e\n", FLOAT_CAST dF_total, FLOAT_CAST dF_total_mesh);
 
   return error_mesh;
 }
 
-FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh, int cao, int mc, int write_mesh) {
+FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh, int cao, int mc, char *out_file) {
   //  printf("Generic_error_estimate_inhomo(mesh %d cao %d, mc %d):\n", mesh, cao, mc);
   int ind = 0;
   int nx, ny, nz;
@@ -396,7 +396,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 
   FFTW_PLAN kernel_forward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh,(FFTW_COMPLEX *) Kernel[3], (FFTW_COMPLEX *) Kernel[3],FFTW_FORWARD, FFTW_MEASURE);
   
-  FLOAT_TYPE K2 = 0.0;
+  FLOAT_TYPE k2 = 0.0;
   parameters_t param;
   param.mesh = mesh;
   param.alpha = p->alpha;
@@ -417,10 +417,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 
   /* Homogenous part */
 
-  puts("Homogenous part.");
-
-  double u,um,b,a, u2, gm;
-
+  FLOAT_TYPE u,um,b,a, u2, gm;
 
   for (nx=0; nx<mesh; nx++) {
     tn[0] = (nx >= mesh/2) ? (nx - mesh) : nx;
@@ -431,33 +428,33 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	ind = 2*(mesh*mesh*nx + mesh*ny + nz);
 
 	if( (tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0) ) 
-	  K2 = 0.0;
+	  k2 = 0.0;
 	else {
 	  u2 = U2(tn[0],tn[1],tn[2], mesh, param.cao);
-	  b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
-	  a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
-	  gm = Gm(tn[0],tn[1],tn[2],s->length, param.alpha, mesh, 0);
+	  b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 1, param.cao);
+	  a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 1, param.cao);
+	  gm = Gm(tn[0],tn[1],tn[2],s->length, param.alpha, mesh, 1);
 
-	  K2 = u2*b/a - gm;
+	  k2 = (u2*b/a) - gm;
 
-	  printf("(%d, %d, %d): tn = (%d, %d, %d), K2 = %e * %e / %e - %e = %e\n", nx, ny, nz, tn[0], tn[1], tn[2], u2,b,a,gm,K2);
-	  printf("\t u2 = %e\n", u2);
-	  printf("\t b = %e\n", b);
-	  printf("\t a = %e\n", a);
-	  printf("\t gm = %e\n", gm);
-
+	  /* printf("(%d, %d, %d): tn = (%d, %d, %d), K2 = %.10e * %.10e / %.10e - %.10e = %.10e, %e\n", nx, ny, nz, tn[0], tn[1], tn[2], FLOAT_CAST u2, FLOAT_CAST b, FLOAT_CAST a, FLOAT_CAST gm, FLOAT_CAST k2, FLOAT_CAST (u2*b/a - gm)); */
+	  /* printf("\t u2 = %e\n", FLOAT_CAST u2); */
+	  /* printf("\t b = %e\n", FLOAT_CAST b); */
+	  /* printf("\t a = %e\n", FLOAT_CAST a); */
+	  /* printf("\t gm = %e\n", FLOAT_CAST gm); */
+	  /* printf("\t -2*PI*tn/s->length = %e %e %e\n", FLOAT_CAST -2*PI*tn[0]/s->length, FLOAT_CAST -2*PI*tn[1]/s->length, FLOAT_CAST -2*PI*tn[2]/s->length); */
 	}
 
 	Kernel[0][ind + 0] = 0;
-	Kernel[0][ind + 1] = -2*PI*tn[0]/s->length*K2;
+	Kernel[0][ind + 1] = -2*PI*tn[0]/s->length*k2;
 	Kernel[1][ind + 0] = 0;
-	Kernel[1][ind + 1] = -2*PI*tn[1]/s->length*K2;
+	Kernel[1][ind + 1] = -2*PI*tn[1]/s->length*k2;
 	Kernel[2][ind + 0] = 0;
-	Kernel[2][ind + 1] = -2*PI*tn[2]/s->length*K2;	  
+	Kernel[2][ind + 1] = -2*PI*tn[2]/s->length*k2;	  
 
-	for(int i = 0; i < 3; i++) {
-	  printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, Kernel[i][ind + 0], Kernel[i][ind + 1]);
-	}
+	/* for(int i = 0; i < 3; i++) { */
+	/*   printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
+	/* } */
 
 
       }
@@ -476,7 +473,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	kr = 0;
 	for(int i = 0; i < 3; i++) {
 	  kr += SQR(Kernel[i][ind + 0]);
-	  printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, Kernel[i][ind + 0], Kernel[i][ind + 1]);
+	  /* printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
 	}
 	Kernel[3][ind + 0] = kr;
 	Kernel[3][ind + 1] = 0;
@@ -485,8 +482,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   }
 
   /* Inhomogemous paprt */
-
-  puts("========================= Inhomogenous Part =============================");
 
   for(int mx = -mc; mx <=mc; mx++)
     for(int my = -mc; my <=mc; my++)
@@ -501,37 +496,37 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	      tn[2] = (nz >= mesh/2) ? (nz - mesh) : nz;
 	      ind = 2*(mesh*mesh*nx + mesh*ny + nz);
 
-	      if( (tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0) ) 
-		K2 = 0.0;
+	      if((tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0)) 
+		k2 = 0.0;
 	      else {
 		u = U(tn[0],tn[1],tn[2], mesh, param.cao);
 		um = U(-tn[0]-mx*mesh,-tn[1]-my*mesh,-tn[2]-mz*mesh, mesh, param.cao);
-		b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 1, param.cao);
+		b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
 		a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
-		K2 = 2*PI*u*um*b/a;
+		k2 = 2*PI*u*um*b/a;
 		
 	      }
 
 	      Kernel[0][ind + 0] = 0;
-	      Kernel[0][ind + 1] = -tn[0]/s->length*K2;
+	      Kernel[0][ind + 1] = -(tn[0]/s->length)*k2;
 	      Kernel[1][ind + 0] = 0;
-	      Kernel[1][ind + 1] = -tn[1]/s->length*K2;
+	      Kernel[1][ind + 1] = -(tn[1]/s->length)*k2;
 	      Kernel[2][ind + 0] = 0;
-	      Kernel[2][ind + 1] = -tn[2]/s->length*K2;	  
+	      Kernel[2][ind + 1] = -(tn[2]/s->length)*k2;	  
 
-	      printf("(%d, %d, %d): tn = (%d, %d, %d), K2 = %e\n", nx, ny, nz, tn[0], tn[1], tn[2], K2);
-	      printf("\t u = %e\n", u);
-	      printf("\t um = %e\n", um);
-	      printf("\t b = %e\n", b);
-	      printf("\t a = %e\n", a);
-	      for(int i = 0; i < 3; i++) {
-		printf("\tkernel[%d] = %e + I * %e\n", i, nx, ny, nz, Kernel[i][ind + 0], Kernel[i][ind + 1]);
-	      }
+	      /* printf("(%d, %d, %d): tn = (%d, %d, %d), k2 = %e\n", nx, ny, nz, tn[0], tn[1], tn[2], FLOAT_CAST k2); */
+	      /* printf("\t u = %e\n", FLOAT_CAST u); */
+	      /* printf("\t um = %e\n", FLOAT_CAST um); */
+	      /* printf("\t b = %e\n", FLOAT_CAST b); */
+	      /* printf("\t a = %e\n", FLOAT_CAST a); */
+	      /* for(int i = 0; i < 3; i++) { */
+	      /* 	printf("\tkernel[%d](%d %d %d) = %e + I * %e\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
+	      /* } */
 
 	    }
 	  }
 	}
-	puts("=============================== FFT^-1 ========================================");
+
 	for(int i = 0; i < 3; i++)
 	  FFTW_EXECUTE(kernel_backward_plan[i]);
 
@@ -544,7 +539,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	      kr = 0;
 	      for(int i = 0; i < 3; i++) {
 		kr += SQR(Kernel[i][ind + 0]);
-		printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, Kernel[i][ind + 0], Kernel[i][ind + 1]);
+		/* printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
 	      }
 	      Kernel[3][ind + 0] += kr;
 	    }
@@ -582,8 +577,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 
     FLOAT_TYPE sum = 0.0;
     FILE *inhomo_out = NULL;
-    if(write_mesh) {
-      inhomo_out = fopen("inhomo.dat", "w");
+    if(out_file != NULL) {
+      inhomo_out = fopen(out_file, "w");
     }
     for (nx=0; nx<mesh; nx++) {
       for (ny=0; ny<mesh; ny++) {
@@ -591,7 +586,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	  ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
 	  if(inhomo_out != NULL)
 	    fprintf( inhomo_out, "%d %d %d %e %e %e %e %e\n", nx, ny, nz, 
-		     Kmesh[ind + 0], Kmesh[ind + 1], Kernel[0][ind + 0], Kernel[0][ind + 1], Qmesh[ind]);
+		     FLOAT_CAST Kmesh[ind + 0], FLOAT_CAST Kmesh[ind + 1], FLOAT_CAST Kernel[0][ind + 0], FLOAT_CAST Kernel[0][ind + 1], FLOAT_CAST Qmesh[ind]);
 	  sum += Kmesh[ind]*Qmesh[ind];
 	}
       }
@@ -607,8 +602,10 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   FFTW_FREE(Kernel[0]);
   FFTW_FREE(Kernel[1]);
   FFTW_FREE(Kernel[2]);
- 
-  return  SQRT(sum/s->nparticles)/SQR(s->length*SQR(s->length));
+  FFTW_FREE(Kernel[3]);
+  Free_interpolation(inter);
+
+  return  SQRT(sum)/SQR(s->length*SQR(s->length));
  
 }
 
@@ -620,7 +617,6 @@ FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, 
   int ind = 0;
   // Convinience variable to hold the current value of the influence function.
   FLOAT_TYPE G_hat = 0.0;
-  FLOAT_TYPE V = s->length * SQR(s->length);
   FLOAT_TYPE a,b,c;
 
   int nx, ny, nz;

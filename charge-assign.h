@@ -11,6 +11,7 @@
 void assign_charge(system_t *, parameters_t *, data_t *, int);
 void assign_forces(FLOAT_TYPE, system_t *, parameters_t *, data_t *, forces_t *, int);
 void assign_forces_real(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f);
+void assign_forces_ad_real(double force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f);
 
 void assign_charge_real(system_t *s, parameters_t *p, data_t *d);
 void assign_forces_real(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f);

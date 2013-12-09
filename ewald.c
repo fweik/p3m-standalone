@@ -113,7 +113,7 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
   int    i;
   int    nx, ny, nz;
   FLOAT_TYPE kr, energy=0.0;
-  FLOAT_TYPE rhohat_re, rhohat_im, ghat;
+  FLOAT_TYPE rhohat_re=0, rhohat_im=0, ghat=0;
   FLOAT_TYPE force_factor;
   FLOAT_TYPE Leni = 1.0/s->length;
   
