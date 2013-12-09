@@ -1,8 +1,6 @@
 #include <math.h>
 #include <string.h>
 
-#include <gsl/gsl_integration.h>
-
 #include "common.h"
 
 #include "realpart.h"
