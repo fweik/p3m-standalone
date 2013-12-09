@@ -101,6 +101,7 @@ int main ( int argc, char **argv ) {
 
     int inhomo_error_mesh = 64;
     int inhomo_error_cao = 5;
+    int inhomo_mc = 0;
 
     FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est = 0;
     int i,j, calc_k_error, calc_est;
@@ -152,6 +153,7 @@ int main ( int argc, char **argv ) {
     add_param( "inhomo_error", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     add_param( "inhomo_mesh", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_error_mesh, &params);
     add_param( "inhomo_cao", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_error_cao, &params);
+    add_param( "inhomo_mc", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_mc, &params);
     add_param( "inhomo_output", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     add_param( "error_map", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     add_param( "error_map_mesh", ARG_TYPE_INT, ARG_OPTIONAL, &error_map_mesh, &params);
@@ -429,7 +431,7 @@ int main ( int argc, char **argv ) {
 
 	FLOAT_TYPE err_inhomo = 0.0;
 	if(param_isset("inhomo_error", params)) {
-	  err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, P3M_BRILLOUIN, inhomo_write);
+	  err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, inhomo_mc, inhomo_write);
 	}
 	
 	FLOAT_TYPE rs_error = Realspace_error( system, &parameters );
