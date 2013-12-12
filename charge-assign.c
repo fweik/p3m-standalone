@@ -333,7 +333,7 @@ void collect_rms_nocf(system_t *s, parameters_t *p, FLOAT_TYPE *Qmesh, FLOAT_TYP
   FLOAT_TYPE Hi = (double)p->mesh/(double)s->length;
 
   FLOAT_TYPE **interpol = inter->interpol;
-  FLOAT_TYPE q;
+  FLOAT_TYPE q2;
   const int cao = p->cao;
 
   // Make sure parameter-set and data-set are compatible
@@ -351,11 +351,11 @@ void collect_rms_nocf(system_t *s, parameters_t *p, FLOAT_TYPE *Qmesh, FLOAT_TYP
       base[dim]  = wrap_mesh_index( nmp, mesh);
       arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
     }
-    q = s->q[id];
+    q2 = SQR(s->q[id]);
     rms[id] = 0.0;
     for (i0=0; i0<cao; i0++) {
       i = wrap_mesh_index(base[0] + i0, mesh);
-      tmp0 = q * interpol[arg[0]][i0];
+      tmp0 = q2 * interpol[arg[0]][i0];
       for (i1=0; i1<cao; i1++) {
 	tmp1 = tmp0 * interpol[arg[1]][i1];
 	j = wrap_mesh_index(base[1] + i1, mesh);
@@ -369,7 +369,6 @@ void collect_rms_nocf(system_t *s, parameters_t *p, FLOAT_TYPE *Qmesh, FLOAT_TYP
     } 
   }
 }
-
 
 // assign the forces obtained from k-space
 void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii) {

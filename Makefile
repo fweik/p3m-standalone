@@ -1,7 +1,10 @@
 CC=mpicc
 CFLAGS=-Wall -O3 -DNDEBUG
 CFLAGS+=-std=c99
-LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 -lfftw3l -lm
+LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
+#Uncomment to add long double 
+#LFLAGS+=-lfftw3l
+LFLAGS+=-lm
 
 CUDA_COMPILER=nvcc
 CUDA_COMPILER_FLAGS=-arch=sm_30 -g -G

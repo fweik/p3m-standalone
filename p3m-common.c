@@ -395,7 +395,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   }
 
   FFTW_PLAN kernel_forward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh,(FFTW_COMPLEX *) Kernel[3], (FFTW_COMPLEX *) Kernel[3],FFTW_FORWARD, FFTW_MEASURE);
-  
+  int mesh3 = mesh*mesh*mesh;
   FLOAT_TYPE k2 = 0.0;
   parameters_t param;
   param.mesh = mesh;
@@ -472,7 +472,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
 	kr = 0;
 	for(int i = 0; i < 3; i++) {
-	  kr += SQR(Kernel[i][ind + 0]);
+	  kr += SQR(Kernel[i][ind + 0]/mesh3);
 	  /* printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
 	}
 	Kernel[3][ind + 0] = kr;
@@ -538,7 +538,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	      ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
 	      kr = 0;
 	      for(int i = 0; i < 3; i++) {
-		kr += SQR(Kernel[i][ind + 0]);
+		kr += SQR(Kernel[i][ind + 0]/mesh3);
 		/* printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
 	      }
 	      Kernel[3][ind + 0] += kr;
@@ -574,29 +574,37 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 
   FFTW_EXECUTE(backward_plan);
 
+  FLOAT_TYPE *rms = Init_array(s->nparticles, sizeof(FLOAT_TYPE));
 
-    FLOAT_TYPE sum = 0.0;
-    FILE *inhomo_out = NULL;
-    if(out_file != NULL) {
-      inhomo_out = fopen(out_file, "w");
-    }
-    for (nx=0; nx<mesh; nx++) {
-      for (ny=0; ny<mesh; ny++) {
-	for (nz=0; nz<mesh; nz++) {
-	  ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
-	  if(inhomo_out != NULL)
-	    fprintf( inhomo_out, "%d %d %d %e %e %e %e %e\n", nx, ny, nz, 
-		     FLOAT_CAST Kmesh[ind + 0], FLOAT_CAST Kmesh[ind + 1], FLOAT_CAST Kernel[0][ind + 0], FLOAT_CAST Kernel[0][ind + 1], FLOAT_CAST Qmesh[ind]);
-	  sum += Kmesh[ind]*Qmesh[ind];
-	}
+  collect_rms_nocf(s, p, Kmesh, rms, mesh, inter);
+
+
+  FLOAT_TYPE sum = 0.0;
+  FILE *inhomo_out = NULL;
+  if(out_file != NULL) {
+    inhomo_out = fopen(out_file, "w");
+  }
+  for (nx=0; nx<mesh; nx++) {
+    for (ny=0; ny<mesh; ny++) {
+      for (nz=0; nz<mesh; nz++) {
+	ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
+	if(inhomo_out != NULL)
+	  fprintf( inhomo_out, "%d %d %d %e %e %e %e %e\n", nx, ny, nz, 
+		   FLOAT_CAST Kmesh[ind + 0], FLOAT_CAST Kmesh[ind + 1], FLOAT_CAST Kernel[0][ind + 0], FLOAT_CAST Kernel[0][ind + 1], FLOAT_CAST Qmesh[ind]);
+	sum += Kmesh[ind]*Qmesh[ind];
       }
     }
+  }
 
-    if(inhomo_out != NULL)
-      fclose(inhomo_out);
+  if(inhomo_out != NULL)
+    fclose(inhomo_out);
 
-  // printf("inhomo total %e\n", sum);
+  FLOAT_TYPE sum_part = 0.0;
 
+  for(int i = 0; i < s->nparticles; i++)
+    sum_part += rms[i];
+
+  FFTW_FREE(rms);
   FFTW_FREE(Qmesh);
   FFTW_FREE(Kmesh);
   FFTW_FREE(Kernel[0]);
@@ -605,7 +613,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   FFTW_FREE(Kernel[3]);
   Free_interpolation(inter);
 
-  return  SQRT(sum)/SQR(s->length*SQR(s->length));
+  return  SQRT(sum_part)/SQR(s->nparticles);
  
 }
 
