@@ -403,14 +403,12 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   param.cao = cao;
   param.cao3 = cao*cao*cao;
 
-  /* puts("Init interpolation."); */
   interpolation_t *inter = Init_interpolation( cao - 1, 0 );
 
   memset( Qmesh, 0, mesh*mesh*mesh*2 * sizeof(FLOAT_TYPE));
   memset( Kmesh, 0, mesh*mesh*mesh*2 * sizeof(FLOAT_TYPE));
 
-
-  /* puts("Assign charge."); */
+  /* Calculate \rho^2 */
   assign_charge_q2(s, &param, Qmesh, mesh, inter);
 
   int tn[3];
@@ -418,6 +416,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   /* Homogenous part */
 
   FLOAT_TYPE u,um,b,a, u2, gm;
+
+  /* Calculate K_homo(k) */
 
   for (nx=0; nx<mesh; nx++) {
     tn[0] = (nx >= mesh/2) ? (nx - mesh) : nx;
@@ -461,10 +461,14 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
     }
   }
 
+  /* Transform back */
+
   for(int i = 0; i < 3; i++)
     FFTW_EXECUTE(kernel_backward_plan[i]);
 
   FLOAT_TYPE kr;  
+
+  /* Calculate K^2_homo(r) */
 
   for (nx=0; nx<mesh; nx++) {
     for (ny=0; ny<mesh; ny++) {
@@ -472,7 +476,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
 	kr = 0;
 	for(int i = 0; i < 3; i++) {
-	  kr += SQR(Kernel[i][ind + 0]/mesh3);
+	  kr += SQR(Kernel[i][ind + 0]);
 	  /* printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
 	}
 	Kernel[3][ind + 0] = kr;
@@ -482,6 +486,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   }
 
   /* Inhomogemous paprt */
+
+  /* Calculate K_inhomo(k) */
 
   for(int mx = -mc; mx <=mc; mx++)
     for(int my = -mc; my <=mc; my++)
@@ -527,9 +533,13 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	  }
 	}
 
+	/* Transform back */
+
 	for(int i = 0; i < 3; i++)
 	  FFTW_EXECUTE(kernel_backward_plan[i]);
 
+
+	/* Calculate K^2_inhomo(r) */
 	FLOAT_TYPE kr;  
 
 	for (nx=0; nx<mesh; nx++) {
@@ -538,7 +548,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	      ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
 	      kr = 0;
 	      for(int i = 0; i < 3; i++) {
-		kr += SQR(Kernel[i][ind + 0]/mesh3);
+		kr += SQR(Kernel[i][ind + 0]);
 		/* printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
 	      }
 	      Kernel[3][ind + 0] += kr;
@@ -547,18 +557,18 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	}
       }
 
+  /* Calculate K^2(k) = FFT[K^2_homo(r) + K^2_inhomo(r) */
+
   FFTW_EXECUTE(kernel_forward_plan);
 
   /* Transform \rho^2 to k-space */
   
-  /* /\* puts("Exec FFT."); *\/ */
   FFTW_EXECUTE(forward_plan);
 
 
 
-  /* Calculate convolution \rho^2 * K */
+  /* Calculate convolution [\rho^2 * K] */
 
-  /* puts("Convolute."); */
   for (nx=0; nx<mesh; nx++) {
     for (ny=0; ny<mesh; ny++) {
       for (nz=0; nz<mesh; nz++) {
@@ -568,13 +578,16 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
       }
     }
   }
-  //  puts("Back fft.");
 
   /* Transform back to get real space error density. */
 
   FFTW_EXECUTE(backward_plan);
 
+  
   FLOAT_TYPE *rms = Init_array(s->nparticles, sizeof(FLOAT_TYPE));
+  memset(rms, 0, s->nparticles * sizeof(FLOAT_TYPE));
+
+  /* Interpolate on particles */
 
   collect_rms_nocf(s, p, Kmesh, rms, mesh, inter);
 

@@ -107,6 +107,28 @@ system_t *generate_inner_box(int size, FLOAT_TYPE box) {
   return s;
 }
 
+system_t *generate_slab(int size, FLOAT_TYPE box) {
+  FLOAT_TYPE width = 0.1 * box;
+  FLOAT_TYPE lower_x = (0.5 - width) * box;
+  puts("Generating inner box system.");
+  int i,j;
+  system_t *s;
+  gsl_rng *rng = gsl_rng_alloc(gsl_rng_default);
+
+  s = Init_system(size);
+  s->length = box;
+  s->q2 = 0.0;
+
+  for(i=0;i<size;i++) {
+    for(j=0;j<3;j++) {
+      s->p->fields[j][i] = lower_x + width * box*gsl_rng_uniform(rng);
+    }
+    s->q[i] = 1.0 - 2.0 * (i%2);
+    s->q2 += s->q[i] * s->q[i];
+  }
+  return s;
+}
+
 system_t *generate_random_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge ) {
   int i,j;
   system_t *s;
@@ -175,6 +197,9 @@ system_t *generate_system( int form_factor, int size, FLOAT_TYPE box, FLOAT_TYPE
     break;
   case SYSTEM_SEPARATED_DIPOLE:
     return generate_seperated_dipole(size,box);
+    break;
+  case SYSTEM_SLAB:
+    return generate_slab(size,box);
     break;
   default:
     fprintf( stderr, "Warning, form factor not known.\n");
