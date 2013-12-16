@@ -1,18 +1,18 @@
 PURPOSE
 =======================
 This program calculates electrostatic interactions in many particle systems
-using different algotighms. It does not have a name.
+using different algorithms. It does not have a name.
 
 INSTALL
 ========================
 To build execute "make" in the source directory.
-Prerequesits to build are an mpicc in the PATH, fftw3 nand the gnu scientific
+Prerequesits to build are an mpicc in the PATH, fftw3, the gnu scientific
 library and GNU make.
 
 RUN
 ========================
-The binary is calles "p3m". It is controlled via command line parameters.
-They should be somewhat selfexplanatory, but there is detailes documentation
+The binary is called "p3m". It is controlled via command line parameters.
+They should be somewhat selfexplanatory, but there is detailed documentation
 below. They are of the form <key> [<value>], their order is arbitrary.
 
 EXAMPLE
@@ -20,10 +20,10 @@ EXAMPLE
 ./p3m particles 1000 box 10 mesh 16 cao 7 rcut 3.0 method 7 alphamin 0.1
 alphamax 2.5 alphastep 0.05 system_type 5 
 
-This generates a randome system of 1000 particles of type 5 ( See system_type ) in a box of size 10^3.
-It then calculates reference forces using an Ewald sum with machine precision, 
-and executes the method no. 7 ( See methods. ) a mesh of 16^3 interpolation
-order 7 and real space cutofff 3.0 for all alphas from 0.1 to 2.5 with a
+This generates a random system of 1000 particles of type 5 ( See system_type ) in a box of size 10^3.
+It then calculates reference forces using an Ewald summation with machine precision, 
+and executes the method no. 7 ( see methods ) a mesh of 16^3 interpolation
+order 7 and real space cutoff 3.0 for all alphas from 0.1 to 2.5 with a
 spacing of 0.05.
 
 
@@ -51,7 +51,7 @@ The system_types are
 0   SYSTEM_RANDOM		uniformly distributed particles in the whole box.
 1   SYSTEM_INNER_BOX		randomly placed particles within [0.25*box,0.75*box)^3.
 2   SYSTEM_MADELUNG		A cubic cristall.
-3   SYSTEM_SEPARATED_DIPOLE	Randomly placed extended dipoles with distance1.
+3   SYSTEM_SEPARATED_DIPOLE	Randomly placed extended dipoles with distance 1.
 4   SYSTEM_GAUSSIAN		Gaussian distributed particles about the
 center of the box.
 5   SYSTEM_SLAB			Particles within [0.25*box,0.75*box)x[0,box)x[0,box) 
@@ -59,6 +59,7 @@ center of the box.
 If charge is set, then the particles carry charge <charge> instead of unit charges.
 
 The format of the position file is
+
 # Teilchenzahl: <number_of_particles>
 # Len: <box_length>
 <x_1> <y_1> <z_1> <q_1>
@@ -66,11 +67,15 @@ The format of the position file is
 <x_number_of_particles> <y_number_of_particles> <z_number_of_particles>
 <q_number_of_particles>
 
+
 If forces is given the reference forces are read from <forces_filename>,
 the format is
+
 <fx_1> <fy_1> <fz_1>
 ...
 <fx_number_of_particles> <fy_number_of_particles> <fz_number_of_particles>
+
+
 There have to be exactly as many lines in this file as there are particles
 in the particle file. If forces is not set, the reference forces are
 calculated.
@@ -88,7 +93,7 @@ The aliasing sum cutoff for the P3M influence function.
 The aliasing sum cutoff for the P3M error estimate.
 
 * method <method>
-The method to user, where <method> is one of
+The method to use, where <method> is one of
 
 0   P3M, ik differentiated, complex to complex, not interlaced.
 1   P3M, ik differentiated, complex to complex, interlaced.
@@ -109,7 +114,7 @@ and
 Neelov, Alexey, and Christian Holm. "Interlaced P3M algorithm with analytical
 and ik-differentiation." The Journal of chemical physics 132 (2010): 234103.
 
-For an more detailed intruduction see the textbook of Hockney and Eastwood:
+For a more detailed intruduction see the textbook of Hockney and Eastwood:
 
 Hockney, Roger W., and James W. Eastwood. Computer simulation using particles. CRC Press, 2010.
 
