@@ -109,9 +109,9 @@ system_t *generate_inner_box(int size, FLOAT_TYPE box) {
 
 system_t *generate_slab(int size, FLOAT_TYPE box) {
   FLOAT_TYPE width = 0.1 * box;
-  FLOAT_TYPE lower_x = (0.5 - width) * box;
-  puts("Generating inner box system.");
-  int i,j;
+  FLOAT_TYPE lower_x = (0.45) * box;
+  printf("Generating slab system with %lf < x < %lf\n", lower_x, lower_x + width);
+  int i;
   system_t *s;
   gsl_rng *rng = gsl_rng_alloc(gsl_rng_default);
 
@@ -120,9 +120,10 @@ system_t *generate_slab(int size, FLOAT_TYPE box) {
   s->q2 = 0.0;
 
   for(i=0;i<size;i++) {
-    for(j=0;j<3;j++) {
-      s->p->fields[j][i] = lower_x + width * box*gsl_rng_uniform(rng);
-    }
+      s->p->fields[1][i] = lower_x + width * gsl_rng_uniform(rng);
+      s->p->fields[0][i] = box * gsl_rng_uniform(rng);
+      s->p->fields[2][i] = box * gsl_rng_uniform(rng);
+      
     s->q[i] = 1.0 - 2.0 * (i%2);
     s->q2 += s->q[i] * s->q[i];
   }
