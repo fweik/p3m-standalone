@@ -588,8 +588,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
     for (ny=0; ny<mesh; ny++) {
       for (nz=0; nz<mesh; nz++) {
   	ind = 2*(mesh*mesh*nx + mesh*ny + nz);
-	Kmesh[ind + 0] *= Kernel[3][ind];
-	Kmesh[ind + 1] *= Kernel[3][ind];
+	Kmesh[ind + 0] *= Kernel[3][ind]/mesh3;
+	Kmesh[ind + 1] *= Kernel[3][ind]/mesh3;
       }
     }
   }
