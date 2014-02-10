@@ -10,7 +10,7 @@ CUDA_COMPILER=nvcc
 CUDA_COMPILER_FLAGS=-arch=sm_30 -g -G
 CUDA_COMPILER_LFLAGS=-lcufft
 
-OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o statistics.o tuning.o p3m-ik-real.o parameters.o p3m-ad-real.o
+OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o statistics.o tuning.o p3m-ik-real.o parameters.o p3m-ad-real.o q_ik_double.o find_error.o
 
 all: p3mstandalone
 
@@ -22,6 +22,9 @@ tuning4cuda: $(OBJECTS) Makefile tuning4cuda.c
 
 test_tuning: $(OBJECTS) Makefile tuning_test.c
 	$(CC) $(CFLAGS) -o test_tuning tuning_test.c $(OBJECTS) $(LFLAGS)
+
+tune_ik: $(OBJECTS) Makefile tune_ik
+	$(CC) $(CFLAGS) -o tune_ik tune_ik.c $(OBJECTS) $(LFLAGS)
 
 test_dd: $(OBJECTS) Makefile test-dd.c domain-decomposition.o
 	$(CC) $(CFLAGS) -o test-dd test-dd.c domain-decomposition.o $(OBJECTS) $(LFLAGS)

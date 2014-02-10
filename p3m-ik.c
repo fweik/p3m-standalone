@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <fftw3.h>
 #include <string.h>
+#include <stdlib.h>
 
 // General typ definitions
 #include "types.h"
@@ -32,10 +33,20 @@
 
 #include "p3m-ik.h"
 
+// Tables for the error kernel Q
+
+#include "q_ik_double.h"
+#include "find_error.h"
+
 #ifdef __detailed_timings
 #include <mpi.h>
 #endif
 
+static int
+compare_ints (const void *a, const void *b)
+{
+  return (*(int *)(a) - *(int *)(b));
+}
 
 // declaration of the method
 
@@ -279,16 +290,24 @@ FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
 }
 
 FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
-  // Mesh loop counters 
-    int  nx, ny, nz;
     // The pair force error Q
     FLOAT_TYPE he_q = 0.0;
+    int mesh = p->mesh;
+    int *mesh_id, *cao_id;
+    // Check whether value pair is tabulated.
+
+    mesh_id = bsearch(&mesh, meshes, n_meshes, sizeof(int), compare_ints);
+    cao_id =  bsearch(&(p->cao), caos, n_caos, sizeof(int), compare_ints);
+        
+    if((mesh_id == NULL) || (cao_id == NULL)) {
+      printf("Mesh %d cao %d not tabulated.\n", mesh, p->cao);
+   
+  // Mesh loop counters 
+    int  nx, ny, nz;
     // Helper variables
     FLOAT_TYPE alias1, alias2, n2, cs;
     FLOAT_TYPE ctan_x, ctan_y;
-    int mesh = p->mesh;
     FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
-
 #ifdef _OPENMP
 #pragma omp parallel for private(ctan_x, ctan_y, n2, cs, alias1, alias2, ny, nz) reduction( + : he_q )
 #endif
@@ -310,6 +329,13 @@ FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const pa
 #pragma omp barrier
 #endif
     he_q = fabs(he_q);
+    } else {
+      printf("Mesh %d tabulated at index %ld,%ld = %d\n", mesh, mesh_id - meshes, cao_id - caos, meshes[mesh_id - meshes]);
+      // Interpolate from tabulated value.
+      he_q = p3m_find_error(p->alpha*s->length, (int)(mesh_id - meshes), (int)(cao_id - caos));
+    }    
+
+
     return 2.0*s->q2*SQRT ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
 }
 
