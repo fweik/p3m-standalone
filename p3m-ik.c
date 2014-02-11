@@ -42,12 +42,6 @@
 #include <mpi.h>
 #endif
 
-static int
-compare_ints (const void *a, const void *b)
-{
-  return (*(int *)(a) - *(int *)(b));
-}
-
 // declaration of the method
 
 const method_t method_p3m_ik = { METHOD_P3M_ik, "P3M with ik differentiation, not intelaced.", "p3m-ik",
@@ -291,50 +285,41 @@ FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
 
 FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
     // The pair force error Q
-    FLOAT_TYPE he_q = 0.0;
     int mesh = p->mesh;
-    int *mesh_id, *cao_id;
     // Check whether value pair is tabulated.
 
-    mesh_id = bsearch(&mesh, meshes, n_meshes, sizeof(int), compare_ints);
-    cao_id =  bsearch(&(p->cao), caos, n_caos, sizeof(int), compare_ints);
-        
-    if((mesh_id == NULL) || (cao_id == NULL)) {
-      printf("Mesh %d cao %d not tabulated.\n", mesh, p->cao);
-   
-  // Mesh loop counters 
-    int  nx, ny, nz;
-    // Helper variables
-    FLOAT_TYPE alias1, alias2, n2, cs;
-    FLOAT_TYPE ctan_x, ctan_y;
-    FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
+    FLOAT_TYPE he_q = p3m_find_error(p->alpha*s->length, mesh, p->cao);
+
+    // Parameter set not found
+    if(he_q < 0) {
+      // Mesh loop counters 
+      int  nx, ny, nz;
+      // Helper variables
+      FLOAT_TYPE alias1, alias2, n2, cs;
+      FLOAT_TYPE ctan_x, ctan_y;
+      FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
 #ifdef _OPENMP
 #pragma omp parallel for private(ctan_x, ctan_y, n2, cs, alias1, alias2, ny, nz) reduction( + : he_q )
 #endif
-    for ( nx=-mesh/2; nx<mesh/2; nx++ ) {
+      for ( nx=-mesh/2; nx<mesh/2; nx++ ) {
         ctan_x = analytic_cotangent_sum ( nx, meshi,p->cao );
         for ( ny=-mesh/2; ny<mesh/2; ny++ ) {
-            ctan_y = ctan_x * analytic_cotangent_sum ( ny, meshi, p->cao );
-            for ( nz=-mesh/2; nz<mesh/2; nz++ ) {
-                if ( ( nx!=0 ) || ( ny!=0 ) || ( nz!=0 ) ) {
-                    n2 = SQR ( nx ) + SQR ( ny ) + SQR ( nz );
-                    cs = analytic_cotangent_sum ( nz, meshi ,p->cao ) *ctan_y;
-                    p3m_tune_aliasing_sums_ik ( nx,ny,nz, s, p, &alias1,&alias2 );
-                    he_q += ( alias1  -  SQR ( alias2/cs ) / n2 );
-                }
-            }
+	  ctan_y = ctan_x * analytic_cotangent_sum ( ny, meshi, p->cao );
+	  for ( nz=-mesh/2; nz<mesh/2; nz++ ) {
+	    if ( ( nx!=0 ) || ( ny!=0 ) || ( nz!=0 ) ) {
+	      n2 = SQR ( nx ) + SQR ( ny ) + SQR ( nz );
+	      cs = analytic_cotangent_sum ( nz, meshi ,p->cao ) *ctan_y;
+	      p3m_tune_aliasing_sums_ik ( nx,ny,nz, s, p, &alias1,&alias2 );
+	      he_q += ( alias1  -  SQR ( alias2/cs ) / n2 );
+	    }
+	  }
         }
-    }
+      }
 #ifdef _OPENMP
 #pragma omp barrier
 #endif
-    he_q = fabs(he_q);
-    } else {
-      printf("Mesh %d tabulated at index %ld,%ld = %d\n", mesh, mesh_id - meshes, cao_id - caos, meshes[mesh_id - meshes]);
-      // Interpolate from tabulated value.
-      he_q = p3m_find_error(p->alpha*s->length, (int)(mesh_id - meshes), (int)(cao_id - caos));
-    }    
-
+      he_q = fabs(he_q);
+    }
 
     return 2.0*s->q2*SQRT ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
 }

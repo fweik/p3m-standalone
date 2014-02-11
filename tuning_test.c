@@ -89,16 +89,7 @@ int main(int argc, char **argv) {
       }
       printf("\t%s:\n", methods[j].method_name);
       printf("\t\tmesh %d cao %d time %lf +/- %lf\n", p.mesh, p.cao, timing.avg, timing.sgm);
-
-      forces_t *forces = Init_forces(i);
-  
-      data_t *d = methods[j].Init( s, &p);
-  
-      Free_data(d);
-      Free_forces(forces);
-
-      
-
+    
       fprintf(f[j], "%d %d %d %lf %e %e\n", i, p.mesh, p.cao, p.alpha, timing.avg, timing.sgm);
       fflush(f[j]);
     }

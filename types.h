@@ -208,6 +208,10 @@ typedef struct {
     int        cao;
     int        cao3;
     FLOAT_TYPE precision;
+    // Flag to tell the method where we are in tuning mode.
+    // If true, the method only has to have only accurate
+    // calculation time, the numerical result doesn't matter.
+    int        tuning;
 } parameters_t;
 
 typedef struct {

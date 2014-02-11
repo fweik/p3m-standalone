@@ -32,5 +32,6 @@ typedef struct {
 } timing_t;
 
 timing_t Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
+void Init_dummy(int max_part);
 
 #endif

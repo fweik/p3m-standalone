@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <mpi.h>
+#include <string.h>
 
 #include "tuning.h"
 
@@ -25,9 +26,86 @@
 #include "interpol.h"
 #include "realpart.h"
 
+static int dummy_data_initialized = 0;
+static data_t dummy_ad_complex;
+static data_t dummy_ad_real;
+
+static data_t dummy_ik_complex;
+static data_t dummy_ik_real;
+
+
 const int smooth_numbers[] = {4, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128, 130, 132, 140, 144, 150, 154, 156, 160, 162, 168, 176, 180, 182, 192, 196, 198, 200, 208, 210, 216, 220, 224, 234, 240, 242, 250, 252, 256, 260, 264, 270, 280, 288, 294, 300};
 
-const int smooth_numbers_n = 122;
+const int smooth_numbers_n = sizeof(smooth_numbers)/sizeof(int);
+
+void Init_dummy(int max_part) {
+  int mesh = smooth_numbers[smooth_numbers_n-1];
+  int mesh3 = mesh*mesh*mesh ;
+
+  data_t *d = Init_array(1, sizeof(data_t));
+
+  d->mesh = mesh;
+
+  d->Qmesh = Init_array(2*mesh3, sizeof(FLOAT_TYPE));
+
+  d->Fmesh = Init_vector_array(2*mesh3);
+  d->Dn = Init_array(d->mesh, sizeof(FLOAT_TYPE));
+  Init_differential_operator(d);
+
+  d->nshift = Init_array(d->mesh, sizeof(FLOAT_TYPE));
+  Init_nshift(d);
+
+
+  int max = 2;
+
+  for (int i = 0; i < max; i++) {
+    d->dQdx[i] = Init_array( max_part*7*7*7, sizeof(FLOAT_TYPE) );
+    d->dQdy[i] = Init_array( max_part*7*7*7, sizeof(FLOAT_TYPE) );
+    d->dQdz[i] = Init_array( max_part*7*7*7, sizeof(FLOAT_TYPE) );
+  }
+      
+  for (int i = 0; i < max; i++) {
+    d->cf[i] = Init_array( 7*7*7 * max_part, sizeof(FLOAT_TYPE));
+    d->ca_ind[i] = Init_array( 3*max_part, sizeof(int));
+  }
+	
+  d->inter = Init_interpolation( 6, 1 );
+	
+  d->G_hat = Init_array(mesh3, sizeof(FLOAT_TYPE));
+
+  d->forward_plans = 1;
+  d->backward_plans = 3;
+
+  memcpy(&dummy_ad_real, d, sizeof(data_t));
+  memcpy(&dummy_ad_complex, d, sizeof(data_t));
+  memcpy(&dummy_ik_real, d, sizeof(data_t));
+  memcpy(&dummy_ik_complex, d, sizeof(data_t));
+
+  int l;
+
+  dummy_ik_complex.forward_plan[0] = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) dummy_ik_complex.Qmesh, ( FFTW_COMPLEX * ) dummy_ik_complex.Qmesh, FFTW_FORWARD, FFTW_PATIENT );
+
+  for ( l=0;l<3;l++ ) {
+    dummy_ik_complex.backward_plan[l] = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) ( dummy_ik_complex.Fmesh->fields[l] ), ( FFTW_COMPLEX * ) ( dummy_ik_complex.Fmesh->fields[l] ), FFTW_BACKWARD, FFTW_PATIENT );
+  }
+
+    dummy_ad_complex.forward_plan[0] = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) dummy_ad_complex.Qmesh, ( FFTW_COMPLEX * ) dummy_ad_complex.Qmesh, FFTW_FORWARD, FFTW_PATIENT );
+
+    dummy_ad_complex.backward_plan[0] = FFTW_PLAN_DFT_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) ( dummy_ad_complex.Qmesh ), ( FFTW_COMPLEX * ) ( dummy_ad_complex.Qmesh ), FFTW_BACKWARD, FFTW_PATIENT );
+
+    dummy_ik_real.forward_plan[0] = FFTW_PLAN_DFT_R2C_3D ( mesh, mesh, mesh, dummy_ik_real.Qmesh, (FFTW_COMPLEX *)dummy_ik_real.Qmesh, FFTW_PATIENT );
+
+    for ( l=0;l<3;l++ ) {
+        dummy_ik_real.backward_plan[l] = FFTW_PLAN_DFT_C2R_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) ( dummy_ik_real.Fmesh->fields[l] ), ( dummy_ik_real.Fmesh->fields[l] ), FFTW_PATIENT );
+    }
+
+    dummy_ad_real.forward_plan[0] = FFTW_PLAN_DFT_R2C_3D ( mesh, mesh, mesh, dummy_ad_real.Qmesh, ( FFTW_COMPLEX * ) dummy_ad_real.Qmesh, FFTW_PATIENT );
+
+    dummy_ad_real.backward_plan[0] = FFTW_PLAN_DFT_C2R_3D ( mesh, mesh, mesh, ( FFTW_COMPLEX * ) ( dummy_ad_real.Qmesh ),  dummy_ad_real.Qmesh,  FFTW_PATIENT );
+
+  dummy_data_initialized = 1;
+}
+
 
 //#define TUNE_DEBUG
 
@@ -115,8 +193,16 @@ timing_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE preci
       TUNE_TRACE(puts("Initializing..."););
 
       Free_data(d);
-      d = m->Init( s, &it );
 
+      if(!dummy_data_initialized)
+d = m->Init( s, &it );
+      else if ( m->method_id == 0) {
+	d = &dummy_ik_complex;
+      } else {
+	d = m->Init( s, &it );
+      }
+      
+      
       TUNE_TRACE(puts("Starting timing..."););
 
       double avg = 0, sgm = 0;
