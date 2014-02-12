@@ -44,6 +44,7 @@ int main(int argc, char **argv) {
   char filename_buffer[256];
   FLOAT_TYPE density;
   FLOAT_TYPE charge;
+  FLOAT_TYPE t;
   
   start = atoi(argv[1]);
   stop = atoi(argv[2]);
@@ -79,16 +80,19 @@ int main(int argc, char **argv) {
     for(int j = 0; j < 6; j++) {
       memset(&p, 0, sizeof(parameters_t));
       p.rcut = rcut;
+      p.tuning = 1;
 
       timing_t timing;
 
+      t = MPI_Wtime();
       timing = Tune( methods+j, s, &p, prec);
+      t = MPI_Wtime() - t;
       if( timing.avg < 0.0) {
 	puts("Tuning failed.");
 	continue;
       }
       printf("\t%s:\n", methods[j].method_name);
-      printf("\t\tmesh %d cao %d time %lf +/- %lf\n", p.mesh, p.cao, timing.avg, timing.sgm);
+      printf("\t\tmesh %d cao %d time %lf +/- %lf (tuning = %d, tuning time %lf)\n", p.mesh, p.cao, timing.avg, timing.sgm, p.tuning, t);
     
       fprintf(f[j], "%d %d %d %lf %e %e\n", i, p.mesh, p.cao, p.alpha, timing.avg, timing.sgm);
       fflush(f[j]);

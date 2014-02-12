@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <fftw3.h>
 #include <string.h>
+#include <assert.h>
 
 #include "p3m-common.h"
 #include "charge-assign.h"
@@ -25,10 +26,43 @@
 #include "common.h"
 #include "interpol.h"
 
+#include "p3m-ad-self-forces.h"
+
 int P3M_BRILLOUIN = 1;
 int P3M_BRILLOUIN_TUNING = 1;
 
 #define FREE_TRACE(A) 
+
+#define DUMMY_G_STEP 10
+#define DUMMY_G_MIN_SIZE 32
+#define DUMMY_G_MAX_SIZE 300
+
+static FLOAT_TYPE *dummy_g = NULL;
+static int dummy_g_size = 0;
+static interpolation_t *dummy_inter = NULL;
+
+static void dummy_g_realloc(int mesh) {
+  size_t new_size;
+  if((dummy_g != NULL) && (mesh <= dummy_g_size))
+    return;
+
+  new_size = (dummy_g_size + DUMMY_G_STEP);
+  new_size = (new_size < DUMMY_G_MIN_SIZE) ? DUMMY_G_MIN_SIZE : new_size;
+  new_size = (new_size > DUMMY_G_MAX_SIZE) ? DUMMY_G_MAX_SIZE : new_size;
+
+  new_size = new_size*new_size*new_size*sizeof(double);
+
+  if(dummy_g != NULL)
+    FFTW_FREE(dummy_g);
+
+  dummy_g = FFTW_MALLOC(new_size);
+
+  assert(dummy_g != NULL);
+  
+  for(int i = 0; i < mesh*mesh*mesh; i++)
+    dummy_g[i] = 1.0;
+
+}
 
 
 FLOAT_TYPE sinc(FLOAT_TYPE d)
@@ -136,6 +170,9 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
     d->dQdx[0] = d->dQdy[0] = d->dQdz[0] = NULL;
     d->dQdx[1] = d->dQdy[1] = d->dQdz[1] = NULL;
 
+    if( m->flags & METHOD_FLAG_self_force_correction)
+      d->self_force_corrections = Init_array(my_power(1+2*P3M_SELF_BRILLOUIN, 3), 3*sizeof(FLOAT_TYPE));
+
     if ( m->flags & METHOD_FLAG_ad ) {
       int i;
       int max = ( m->flags & METHOD_FLAG_interlaced) ? 2 : 1;
@@ -158,8 +195,13 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
 	d->ca_ind[i] = Init_array( 3*s->nparticles, sizeof(int));
       }
 	
-      d->inter = Init_interpolation( p->ip, m->flags & METHOD_FLAG_ad );
-	
+      if( !p->tuning )
+	d->inter = Init_interpolation( p->ip, m->flags & METHOD_FLAG_ad );
+      else {
+	if(dummy_inter == NULL)
+	  dummy_inter = Init_interpolation( 6, 1 );
+	d->inter = dummy_inter;
+      }
     }
     else {
       d->cf[0] = NULL;
@@ -170,11 +212,17 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
     }
 
     if ( m->flags & METHOD_FLAG_G_hat) {
-        d->G_hat = Init_array(mesh3, sizeof(FLOAT_TYPE));
+      d->G_hat = Init_array(mesh3, sizeof(FLOAT_TYPE));
+
+      if( !p->tuning) {
         m->Influence_function( s, p, d );   
+      } else {
+	dummy_g_realloc(d->mesh);
+	d->G_hat = dummy_g;
+      }
     }
     else
-        d->G_hat = NULL;    
+      d->G_hat = NULL;    
 
 
     d->forward_plans = 0;
@@ -190,7 +238,8 @@ void Free_data(data_t *d) {
       return;
 
     FREE_TRACE(puts("Free_data(); Free ghat.");)
-    if (d->G_hat != NULL)
+      // Free G_hat only if it's not the dummy influence function.
+      if ((d->G_hat != NULL) && (d->G_hat != dummy_g))
         FFTW_FREE(d->G_hat);
 
     FREE_TRACE(puts("Free qmesh.");)
@@ -217,7 +266,7 @@ void Free_data(data_t *d) {
             FFTW_FREE(d->dQdz[i]);
     }
 
-    if(d->inter != NULL ) {
+    if((d->inter != NULL ) && (d->inter != dummy_inter)) {
       Free_interpolation(d->inter);
       d->inter = NULL;
     }

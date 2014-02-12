@@ -93,6 +93,7 @@ int main ( int argc, char **argv ) {
     system_t *system;
     method_t method;
     parameters_t parameters, parameters_ewald;
+    parameters.tuning = parameters_ewald.tuning = 0;
     data_t *data = NULL, *data_ewald = NULL;
     forces_t *forces, *forces_ewald;
     char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL, *sys_out = NULL, *rdf_file = NULL, *vtf_file = NULL, *cdf_file = NULL;

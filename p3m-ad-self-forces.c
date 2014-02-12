@@ -20,13 +20,6 @@
 
 #include <math.h>
 
-#ifdef P3M_AD_FAST_SELF_FORCE
-#warning P3M_AD_FAST_SELF_FORCES
-#warning Will produce unaccurate results!
-#define P3M_SELF_BRILLOUIN 0
-#else
-#define P3M_SELF_BRILLOUIN 1
-#endif
 /* This is an implementation of equation (9) of
    V. Ballenegger et al., Computer Physics Communications 182(2011)
    The directional indices of the coefficent \beta are called p,q,r
