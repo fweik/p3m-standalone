@@ -26,6 +26,13 @@
 #include "interpol.h"
 #include "realpart.h"
 
+#ifdef TUNE_DEBUG
+  #include <stdio.h>
+  #define TUNE_TRACE(A) A
+#else
+  #define TUNE_TRACE(A) 
+#endif
+
 const int smooth_numbers[] = {4, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128, 130, 132, 140, 144, 150, 154, 156, 160, 162, 168, 176, 180, 182, 192, 196, 198, 200, 208, 210, 216, 220, 224, 234, 240, 242, 250, 252, 256, 260, 264, 270, 280, 288, 294, 300};
 
 const int smooth_numbers_n = sizeof(smooth_numbers)/sizeof(int);
@@ -79,10 +86,18 @@ double time_cao(const method_t *m, system_t *s, parameters_t *p) {
 }
 
 double get_timing(const method_t *m, system_t *s, parameters_t *p) {
-  if(m->method_id >= n_pt) {
-    pt = realloc(pt, m->method_id * sizeof(parameter_timings_t));
+  /* printf("get_timing(method_id %d, mesh %d, cao %d pt %p)\n", m->method_id, p->mesh, p->cao, pt); */
 
-    for(int i = n_pt; i < m->method_id; i++) {
+  if(n_pt == 0) {
+    pt = Init_array(1, sizeof(parameter_timings_t));
+    n_pt = 1;
+    pt[0].mesh_timings = NULL;
+    pt[0].cao_timings = NULL;
+  }
+  if(m->method_id >= n_pt) {
+    pt = realloc(pt, (m->method_id+1) * sizeof(parameter_timings_t));
+
+    for(int i = n_pt-1; i <= m->method_id; i++) {
       pt[i].mesh_timings = NULL;
       pt[i].cao_timings = NULL;
     }
@@ -94,8 +109,8 @@ double get_timing(const method_t *m, system_t *s, parameters_t *p) {
     memset(pt[m->method_id].mesh_timings, 0, smooth_numbers_n * sizeof(double));
   }
   if(pt[m->method_id].cao_timings == NULL) {
-    pt[m->method_id].cao_timings = Init_array(CAO_MAX, sizeof(double));
-    memset(pt[m->method_id].cao_timings, 0, CAO_MAX * sizeof(double));
+    pt[m->method_id].cao_timings = Init_array(CAO_MAX+1, sizeof(double));
+    memset(pt[m->method_id].cao_timings, 0, (CAO_MAX+1) * sizeof(double));
   }
 
   int *mesh_of = bsearch(&(p->mesh), smooth_numbers, smooth_numbers_n, sizeof(int), compare_ints);
@@ -103,28 +118,23 @@ double get_timing(const method_t *m, system_t *s, parameters_t *p) {
 
   if(pt[m->method_id].mesh_timings[mesh_id] <= 0) {
     pt[m->method_id].mesh_timings[mesh_id] = time_mesh(m,s,p);
+    /* printf("mesh miss %d (id %d), time %e\n", p->mesh, mesh_id, pt[m->method_id].mesh_timings[mesh_id]); */
   }
   if(pt[m->method_id].cao_timings[p->cao] <= 0) {
     pt[m->method_id].cao_timings[p->cao] = time_cao(m,s,p);
+    /* printf("cao miss %d, time %e\n", p->cao, pt[m->method_id].cao_timings[p->cao]); */
   }
 
   return pt[m->method_id].mesh_timings[mesh_id] + pt[m->method_id].cao_timings[p->cao];
 }
 
-#ifdef TUNE_DEBUG
-  #include <stdio.h>
-  #define TUNE_TRACE(A) A
-#else
-  #define TUNE_TRACE(A) 
-#endif
-
 timing_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision ) {
   //Parameter iteraters, best parameter set
   parameters_t it, p_best;
   // Array to store forces
-  forces_t *f = Init_forces(s->nparticles);
+// @TODO: Make copy of reference forces.
 
-  data_t *d = NULL;  
+  forces_t *f = Init_forces(s->nparticles);
 
   it.prefactor = 1.0;
 
@@ -193,27 +203,12 @@ timing_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE preci
       if( (it.mesh >= p_best.mesh) && (it.cao >= p_best.cao))
 	break;
 
-      TUNE_TRACE(puts("Initializing..."););
-
-      Free_data(d);
-
-      d = m->Init( s, &it );
-      
       TUNE_TRACE(puts("Starting timing..."););
 
       double avg = 0, sgm = 0;
-      for(int i = 0; i < N_TUNING_SAMPLES; i++) {
-      time = MPI_Wtime();
-
-      m->Kspace_force( s, &it, d, f );
-
-      time = MPI_Wtime() - time;
-      avg += time;
-      sgm += time*time;
-      }
-
-      avg /= N_TUNING_SAMPLES;
-      sgm = sqrt(sgm/N_TUNING_SAMPLES - avg*avg);
+avg = get_timing(m, s, &it);
+     
+      time = avg;
 
       TUNE_TRACE(printf("\n mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time, error, it.alpha ););
 	
@@ -230,9 +225,6 @@ timing_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE preci
     if( (success_once == 1) && (it.mesh > (p_best.mesh + 10)) )
       break;
   }
-  if(d != NULL)
-    Free_data(d);
-
   Free_forces(f);
 
   if( success_once == 0 )
