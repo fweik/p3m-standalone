@@ -1,5 +1,5 @@
 CC=mpicc
-CFLAGS=-Wall -DNDEBUG -O5
+CFLAGS=-Wall -O3 -DNDEBUG
 CFLAGS+=-std=c99
 LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 #Uncomment to add long double 
@@ -25,6 +25,9 @@ test_tuning: $(OBJECTS) Makefile tuning_test.c
 
 tune_ik: $(OBJECTS) Makefile tune_ik
 	$(CC) $(CFLAGS) -o tune_ik tune_ik.c $(OBJECTS) $(LFLAGS)
+
+time_assignment: $(OBJECTS) Makefile time_assignment.c
+	$(CC) $(CFLAGS) -o time_assignment time_assignment.c $(OBJECTS) $(LFLAGS)
 
 test_dd: $(OBJECTS) Makefile test-dd.c domain-decomposition.o
 	$(CC) $(CFLAGS) -o test-dd test-dd.c domain-decomposition.o $(OBJECTS) $(LFLAGS)

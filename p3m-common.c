@@ -48,7 +48,11 @@ static void dummy_g_realloc(int mesh) {
 
   new_size = (dummy_g_size + DUMMY_G_STEP);
   new_size = (new_size < DUMMY_G_MIN_SIZE) ? DUMMY_G_MIN_SIZE : new_size;
-  new_size = (new_size > DUMMY_G_MAX_SIZE) ? DUMMY_G_MAX_SIZE : new_size;
+  new_size = (new_size > DUMMY_G_MAX_SIZE) ? mesh : new_size;
+
+  dummy_g_size = new_size;
+
+  printf("new_size %d mesh %d, dummy_g_size %d\n", new_size, mesh, dummy_g_size);
 
   new_size = new_size*new_size*new_size*sizeof(double);
 
@@ -56,6 +60,8 @@ static void dummy_g_realloc(int mesh) {
     FFTW_FREE(dummy_g);
 
   dummy_g = FFTW_MALLOC(new_size);
+
+  
 
   assert(dummy_g != NULL);
   

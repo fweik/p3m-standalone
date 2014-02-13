@@ -225,40 +225,45 @@ typedef struct {
   FLOAT_TYPE (*U_hat)(int, FLOAT_TYPE);
 } interpolation_t;
 
+typedef struct {
+  double t_c, t_f, t_g;
+} runtime_t;
+
 // Struct holding method data.
 
 typedef struct {
-    // Mesh size the struct is initialized for
-    int mesh;
-    // Influence function
-    FLOAT_TYPE *G_hat;
-    // Charge mesh
-    FLOAT_TYPE *Qmesh;
-    // Force mesh for k space differentiation
-    vector_array_t *Fmesh;
-    // Shifted kvectors (fftw convention)
-    FLOAT_TYPE *nshift;
-    // Fourier coefficients of the differential operator
-    FLOAT_TYPE *Dn;
-    // Derivatives of the charge assignment function for analytical differentiation
-    FLOAT_TYPE *dQdx[2], *dQdy[2], *dQdz[2];
-    // Cache for charge assignment
-    int *ca_ind[2];
-    FLOAT_TYPE *cf[2];
-    // Struct for interpolated charge assignment function
-    interpolation_t *inter;
-    // fftw plans
-    //number of plans
-    int forward_plans;
-    int backward_plans;
-    // actual plans
-    FFTW_PLAN forward_plan[3];
-    FFTW_PLAN backward_plan[3];
-    // neighbor list for real space calculation
-    neighbor_list_t *neighbor_list;
-    // Self forces corrections
-    FLOAT_TYPE *self_force_corrections;
-    void *method_data;
+  // Mesh size the struct is initialized for
+  int mesh;
+  // Influence function
+  FLOAT_TYPE *G_hat;
+  // Charge mesh
+  FLOAT_TYPE *Qmesh;
+  // Force mesh for k space differentiation
+  vector_array_t *Fmesh;
+  // Shifted kvectors (fftw convention)
+  FLOAT_TYPE *nshift;
+  // Fourier coefficients of the differential operator
+  FLOAT_TYPE *Dn;
+  // Derivatives of the charge assignment function for analytical differentiation
+  FLOAT_TYPE *dQdx[2], *dQdy[2], *dQdz[2];
+  // Cache for charge assignment
+  int *ca_ind[2];
+  FLOAT_TYPE *cf[2];
+  // Struct for interpolated charge assignment function
+  interpolation_t *inter;
+  // fftw plans
+  //number of plans
+  int forward_plans;
+  int backward_plans;
+  // actual plans
+  FFTW_PLAN forward_plan[3];
+  FFTW_PLAN backward_plan[3];
+  // neighbor list for real space calculation
+  neighbor_list_t *neighbor_list;
+  // Self forces corrections
+  FLOAT_TYPE *self_force_corrections;
+  void *method_data;
+  runtime_t runtime;
 } data_t;
 
 // Flags for method_t
@@ -276,7 +281,7 @@ enum {
 };
 
 // Common flags for all p3m methods for convinience
-#define METHOD_FLAG_P3M (METHOD_FLAG_nshift | METHOD_FLAG_G_hat | METHOD_FLAG_Qmesh | METHOD_FLAG_ca )
+#define METHOD_FLAG_P3M (METHOD_FLAG_nshift | METHOD_FLAG_G_hat | METHOD_FLAG_Qmesh | METHOD_FLAG_ca)
 // methode type
 
 typedef struct {

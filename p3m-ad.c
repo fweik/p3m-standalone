@@ -168,28 +168,16 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   
   memset(d->Qmesh, 0, 2*Mesh*Mesh*Mesh * sizeof(FLOAT_TYPE));
 
-  #ifdef __detailed_timings
-  timer = MPI_Wtime();
-  #endif
+  TIMING_START_C
   
   /* chargeassignment */
   assign_charge_and_derivatives( s, p, d, 0);
 
-  #ifdef __detailed_timings
-  timer = MPI_Wtime() - timer;
-  t_charge_assignment[2] = timer;
-  timer = MPI_Wtime();
-  #endif
+  TIMING_STOP_C
+  TIMING_START_G
   
   /* Forward Fast Fourier Transform */
   forward_fft(d);
-
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_fft[2] = timer;
-   timer = MPI_Wtime();
-  #endif
- 
 
   for (i=0; i<Mesh; i++)
     for (j=0; j<Mesh; j++)
@@ -202,32 +190,20 @@ void P3M_ad( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 	  d->Qmesh[c_index+1] *= T1;
 	}
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_convolution[2] = timer;
-   timer = MPI_Wtime();
-  #endif
-
-
   /* Backward FFT */
   backward_fft(d);
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_fft[2] += timer;
-   timer = MPI_Wtime();
-  #endif
-
+  TIMING_STOP_G
+  TIMING_START_F
+    
   /* Force assignment */
   assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0 );
 
-#ifdef __detailed_timings
-  timer = MPI_Wtime() - timer;
-  t_force_assignment[2] = timer;
-#endif
 #ifdef P3M_AD_SELF_FORCES
   Substract_self_forces(s,p,d,f);
 #endif
+  TIMING_STOP_F
+
   return;
 }
 

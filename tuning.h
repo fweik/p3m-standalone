@@ -23,7 +23,7 @@
 #define CAO_MIN 2
 #define CAO_MAX 7
 
-#define N_TUNING_SAMPLES 100
+#define N_TUNING_SAMPLES 10
 
 typedef struct {
   double avg;
@@ -32,6 +32,5 @@ typedef struct {
 } timing_t;
 
 timing_t Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
-void Init_dummy(int max_part);
 
 #endif

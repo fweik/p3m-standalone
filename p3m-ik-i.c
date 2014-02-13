@@ -183,33 +183,20 @@ void P3M_ik_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
     /* Initialisieren von Qmesh */
     memset ( d->Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof ( FLOAT_TYPE ) );
 
-  #ifdef __detailed_timings
-  timer = MPI_Wtime();
-  #endif
-
+    TIMING_START_C
 
     /* chargeassignment */
     assign_charge( s, p, d, 0 );
     assign_charge( s, p, d, 1 );
 
+    TIMING_STOP_C
+
   /* assign_charge_interlacing( s, p, d ); */
 
-  #ifdef __detailed_timings
-  timer = MPI_Wtime() - timer;
-  t_charge_assignment[1] = timer;
-  timer = MPI_Wtime();
-  #endif
-
+    TIMING_START_G
 
     /* Durchfuehren der Fourier-Hin-Transformationen: */
     forward_fft(d);
-
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_fft[1] = timer;
-   timer = MPI_Wtime();
-  #endif
-
 
     for (i=0; i<Mesh; i++)
         for (j=0; j<Mesh; j++)
@@ -239,21 +226,12 @@ void P3M_ik_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 
             }
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_convolution[1] = timer;
-   timer = MPI_Wtime();
-  #endif
-
     /* Durchfuehren der Fourier-Rueck-Transformation: */
     backward_fft(d);
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_fft[1] += timer;
-   timer = MPI_Wtime();
-  #endif
+    TIMING_STOP_G
 
+      TIMING_START_F
 
     /* force assignment */
     /* assign_forces ( 1.0 / ( 2.0*s->length*s->length*s->length ), s, p, d, f, 0 ); */
@@ -261,10 +239,7 @@ void P3M_ik_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 
    assign_forces_interlacing ( 1.0 / ( 2.0*s->length*s->length*s->length ), s, p, d, f );
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_force_assignment[1] = timer;
-  #endif
+    TIMING_STOP_F
 
     return;
 }

@@ -18,6 +18,7 @@
 
 #include "types.h"
 
+#include <mpi.h>
 
 extern int P3M_BRILLOUIN_TUNING;
 extern int P3M_BRILLOUIN;
@@ -44,4 +45,16 @@ FLOAT_TYPE A_const(int nx, int ny, int nz, system_t *s, parameters_t *p);
 FLOAT_TYPE B_const(int nx, int ny, int nz, system_t *s, parameters_t *p);
 
 FLOAT_TYPE *Error_map(system_t *s, forces_t *f, forces_t *f_ref, int mesh, int cao);
+
+#define TIMING_START_C TIMING_START(t_c)
+#define TIMING_START_F TIMING_START(t_f)
+#define TIMING_START_G TIMING_START(t_g)
+
+#define TIMING_STOP_C TIMING_STOP(t_c)
+#define TIMING_STOP_F TIMING_STOP(t_f)
+#define TIMING_STOP_G TIMING_STOP(t_g)
+
+#define TIMING_START(A) if(p->tuning) d->runtime.A = MPI_Wtime();
+#define TIMING_STOP(A) if(p->tuning) d->runtime.A = MPI_Wtime() - d->runtime.A;
+
 #endif

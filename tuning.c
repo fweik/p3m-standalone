@@ -32,6 +32,85 @@ const int smooth_numbers_n = sizeof(smooth_numbers)/sizeof(int);
 
 //#define TUNE_DEBUG
 
+typedef struct {
+  double *mesh_timings;
+  double *cao_timings;
+} parameter_timings_t;
+
+parameter_timings_t *pt = NULL;
+int n_pt = 0;
+
+static int
+compare_ints (const void *a, const void *b)
+{
+  return (*(int *)(a) - *(int *)(b));
+}
+
+double time_mesh(const method_t  *m, system_t *s, parameters_t *p) {
+  parameters_t mp = *p;
+  mp.cao = CAO_MIN;
+  mp.tuning = 1;
+  data_t *d = m->Init(s, &mp);
+  double res  = 0.0;
+
+  m->Kspace_force( s, &mp, d, s->reference );
+
+  res = d->runtime.t_g;
+
+  Free_data(d);
+
+  return res;
+}
+
+double time_cao(const method_t *m, system_t *s, parameters_t *p) {
+  parameters_t mp = *p;
+  mp.mesh = 16;
+  mp.tuning = 1;
+  data_t *d = m->Init(s, &mp);
+  double res  = 0.0;
+
+  m->Kspace_force( s, &mp, d, s->reference );
+
+  res = d->runtime.t_c + d->runtime.t_f;
+
+  Free_data(d);
+
+  return res;
+}
+
+double get_timing(const method_t *m, system_t *s, parameters_t *p) {
+  if(m->method_id >= n_pt) {
+    pt = realloc(pt, m->method_id * sizeof(parameter_timings_t));
+
+    for(int i = n_pt; i < m->method_id; i++) {
+      pt[i].mesh_timings = NULL;
+      pt[i].cao_timings = NULL;
+    }
+    n_pt = m->method_id+1;
+  }
+
+  if(pt[m->method_id].mesh_timings == NULL) {
+    pt[m->method_id].mesh_timings = Init_array(smooth_numbers_n, sizeof(double));
+    memset(pt[m->method_id].mesh_timings, 0, smooth_numbers_n * sizeof(double));
+  }
+  if(pt[m->method_id].cao_timings == NULL) {
+    pt[m->method_id].cao_timings = Init_array(CAO_MAX, sizeof(double));
+    memset(pt[m->method_id].cao_timings, 0, CAO_MAX * sizeof(double));
+  }
+
+  int *mesh_of = bsearch(&(p->mesh), smooth_numbers, smooth_numbers_n, sizeof(int), compare_ints);
+  int mesh_id = mesh_of - smooth_numbers;
+
+  if(pt[m->method_id].mesh_timings[mesh_id] <= 0) {
+    pt[m->method_id].mesh_timings[mesh_id] = time_mesh(m,s,p);
+  }
+  if(pt[m->method_id].cao_timings[p->cao] <= 0) {
+    pt[m->method_id].cao_timings[p->cao] = time_cao(m,s,p);
+  }
+
+  return pt[m->method_id].mesh_timings[mesh_id] + pt[m->method_id].cao_timings[p->cao];
+}
+
 #ifdef TUNE_DEBUG
   #include <stdio.h>
   #define TUNE_TRACE(A) A

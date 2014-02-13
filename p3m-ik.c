@@ -178,93 +178,71 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
  */
 
 void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
-    /* Loop counters */
-    int i, j, k;
-    /* helper variables */
-    FLOAT_TYPE T1;
-    FLOAT_TYPE dop;
+  /* Loop counters */
+  int i, j, k;
+  /* helper variables */
+  FLOAT_TYPE T1;
+  FLOAT_TYPE dop;
+  
+  // One over boxlength
+  FLOAT_TYPE Leni = 1.0/s->length;
 
-    // One over boxlength
-    FLOAT_TYPE Leni = 1.0/s->length;
+  int Mesh = p->mesh;
+  int c_index;
 
-    int Mesh = p->mesh;
-    int c_index;
+  /* Setting charge mesh to zero */
+  memset ( d->Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof ( FLOAT_TYPE ) );
 
-    /* Setting charge mesh to zero */
-    memset ( d->Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof ( FLOAT_TYPE ) );
+  TIMING_START_C
+  
+  /* chargeassignment */
+  assign_charge ( s, p, d, 0 );
 
-  #ifdef __detailed_timings
-  timer = MPI_Wtime();
-  #endif
+  TIMING_STOP_C
 
+  TIMING_START_G
 
-    /* chargeassignment */
-    assign_charge ( s, p, d, 0 );
+  /* Forward Fast Fourier Transform */
+  forward_fft(d);
 
-  #ifdef __detailed_timings
-  timer = MPI_Wtime() - timer;
-  t_charge_assignment[0] = timer;
-  timer = MPI_Wtime();
-  #endif
-
-    /* Forward Fast Fourier Transform */
-    forward_fft(d);
-
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_fft[0] = timer;
-   timer = MPI_Wtime();
-  #endif
-
-   double q_r, q_i;
+  double q_r, q_i;
 
 
-    /* Convolution */
-    for ( i=0; i<Mesh; i++ )
-        for ( j=0; j<Mesh; j++ )
-            for ( k=0; k<Mesh; k++ ) {
-                c_index = c_ind ( i,j,k );
+  /* Convolution */
+  for ( i=0; i<Mesh; i++ )
+    for ( j=0; j<Mesh; j++ )
+      for ( k=0; k<Mesh; k++ ) {
+	c_index = c_ind ( i,j,k );
 
-                T1 = d->G_hat[r_ind ( i,j,k ) ];
-		q_r = 2.0*PI*Leni*d->Qmesh[c_index] *T1;
-		q_i = -2.0*PI*Leni*d->Qmesh[c_index+1] *T1;
+	T1 = d->G_hat[r_ind ( i,j,k ) ];
+	q_r = 2.0*PI*Leni*d->Qmesh[c_index] *T1;
+	q_i = -2.0*PI*Leni*d->Qmesh[c_index+1] *T1;
 
-		dop = d->Dn[i];	 
-		d->Fmesh->fields[0][c_index]   =  dop*q_i;
-		d->Fmesh->fields[0][c_index+1] =  dop*q_r;
+	dop = d->Dn[i];	 
+	d->Fmesh->fields[0][c_index]   =  dop*q_i;
+	d->Fmesh->fields[0][c_index+1] =  dop*q_r;
 
-		dop = d->Dn[j];
-		d->Fmesh->fields[1][c_index]   =  dop*q_i;
-		d->Fmesh->fields[1][c_index+1] =  dop*q_r;
+	dop = d->Dn[j];
+	d->Fmesh->fields[1][c_index]   =  dop*q_i;
+	d->Fmesh->fields[1][c_index+1] =  dop*q_r;
 
-		dop = d->Dn[k];
-		d->Fmesh->fields[2][c_index]   =  dop*q_i;
-		d->Fmesh->fields[2][c_index+1] =  dop*q_r;
+	dop = d->Dn[k];
+	d->Fmesh->fields[2][c_index]   =  dop*q_i;
+	d->Fmesh->fields[2][c_index+1] =  dop*q_r;
  
-            }
+      }
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_convolution[0] = timer;
-   timer = MPI_Wtime();
-  #endif
+  /* Backward Fast Fourier Transformation */
+  backward_fft(d);
 
-    /* Backward Fast Fourier Transformation */
-    backward_fft(d);
+  TIMING_STOP_G
+    
+  TIMING_START_F
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_fft[0] += timer;
-   timer = MPI_Wtime();
-  #endif
+  /* Force assignment */
+  assign_forces ( 1.0/ ( 2.0*s->length*s->length*s->length ),s,p,d,f,0 );
 
-    /* Force assignment */
-    assign_forces ( 1.0/ ( 2.0*s->length*s->length*s->length ),s,p,d,f,0 );
-
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_force_assignment[0] = timer;
-  #endif
+  TIMING_STOP_F
 }
 
 // Functions for error estimate.
@@ -289,6 +267,8 @@ FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const pa
     // Check whether value pair is tabulated.
 
     FLOAT_TYPE he_q = p3m_find_error(p->alpha*s->length, mesh, p->cao);
+
+    /* printf("alpha %lf alphaL %lf mesh %d cao %d he_q = %e\n", p->alpha, p->alpha*s->length, mesh, p->cao, he_q); */
 
     // Parameter set not found
     if(he_q < 0) {
