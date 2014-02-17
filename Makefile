@@ -1,5 +1,5 @@
 CC=mpicc
-CFLAGS=-Wall -O0 -g
+CFLAGS=-Wall -O5 -DNDEBUG
 CFLAGS+=-std=c99
 LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 #Uncomment to add long double 

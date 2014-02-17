@@ -42,17 +42,21 @@ static int dummy_g_size = 0;
 static interpolation_t *dummy_inter = NULL;
 
 static void dummy_g_realloc(int mesh) {
+  //  printf("dummy_g_realloc(mesh %d): MIN_SIZE %d MAX_SIZE %d, dummy_g_size %d\n",
+  //	 mesh, DUMMY_G_MIN_SIZE, DUMMY_G_MAX_SIZE, dummy_g_size);
   size_t new_size;
   if((dummy_g != NULL) && (mesh <= dummy_g_size))
     return;
 
-  new_size = (dummy_g_size + DUMMY_G_STEP);
+  new_size = ((mesh - dummy_g_size) < DUMMY_G_STEP) ? (dummy_g_size + DUMMY_G_STEP) : mesh;
+// printf("new_size %ld mesh %d, dummy_g_size %d\n", new_size, mesh, dummy_g_size);
   new_size = (new_size < DUMMY_G_MIN_SIZE) ? DUMMY_G_MIN_SIZE : new_size;
+// printf("new_size %ld mesh %d, dummy_g_size %d\n", new_size, mesh, dummy_g_size);
   new_size = (new_size > DUMMY_G_MAX_SIZE) ? mesh : new_size;
 
   dummy_g_size = new_size;
 
-  /* printf("new_size %d mesh %d, dummy_g_size %d\n", new_size, mesh, dummy_g_size); */
+// printf("new_size %ld mesh %d, dummy_g_size %d\n", new_size, mesh, dummy_g_size);
 
   new_size = new_size*new_size*new_size*sizeof(double);
 
@@ -63,6 +67,8 @@ static void dummy_g_realloc(int mesh) {
 
   assert(dummy_g != NULL);
   
+// printf("size of dummy_g is %ld, mesh3 is %d, dummy_g_size %d\n", new_size/sizeof(double), mesh*mesh*mesh, dummy_g_size);
+
   for(int i = 0; i < mesh*mesh*mesh; i++)
     dummy_g[i] = 1.0;
 }

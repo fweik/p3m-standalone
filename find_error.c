@@ -3,6 +3,10 @@
 #include <stdlib.h>
 
 #include "q_ik_double.h"
+#include "q_ik_i.h"
+#include "q_ad.h"
+#include "q_ad_i.h"
+
 
 static int
 compare_ints (const void *a, const void *b)
