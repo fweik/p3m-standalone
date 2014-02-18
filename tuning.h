@@ -31,6 +31,6 @@ typedef struct {
   int n;
 } timing_t;
 
-timing_t Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
+runtime_t Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
 
 #endif

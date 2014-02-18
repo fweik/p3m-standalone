@@ -97,9 +97,7 @@ double p3m_find_error(double alphaL, int mesh, int cao, int method) {
       case 0:
 	return p3m_find_q_ik(alphaL, mesh_id - meshes, cao_id - caos);
       case 1:
-	#warning Enable table again when available!
-	return -1;	
-	/* return p3m_find_q_ik_i(alphaL, mesh_id - meshes, cao_id - caos); */
+	return p3m_find_q_ik_i(alphaL, mesh_id - meshes, cao_id - caos);
       case 2: 
 	return p3m_find_q_ad(alphaL, mesh_id - meshes, cao_id - caos); 
       case 3:

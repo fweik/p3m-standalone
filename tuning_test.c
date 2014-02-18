@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 
   fprintf(sys_params, "# npart density box\n");
 
-  for(int i = stop; i >= start; i-= step) {
+  for(int i = start; i <= stop; i+= step) {
     printf("Tuning for %d particles.\n", i);
     box = pow((double)(i)/density, 0.3333);
     printf("density %lf (%lf), box %lf npart %d \n", FLOAT_CAST (double)(i)/(box*box*box), FLOAT_CAST density, FLOAT_CAST box, i);    
@@ -82,18 +82,18 @@ int main(int argc, char **argv) {
       p.rcut = rcut;
       p.tuning = 1;
 
-      timing_t timing;
+      runtime_t timing;
 
       printf("\t%s:\n", methods[j].method_name);
 
       t = MPI_Wtime();
       timing = Tune( methods+j, s, &p, prec);
       t = MPI_Wtime() - t;
-      if( timing.avg < 0.0) {
+      if( timing.t < 0.0) {
 	printf("\t\tTuning failed.\n");
 	continue;
       }
-      printf("\t\tmesh %d cao %d time %lf +/- %lf (tuning = %d, tuning time %lf)\n", p.mesh, p.cao, timing.avg, timing.sgm, p.tuning, t);
+      printf("\t\tmesh %d cao %d time %lf (t_c %e t_f %e t_g %e) (tuning time %lf)\n", p.mesh, p.cao, timing.t, timing.t_c, timing.t_f, timing.t_g, t);
 
       double tt;
       if(1) {
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 	Free_data(d);
       }
     
-      fprintf(f[j], "%d %d %d %lf %e %e %e\n", i, p.mesh, p.cao, p.alpha, timing.avg, timing.sgm, tt);
+      fprintf(f[j], "%d %d %d %lf %e %e\n", i, p.mesh, p.cao, p.alpha, timing.t, tt);
       fflush(f[j]);
     }
 
