@@ -35,7 +35,6 @@
 
 // Tables for the error kernel Q
 
-#include "q_ik_double.h"
 #include "find_error.h"
 
 #ifdef __detailed_timings
@@ -266,7 +265,7 @@ FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const pa
     int mesh = p->mesh;
     // Check whether value pair is tabulated.
 
-    FLOAT_TYPE he_q = p3m_find_error(p->alpha*s->length, mesh, p->cao);
+    FLOAT_TYPE he_q = p3m_find_error(p->alpha*s->length, mesh, p->cao, 0);
 
     /* printf("alpha %lf alphaL %lf mesh %d cao %d he_q = %e\n", p->alpha, p->alpha*s->length, mesh, p->cao, he_q); */
 

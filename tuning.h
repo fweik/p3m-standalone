@@ -23,7 +23,7 @@
 #define CAO_MIN 2
 #define CAO_MAX 7
 
-#define N_TUNING_SAMPLES 10
+#define N_TUNING_SAMPLES 1
 
 typedef struct {
   double avg;

@@ -1,5 +1,5 @@
 CC=mpicc
-CFLAGS=-Wall -O5 -DNDEBUG
+CFLAGS=-Wall -O0 -g -I/home/fweik/Base/include
 CFLAGS+=-std=c99
 LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 #Uncomment to add long double 
@@ -10,7 +10,7 @@ CUDA_COMPILER=nvcc
 CUDA_COMPILER_FLAGS=-arch=sm_30 -g -G
 CUDA_COMPILER_LFLAGS=-lcufft
 
-OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o statistics.o tuning.o p3m-ik-real.o parameters.o p3m-ad-real.o q_ik_double.o find_error.o
+OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o statistics.o tuning.o p3m-ik-real.o parameters.o p3m-ad-real.o q_ik.o q_ad.o q_ik_i.o q_ad_i.o find_error.o q.o
 
 all: p3mstandalone
 

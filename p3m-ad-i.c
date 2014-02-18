@@ -30,6 +30,8 @@
 
 #include "realpart.h"
 
+#include "find_error.h"
+
 #ifdef __detailed_timings
 #include <mpi.h>
 #endif
@@ -252,23 +254,28 @@ FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
   FLOAT_TYPE alias1, alias2, alias3, alias4, alias5, alias6;
   int mesh = p->mesh;
 
+  he_q = p3m_find_error(p->alpha*s->length, mesh, p->cao, 3);
+
+  if(he_q < 0) {
+
 #ifdef _OPENMP
 #pragma omp parallel for private(ny,nz,alias1, alias2, alias3, alias4,alias5, alias6) reduction(+ : he_q)
 #endif
-  for (nx=-mesh/2; nx<mesh/2; nx++) {
-    for (ny=-mesh/2; ny<mesh/2; ny++) {
-      for (nz=-mesh/2; nz<mesh/2; nz++) {
-	if((nx!=0) && (ny!=0) && (nz!=0)) {
-	  P3M_tune_aliasing_sums_AD_interlaced(nx,ny,nz,s,p,&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
-	  he_q += (alias1  -  SQR(alias2) / (0.5*(alias3*alias4 + alias5*alias6)));
+    for (nx=-mesh/2; nx<mesh/2; nx++) {
+      for (ny=-mesh/2; ny<mesh/2; ny++) {
+	for (nz=-mesh/2; nz<mesh/2; nz++) {
+	  if((nx!=0) && (ny!=0) && (nz!=0)) {
+	    P3M_tune_aliasing_sums_AD_interlaced(nx,ny,nz,s,p,&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
+	    he_q += (alias1  -  SQR(alias2) / (0.5*(alias3*alias4 + alias5*alias6)));
+	  }
 	}
       }
     }
-  }
 #ifdef _OPENMP
 #pragma omp barrier
 #endif
-  he_q = fabs(he_q);
+    he_q = fabs(he_q);
+  }
   return 2.0*s->q2*sqrt(he_q/(FLOAT_TYPE)s->nparticles) / SQR(s->length);
 }
 

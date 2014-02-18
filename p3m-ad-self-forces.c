@@ -124,15 +124,14 @@ void Substract_self_forces( system_t *s, parameters_t *p, data_t *d, forces_t *f
     for(m[0] = -P3M_SELF_BRILLOUIN; m[0]<=P3M_SELF_BRILLOUIN; m[0]++)
       for(m[1] = -P3M_SELF_BRILLOUIN; m[1]<=P3M_SELF_BRILLOUIN; m[1]++)
 	for(m[2] = -P3M_SELF_BRILLOUIN; m[2]<=P3M_SELF_BRILLOUIN; m[2]++) {
-	  sin_term = SIN(2*PI*(m[0] * s->p->x[id]/h +
+	  sin_term = SQR(s->q[id]) * SIN(2*PI*(m[0] * s->p->x[id]/h +
 			       m[1] * s->p->y[id]/h +
 			       m[2] * s->p->z[id]/h)); 
 	  /* printf("Selfforce: m (%d %d %d), sin_term %e, self_force_corrections (%e %e %e)\n", m[0], m[1], m[2], FLOAT_CAST sin_term, FLOAT_CAST d->self_force_corrections[ind], */
 	  /* 	 FLOAT_CAST d->self_force_corrections[ind+1], FLOAT_CAST d->self_force_corrections[ind+2]); */
 
 	  for(dir = 0; dir<3; dir++) {
-	    f->f->fields[dir][id] -= SQR(s->q[id]) * d->self_force_corrections[ind++] * sin_term;
-	    f_self[dir] += SQR(s->q[id]) * d->self_force_corrections[ind-1] * sin_term;
+	    f->f->fields[dir][id] -=  d->self_force_corrections[ind++] * sin_term;
 	  }
 	}
     /* printf("Selfforce: particle %d, force (%e %e %e)\n", id, FLOAT_CAST f_self[0], FLOAT_CAST f_self[1], FLOAT_CAST f_self[2]); */

@@ -26,6 +26,8 @@
 #include "interpol.h"
 #include "realpart.h"
 
+#define TUNE_DEBUG
+
 #ifdef TUNE_DEBUG
   #include <stdio.h>
   #define TUNE_TRACE(A) A
@@ -36,8 +38,6 @@
 const int smooth_numbers[] = {4, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128, 130, 132, 140, 144, 150, 154, 156, 160, 162, 168, 176, 180, 182, 192, 196, 198, 200, 208, 210, 216, 220, 224, 234, 240, 242, 250, 252, 256, 260, 264, 270, 280, 288, 294, 300};
 
 const int smooth_numbers_n = sizeof(smooth_numbers)/sizeof(int);
-
-//#define TUNE_DEBUG
 
 typedef struct {
   double *mesh_timings;
@@ -54,11 +54,13 @@ compare_ints (const void *a, const void *b)
 }
 
 double time_mesh(const method_t  *m, system_t *s, parameters_t *p) {
-  parameters_t mp = *p;
-  mp.cao = CAO_MIN;
-  mp.tuning = 1;
-  data_t *d = m->Init(s, &mp);
-  double res  = 0.0;
+parameters_t mp = *p;
+mp.cao = CAO_MIN;
+mp.cao3 = mp.cao*mp.cao*mp.cao;
+mp.ip = mp.cao - 1;
+mp.tuning = 1;
+data_t *d = m->Init(s, &mp);
+double res  = 0.0;
 
   m->Kspace_force( s, &mp, d, s->reference );
 
@@ -79,6 +81,8 @@ double time_cao(const method_t *m, system_t *s, parameters_t *p) {
   m->Kspace_force( s, &mp, d, s->reference );
 
   res = d->runtime.t_c + d->runtime.t_f;
+
+TUNE_TRACE(printf("time_cao(%d): t_c = %e, t_f = %e\n", p->cao, d->runtime.t_c, d->runtime.t_f));
 
   Free_data(d);
 
@@ -118,14 +122,14 @@ double get_timing(const method_t *m, system_t *s, parameters_t *p) {
 
   if(pt[m->method_id].mesh_timings[mesh_id] <= 0) {
     pt[m->method_id].mesh_timings[mesh_id] = time_mesh(m,s,p);
-    /* printf("mesh miss %d (id %d), time %e\n", p->mesh, mesh_id, pt[m->method_id].mesh_timings[mesh_id]); */
+    TUNE_TRACE(printf("mesh miss %d (id %d), time %e\n", p->mesh, mesh_id, pt[m->method_id].mesh_timings[mesh_id]););
   }
   if(pt[m->method_id].cao_timings[p->cao] <= 0) {
-    pt[m->method_id].cao_timings[p->cao] = time_cao(m,s,p);
-    /* printf("cao miss %d, time %e\n", p->cao, pt[m->method_id].cao_timings[p->cao]); */
+    pt[m->method_id].cao_timings[p->cao] = time_cao(m,s,p)/s->nparticles;
+    TUNE_TRACE(printf("cao miss %d, time %e\n", p->cao, s->nparticles * pt[m->method_id].cao_timings[p->cao]););
   }
 
-  return pt[m->method_id].mesh_timings[mesh_id] + pt[m->method_id].cao_timings[p->cao];
+  return pt[m->method_id].mesh_timings[mesh_id] + s->nparticles * pt[m->method_id].cao_timings[p->cao];
 }
 
 timing_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision ) {
@@ -185,6 +189,21 @@ timing_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE preci
 
     TUNE_TRACE(printf("cao_start %d cao_limit %d\n", cao_start, cao_limit););
 
+    it.cao = cao_min;
+    it.cao3 = it.cao * it.cao * it.cao;
+    it.ip = it.cao - 1;
+
+    // Check if we allready are slower than the best timing.
+    // Then there is no point in going on, it will only get worse.
+    double min_time;
+    min_time = get_timing(m, s, &it);
+
+    if( min_time > best_time) {
+      TUNE_TRACE(printf("Best possible time for (%d %d) = %e slower than best %e\n", it.mesh, it.cao, min_time, best_time););
+      break;
+    }
+
+
     for(it.cao = cao_start; (it.cao >= cao_min) && ( it.cao >= cao_limit ); it.cao--) {
       it.cao3 = it.cao * it.cao * it.cao;
       it.ip = it.cao - 1;
@@ -206,7 +225,7 @@ timing_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE preci
       TUNE_TRACE(puts("Starting timing..."););
 
       double avg = 0, sgm = 0;
-avg = get_timing(m, s, &it);
+      avg = get_timing(m, s, &it);
      
       time = avg;
 
@@ -222,7 +241,7 @@ avg = get_timing(m, s, &it);
 	TUNE_TRACE(printf("New best. mesh %d cao %d rcut %e time %e prec %e alpha %e\n", p_best.mesh, p_best.cao, p_best.rcut, time, error, p_best.alpha );)         ;
       }
     }
-    if( (success_once == 1) && (it.mesh > (p_best.mesh + 10)) )
+    if( (success_once == 1) && (it.mesh > (p_best.mesh+20)) )
       break;
   }
   Free_forces(f);
