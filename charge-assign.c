@@ -488,8 +488,6 @@ void assign_forces_interlacing_ad(FLOAT_TYPE force_prefac, system_t *s, paramete
   FLOAT_TYPE field_x, field_y, field_z;
   int mesh = d->mesh;
 
-  puts("assign_forces_interlacing_ad()");
-
   const int cao = p->cao;
 
   cf_cnt = 0;
