@@ -117,7 +117,7 @@ void Substract_self_forces( system_t *s, parameters_t *p, data_t *d, forces_t *f
   int id, ind;
   FLOAT_TYPE sin_term;
   FLOAT_TYPE h = s->length / p->mesh;
-  FLOAT_TYPE f_self[3] = { 0.0, 0.0, 0.0};
+  //  FLOAT_TYPE f_self[3] = { 0.0, 0.0, 0.0};
 
   for(id=0;id<s->nparticles;id++) {
     ind = 0;

@@ -36,13 +36,14 @@
   #define TUNE_TRACE(A) 
 #endif
 
-const int smooth_numbers[] = {4, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128, 130, 132, 140, 144, 150, 154, 156, 160, 162, 168, 176, 180, 182, 192, 196, 198, 200, 208, 210, 216, 220, 224, 234, 240, 242, 250, 252, 256, 260, 264, 270, 280, 288, 294, 300};
+const int smooth_numbers[] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128, 130, 132, 140, 144, 150, 154, 156, 160, 162, 168, 176, 180, 182, 192, 196, 198, 200, 208, 210, 216, 220, 224, 234, 240, 242, 250, 252, 256, 260, 264, 270, 280, 288, 294, 300};
 
 const int smooth_numbers_n = sizeof(smooth_numbers)/sizeof(int);
 
 typedef struct {
   double *mesh_timings;
   runtime_t *cao_timings;
+  int n;
 } parameter_timings_t;
 
 parameter_timings_t *pt = NULL;
@@ -72,9 +73,24 @@ double res  = 0.0;
   return res;
 }
 
+runtime_t time_full(const method_t  *m, system_t *s, parameters_t *p) {
+parameters_t mp = *p;
+mp.tuning = 1;
+data_t *d = m->Init(s, &mp);
+runtime_t ret;
+
+  m->Kspace_force( s, &mp, d, s->reference );
+
+  ret = d->runtime;
+
+  Free_data(d);
+
+  return ret;
+}
+
+
 runtime_t time_cao(const method_t *m, system_t *s, parameters_t *p) {
   parameters_t mp = *p;
-  mp.mesh = 16;
   mp.tuning = 1;
   data_t *d = m->Init(s, &mp);
   runtime_t res;
@@ -82,9 +98,7 @@ runtime_t time_cao(const method_t *m, system_t *s, parameters_t *p) {
   m->Kspace_force( s, &mp, d, s->reference );
 
   res = d->runtime;
-
-  res.t_c /= s->nparticles;
-  res.t_f /= s->nparticles;
+  res.t_g = 0.0;
 
 /* TUNE_TRACE(printf("time_cao(%d): t_c = %e, t_f = %e\n", p->cao, d->runtime.t_c, d->runtime.t_f)); */
 
@@ -98,47 +112,52 @@ runtime_t get_timing(const method_t *m, system_t *s, parameters_t *p) {
 
 runtime_t ret;
 
-  if(n_pt == 0) {
-    pt = Init_array(1, sizeof(parameter_timings_t));
-    n_pt = 1;
-    pt[0].mesh_timings = NULL;
-    pt[0].cao_timings = NULL;
-  }
-  if(m->method_id >= n_pt) {
-    pt = realloc(pt, (m->method_id+1) * sizeof(parameter_timings_t));
+  /* if(n_pt == 0) { */
+  /*   pt = Init_array(1, sizeof(parameter_timings_t)); */
+  /*   n_pt = 1; */
+  /*   pt[0].mesh_timings = NULL; */
+  /*   pt[0].cao_timings = NULL; */
+  /* } */
+  /* if(m->method_id >= n_pt) { */
+  /*   pt = realloc(pt, (m->method_id+1) * sizeof(parameter_timings_t)); */
 
-    for(int i = n_pt-1; i <= m->method_id; i++) {
-      pt[i].mesh_timings = NULL;
-      pt[i].cao_timings = NULL;
-    }
-    n_pt = m->method_id+1;
-  }
+  /*   for(int i = n_pt-1; i <= m->method_id; i++) { */
+  /*     pt[i].mesh_timings = NULL; */
+  /*     pt[i].cao_timings = NULL; */
+  /*   } */
+  /*   n_pt = m->method_id+1; */
+  /* } */
 
-  if(pt[m->method_id].mesh_timings == NULL) {
-    pt[m->method_id].mesh_timings = Init_array(smooth_numbers_n, sizeof(double));
-    memset(pt[m->method_id].mesh_timings, 0, smooth_numbers_n * sizeof(double));
-  }
-  if(pt[m->method_id].cao_timings == NULL) {
-    pt[m->method_id].cao_timings = Init_array(CAO_MAX+1, sizeof(runtime_t));
-    memset(pt[m->method_id].cao_timings, 0, (CAO_MAX+1) * sizeof(runtime_t));
-  }
+  /* if(pt[m->method_id].mesh_timings == NULL) { */
+  /*   pt[m->method_id].mesh_timings = Init_array(smooth_numbers_n, sizeof(double)); */
+  /*   memset(pt[m->method_id].mesh_timings, 0, smooth_numbers_n * sizeof(double)); */
+  /* } */
+  /* if((pt[m->method_id].cao_timings == NULL) || (pt[m->method_id].n != s->nparticles)) { */
+  /*   puts("Resetting cao timings."); */
+  /*   Free_array(pt[m->method_id].cao_timings); */
+  /*   pt[m->method_id].cao_timings = Init_array(CAO_MAX+1, sizeof(runtime_t)); */
+  /*   memset(pt[m->method_id].cao_timings, 0, (CAO_MAX+1) * sizeof(runtime_t)); */
+  /*   pt[m->method_id].n = s->nparticles; */
+  /* }   */
 
-  int *mesh_of = bsearch(&(p->mesh), smooth_numbers, smooth_numbers_n, sizeof(int), compare_ints);
-  int mesh_id = mesh_of - smooth_numbers;
+  /* int *mesh_of = bsearch(&(p->mesh), smooth_numbers, smooth_numbers_n, sizeof(int), compare_ints); */
+  /* int mesh_id = mesh_of - smooth_numbers; */
 
-  if(pt[m->method_id].mesh_timings[mesh_id] <= 0) {
-    pt[m->method_id].mesh_timings[mesh_id] = time_mesh(m,s,p);
-    /* TUNE_TRACE(printf("mesh miss %d (id %d), time %e\n", p->mesh, mesh_id, pt[m->method_id].mesh_timings[mesh_id]);); */
-  }
-  if(pt[m->method_id].cao_timings[p->cao].t_c <= 0) {
-    pt[m->method_id].cao_timings[p->cao] = time_cao(m,s,p);
-    /* TUNE_TRACE(printf("cao miss %d, time %e\n", p->cao, s->nparticles * pt[m->method_id].cao_timings[p->cao]);); */
-  }
+  /* if(pt[m->method_id].mesh_timings[mesh_id] <= 0) { */
+  /*   pt[m->method_id].mesh_timings[mesh_id] = time_mesh(m,s,p); */
+  /*   /\* TUNE_TRACE(printf("mesh miss %d (id %d), time %e\n", p->mesh, mesh_id, pt[m->method_id].mesh_timings[mesh_id]);); *\/ */
+  /* } */
+  /* if(pt[m->method_id].cao_timings[p->cao].t_c <= 0) { */
+  /*   pt[m->method_id].cao_timings[p->cao] = time_cao(m,s,p); */
+  /*   /\* TUNE_TRACE(printf("cao miss %d, time %e\n", p->cao, s->nparticles * pt[m->method_id].cao_timings[p->cao]);); *\/ */
+  /* } */
 
-  ret = pt[m->method_id].cao_timings[p->cao];
-  ret.t_f *= s->nparticles;
-  ret.t_c *= s->nparticles;
-  ret.t_g = pt[m->method_id].mesh_timings[mesh_id];
+ret = time_full(m, s, p);
+
+//  ret = pt[m->method_id].cao_timings[p->cao];
+//  ret.t_g = pt[m->method_id].mesh_timings[mesh_id];
+
+
   ret.t = ret.t_c + ret.t_g + ret.t_f;
 
   return  ret;
@@ -251,8 +270,6 @@ runtime_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE prec
 	TUNE_TRACE(printf("New best. mesh %d cao %d rcut %e time %e prec %e alpha %e\n", p_best.mesh, p_best.cao, p_best.rcut, time.t, error, p_best.alpha );)         ;
       }
     }
-    if( (success_once == 1) && (it.mesh > (p_best.mesh+20)) )
-      break;
   }
   Free_forces(f);
 
@@ -263,7 +280,7 @@ runtime_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE prec
   p->ip = p->cao - 1;
   p->cao3 = p->cao * p->cao * p->cao;
 
-  TUNE_TRACE(printf("Using mesh %d cao %d rcut %e alpha %e with precision %e time %e\n", p->mesh, p->cao, p->rcut, p->alpha, p->precision, best_time);)
+  TUNE_TRACE(printf("Using mesh %d cao %d rcut %e alpha %e with precision %e time %e\n", p->mesh, p->cao, p->rcut, p->alpha, p->precision, best_time.t);)
   return ret;
 }
 

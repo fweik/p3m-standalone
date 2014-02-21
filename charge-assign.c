@@ -479,6 +479,52 @@ void assign_forces_interlacing(FLOAT_TYPE force_prefac, system_t *s, parameters_
 
 }
 
+void assign_forces_interlacing_ad(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f) {
+  int i,i0,i1,i2;
+  int cf_cnt;
+  int *base1, *base2;
+  int j1,k1,l1,j2,k2,l2;
+  FLOAT_TYPE B1, B2;
+  FLOAT_TYPE field_x, field_y, field_z;
+  int mesh = d->mesh;
+
+  puts("assign_forces_interlacing_ad()");
+
+  const int cao = p->cao;
+
+  cf_cnt = 0;
+
+  for (i=0; i<s->nparticles; i++) {
+    field_x = field_y = field_z = 0;
+    base1 = d->ca_ind[0] + 3*i;
+    base2 = d->ca_ind[1] + 3*i;
+    cf_cnt = i*p->cao3;
+    for (i0=0; i0<cao; i0++) {
+      j1 = wrap_mesh_index(base1[0] + i0, mesh);
+      j2 = wrap_mesh_index(base2[0] + i0, mesh);
+      for (i1=0; i1<cao; i1++) {
+	k1 = wrap_mesh_index(base1[1] + i1, mesh);
+	k2 = wrap_mesh_index(base2[1] + i1, mesh);
+	for (i2=0; i2<cao; i2++) {
+	  l1 = wrap_mesh_index(base1[2] + i2, mesh);
+	  l2 = wrap_mesh_index(base2[2] + i2, mesh);
+	  B1 = d->Qmesh[c_ind(j1,k1,l1)+0];
+	  B2 = d->Qmesh[c_ind(j2,k2,l2)+1];
+	  field_x -= 0.5*force_prefac*(B1*d->dQdx[0][cf_cnt] + B2*d->dQdx[1][cf_cnt]);
+	  field_y -= 0.5*force_prefac*(B1*d->dQdy[0][cf_cnt] + B2*d->dQdy[1][cf_cnt]);
+	  field_z -= 0.5*force_prefac*(B1*d->dQdz[0][cf_cnt] + B2*d->dQdz[1][cf_cnt]);
+	  cf_cnt++;
+	}
+      }
+    }
+    f->f_k->fields[0][i] += field_x;
+    f->f_k->fields[1][i] += field_y;
+    f->f_k->fields[2][i] += field_z;
+  }
+
+}
+
+
 
 
 void assign_forces_real(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f) {

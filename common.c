@@ -71,6 +71,12 @@ void *Resize_array(void *a, size_t new_size, size_t old_size) {
   return NULL;
 }
 
+void Free_array(void *a) {
+  if(a == NULL)
+    return;
+  FFTW_FREE(a);
+}
+
 buffered_list_t *Init_buffered_list(size_t size) {
   buffered_list_t *l = Init_array( 1, sizeof(buffered_list_t));
   
@@ -184,8 +190,6 @@ system_t *Init_system(int n) {
     s-> nparticles = n;
 
     s->p = Init_vector_array(s->nparticles);
-
-    s->v = Init_vector_array(s->nparticles);
 
     s->reference = Init_forces(s->nparticles);
 

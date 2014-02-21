@@ -20,7 +20,7 @@
 
 #include "types.h"
 
-#define P3M_AD_SELF_FORCES
+//#define P3M_AD_SELF_FORCES
 
 void Influence_function_berechnen_ad_r( system_t *, parameters_t *, data_t * );
 void P3M_ad_r( system_t *, parameters_t *, data_t *, forces_t * );

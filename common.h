@@ -48,6 +48,7 @@ void Free_forces(forces_t *);
 
 void *Init_array(int, size_t);
 void *Resize_array(void *a, size_t new_size, size_t old_size);
+void Free_array(void *a);
 
 buffered_list_t *Init_buffered_list(size_t size);
 void Resize_buffered_list(buffered_list_t *l, size_t new_size);

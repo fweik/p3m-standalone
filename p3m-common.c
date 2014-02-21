@@ -221,9 +221,8 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
     }
 
     if ( m->flags & METHOD_FLAG_G_hat) {
-      d->G_hat = Init_array(mesh3, sizeof(FLOAT_TYPE));
-
       if( !p->tuning) {
+	d->G_hat = Init_array(mesh3, sizeof(FLOAT_TYPE));
         m->Influence_function( s, p, d );   
       } else {
 	dummy_g_realloc(d->mesh);
