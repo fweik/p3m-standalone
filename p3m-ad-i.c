@@ -193,10 +193,10 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   TIMING_START_F 
 
   /* Force assignment */
-  /* assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0); */
-  /* assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 1); */
+  assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0);
+  assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 1);
 
-    assign_forces_interlacing_ad( Mesh*Leni*Leni*Leni, s, p, d, f);
+    /* assign_forces_interlacing_ad( Mesh*Leni*Leni*Leni, s, p, d, f); */
 
   TIMING_STOP_F
 
