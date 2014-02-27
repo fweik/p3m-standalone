@@ -488,6 +488,14 @@ void assign_forces_interlacing_ad(FLOAT_TYPE force_prefac, system_t *s, paramete
   FLOAT_TYPE field_x, field_y, field_z;
   int mesh = d->mesh;
 
+  FLOAT_TYPE *dQdx0 = d->dQdx[0];
+  FLOAT_TYPE *dQdy0 = d->dQdy[0];
+  FLOAT_TYPE *dQdz0 = d->dQdz[0];
+
+  FLOAT_TYPE *dQdx1 = d->dQdx[1];
+  FLOAT_TYPE *dQdy1 = d->dQdy[1];
+  FLOAT_TYPE *dQdz1 = d->dQdz[1];
+
   const int cao = p->cao;
 
   cf_cnt = 0;
@@ -508,9 +516,9 @@ void assign_forces_interlacing_ad(FLOAT_TYPE force_prefac, system_t *s, paramete
 	  l2 = wrap_mesh_index(base2[2] + i2, mesh);
 	  B1 = d->Qmesh[c_ind(j1,k1,l1)+0];
 	  B2 = d->Qmesh[c_ind(j2,k2,l2)+1];
-	  field_x -= 0.5*force_prefac*(B1*d->dQdx[0][cf_cnt] + B2*d->dQdx[1][cf_cnt]);
-	  field_y -= 0.5*force_prefac*(B1*d->dQdy[0][cf_cnt] + B2*d->dQdy[1][cf_cnt]);
-	  field_z -= 0.5*force_prefac*(B1*d->dQdz[0][cf_cnt] + B2*d->dQdz[1][cf_cnt]);
+	  field_x -= 0.5*force_prefac*(B1*dQdx0[cf_cnt] + B2*dQdx1[cf_cnt]);
+	  field_y -= 0.5*force_prefac*(B1*dQdy0[cf_cnt] + B2*dQdy1[cf_cnt]);
+	  field_z -= 0.5*force_prefac*(B1*dQdz0[cf_cnt] + B2*dQdz1[cf_cnt]);
 	  cf_cnt++;
 	}
       }
