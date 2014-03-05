@@ -1,3 +1,18 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 /* Computes the Ewald sum of a system of point charges. */
 /* Time-stamp: <2007-07-31 11:57 olenz> */
 
@@ -80,7 +95,9 @@ void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
   fak1 = 2.0/SQR(s->length);
   fak2 = SQR(PI/(p->alpha*s->length));
 
-#pragma omp parallel for collapse(3) private(n_sqr)
+#ifdef _OPENMP
+  #pragma omp parallel for collapse(3) private(n_sqr)
+#endif 
   for (nx=0; nx <= kmax; nx++)
     for (ny=0; ny <= kmax; ny++)
       for (nz=0; nz <= kmax; nz++) {
@@ -111,7 +128,7 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
   int    i;
   int    nx, ny, nz;
   FLOAT_TYPE kr, energy=0.0;
-  FLOAT_TYPE rhohat_re, rhohat_im, ghat;
+  FLOAT_TYPE rhohat_re=0, rhohat_im=0, ghat=0;
   FLOAT_TYPE force_factor;
   FLOAT_TYPE Leni = 1.0/s->length;
   
@@ -123,16 +140,19 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
 	  rhohat_re = 0.0;
 	  rhohat_im = 0.0;
           ghat = d->G_hat[r_ind(abs(nx), abs(ny), abs(nz))];          
-          
+#ifdef _OPENMP          
 #pragma omp parallel for private(kr) reduction( + : rhohat_re ) reduction( + : rhohat_im )
+#endif
 	  for (i=0; i<s->nparticles; i++) {
             kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
 	    rhohat_re += s->q[i] * COS(kr);
 	    rhohat_im += s->q[i] * -SIN(kr);
           }
+#ifdef _OPENMP
 #pragma omp barrier
 
 #pragma omp parallel for private(kr, force_factor)
+#endif
 	  for (i=0; i<s->nparticles; i++) {
 	    kr = 2.0*PI*Leni*(nx*(s->p->x[i]) + ny*(s->p->y[i]) + nz*(s->p->z[i]));
 	     
@@ -144,7 +164,9 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
             f->f_k->z[i] += nz * force_factor;
 	  }
 	}
+#ifdef _OPENMP
 #pragma omp barrier
+#endif
   /* compute energy */
   energy += ghat*(SQR(rhohat_re) + SQR(rhohat_im));
 

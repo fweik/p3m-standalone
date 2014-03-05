@@ -1,3 +1,18 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
@@ -12,10 +27,6 @@
 #include "realpart.h"
 #include "ewald.h"
 #include "p3m-common.h"
-
-#ifdef __VALGRIND_PROFILE_KSPACE_ONLY
- #include <callgrind.h>
-#endif
 
 #ifdef __detailed_timings
 double t_charge_assignment[4];
@@ -58,6 +69,12 @@ void *Resize_array(void *a, size_t new_size, size_t old_size) {
     return b;
   }
   return NULL;
+}
+
+void Free_array(void *a) {
+  if(a == NULL)
+    return;
+  FFTW_FREE(a);
 }
 
 buffered_list_t *Init_buffered_list(size_t size) {
@@ -174,8 +191,6 @@ system_t *Init_system(int n) {
 
     s->p = Init_vector_array(s->nparticles);
 
-    s->v = Init_vector_array(s->nparticles);
-
     s->reference = Init_forces(s->nparticles);
 
     s->q = Init_array(s->nparticles, sizeof(FLOAT_TYPE));
@@ -284,9 +299,6 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
     #ifdef __VALGRIND_PROFILE_KSPACE_ONLY
     CALLGRIND_STOP_INSTRUMENTATION;
     #endif
-
-    /* printf("Kpart %lf sec\n", FLOAT_CAST t); */
-
 
     //#pragma omp parallel for private( i )
     for ( j=0; j < 3; j++ ) {

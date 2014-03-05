@@ -1,3 +1,18 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 #ifndef COMMON_H
 #define COMMON_H
 
@@ -14,8 +29,6 @@ static inline FLOAT_TYPE my_power( FLOAT_TYPE base, int exponent ) {
 
   return ret;
 }
-
-#define __detailed_timings
 
 #ifdef __detailed_timings
 extern double t_charge_assignment[4];
@@ -35,6 +48,7 @@ void Free_forces(forces_t *);
 
 void *Init_array(int, size_t);
 void *Resize_array(void *a, size_t new_size, size_t old_size);
+void Free_array(void *a);
 
 buffered_list_t *Init_buffered_list(size_t size);
 void Resize_buffered_list(buffered_list_t *l, size_t new_size);

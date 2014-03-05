@@ -1,9 +1,25 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fftw3.h>
 #include <string.h>
+#include <stdlib.h>
 
 // General typ definitions
 #include "types.h"
@@ -17,10 +33,13 @@
 
 #include "p3m-ik.h"
 
+// Tables for the error kernel Q
+
+#include "find_error.h"
+
 #ifdef __detailed_timings
 #include <mpi.h>
 #endif
-
 
 // declaration of the method
 
@@ -126,7 +145,9 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
     Dnx = d->Dn[NX];
     for ( NY=0; NY<Mesh; NY++ ) {
       Dny = d->Dn[NY];
+#ifdef _OPENMP
 #pragma omp parallel for private(NZ, ind, Zaehler, Nenner, Dnz, zwi)
+#endif
       for ( NZ=0; NZ<Mesh; NZ++ ) {
 	ind = r_ind ( NX, NY, NZ );
 	  
@@ -146,7 +167,9 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
       }
     }
   }
+#ifdef _OPENMP
 #pragma omp barrier
+#endif
 }
 
 
@@ -154,95 +177,71 @@ void Influence_function_berechnen_ik ( system_t *s, parameters_t *p, data_t *d )
  */
 
 void P3M_ik ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
-    /* Loop counters */
-    int i, j, k, l;
-    /* helper variables */
-    FLOAT_TYPE T1;
-    FLOAT_TYPE dop;
+  /* Loop counters */
+  int i, j, k;
+  /* helper variables */
+  FLOAT_TYPE T1;
+  FLOAT_TYPE dop;
+  
+  // One over boxlength
+  FLOAT_TYPE Leni = 1.0/s->length;
 
-    // One over boxlength
-    FLOAT_TYPE Leni = 1.0/s->length;
+  int Mesh = p->mesh;
+  int c_index;
 
-    int Mesh = p->mesh;
-    int c_index;
+  /* Setting charge mesh to zero */
+  memset ( d->Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof ( FLOAT_TYPE ) );
 
-    /* Setting charge mesh to zero */
-    memset ( d->Qmesh, 0, 2*Mesh*Mesh*Mesh*sizeof ( FLOAT_TYPE ) );
+  TIMING_START_C
+  
+  /* chargeassignment */
+  assign_charge ( s, p, d, 0 );
 
-  #ifdef __detailed_timings
-  timer = MPI_Wtime();
-  #endif
+  TIMING_STOP_C
 
+  TIMING_START_G
 
-    /* chargeassignment */
-    assign_charge ( s, p, d, 0 );
+  /* Forward Fast Fourier Transform */
+  forward_fft(d);
 
-  #ifdef __detailed_timings
-  timer = MPI_Wtime() - timer;
-  t_charge_assignment[0] = timer;
-  timer = MPI_Wtime();
-  #endif
-
-    /* Forward Fast Fourier Transform */
-    forward_fft(d);
-
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_fft[0] = timer;
-   timer = MPI_Wtime();
-  #endif
+  double q_r, q_i;
 
 
-    /* Convolution */
-    for ( i=0; i<Mesh; i++ )
-        for ( j=0; j<Mesh; j++ )
-            for ( k=0; k<Mesh; k++ ) {
-                c_index = c_ind ( i,j,k );
+  /* Convolution */
+  for ( i=0; i<Mesh; i++ )
+    for ( j=0; j<Mesh; j++ )
+      for ( k=0; k<Mesh; k++ ) {
+	c_index = c_ind ( i,j,k );
 
-                T1 = d->G_hat[r_ind ( i,j,k ) ];
-                d->Qmesh[c_index] *= T1;
-                d->Qmesh[c_index+1] *= T1;
+	T1 = d->G_hat[r_ind ( i,j,k ) ];
+	q_r = 2.0*PI*Leni*d->Qmesh[c_index] *T1;
+	q_i = -2.0*PI*Leni*d->Qmesh[c_index+1] *T1;
+
+	dop = d->Dn[i];	 
+	d->Fmesh->fields[0][c_index]   =  dop*q_i;
+	d->Fmesh->fields[0][c_index+1] =  dop*q_r;
+
+	dop = d->Dn[j];
+	d->Fmesh->fields[1][c_index]   =  dop*q_i;
+	d->Fmesh->fields[1][c_index+1] =  dop*q_r;
+
+	dop = d->Dn[k];
+	d->Fmesh->fields[2][c_index]   =  dop*q_i;
+	d->Fmesh->fields[2][c_index+1] =  dop*q_r;
  
-                for ( l=0;l<3;l++ ) {
-		  /* choose the right component of k */
-                    switch ( l ) {
-                    case 0:
-                        dop = d->Dn[i];
-                        break;
-                    case 1:
-                        dop = d->Dn[j];
-                        break;
-                    case 2:
-                        dop = d->Dn[k];
-                        break;
-                    }
-                    d->Fmesh->fields[l][c_index]   =  -2.0*PI*Leni*dop*d->Qmesh[c_index+1];
-                    d->Fmesh->fields[l][c_index+1] =   2.0*PI*Leni*dop*d->Qmesh[c_index];
-                }
-            }
+      }
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_convolution[0] = timer;
-   timer = MPI_Wtime();
-  #endif
+  /* Backward Fast Fourier Transformation */
+  backward_fft(d);
 
-    /* Backward Fast Fourier Transformation */
-    backward_fft(d);
+  TIMING_STOP_G
+    
+  TIMING_START_F
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_fft[0] += timer;
-   timer = MPI_Wtime();
-  #endif
+  /* Force assignment */
+  assign_forces ( 1.0/ ( 2.0*s->length*s->length*s->length ),s,p,d,f,0 );
 
-    /* Force assignment */
-    assign_forces ( 1.0/ ( 2.0*s->length*s->length*s->length ),s,p,d,f,0 );
-
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_force_assignment[0] = timer;
-  #endif
+  TIMING_STOP_F
 }
 
 // Functions for error estimate.
@@ -262,31 +261,45 @@ FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
 }
 
 FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
-  // Mesh loop counters 
-    int  nx, ny, nz;
     // The pair force error Q
-    FLOAT_TYPE he_q = 0.0;
-    // Helper variables
-    FLOAT_TYPE alias1, alias2, n2, cs;
-    FLOAT_TYPE ctan_x, ctan_y;
     int mesh = p->mesh;
-    FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
+    // Check whether value pair is tabulated.
 
-    for ( nx=-mesh/2; nx<mesh/2; nx++ ) {
+    FLOAT_TYPE he_q = p3m_find_error(p->alpha*s->length, mesh, p->cao, 0);
+
+    /* printf("alpha %lf alphaL %lf mesh %d cao %d he_q = %e\n", p->alpha, p->alpha*s->length, mesh, p->cao, he_q); */
+
+    // Parameter set not found
+    if(he_q < 0) {
+      // Mesh loop counters 
+      int  nx, ny, nz;
+      // Helper variables
+      FLOAT_TYPE alias1, alias2, n2, cs;
+      FLOAT_TYPE ctan_x, ctan_y;
+      FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
+#ifdef _OPENMP
+#pragma omp parallel for private(ctan_x, ctan_y, n2, cs, alias1, alias2, ny, nz) reduction( + : he_q )
+#endif
+      for ( nx=-mesh/2; nx<mesh/2; nx++ ) {
         ctan_x = analytic_cotangent_sum ( nx, meshi,p->cao );
         for ( ny=-mesh/2; ny<mesh/2; ny++ ) {
-            ctan_y = ctan_x * analytic_cotangent_sum ( ny, meshi, p->cao );
-            for ( nz=-mesh/2; nz<mesh/2; nz++ ) {
-                if ( ( nx!=0 ) || ( ny!=0 ) || ( nz!=0 ) ) {
-                    n2 = SQR ( nx ) + SQR ( ny ) + SQR ( nz );
-                    cs = analytic_cotangent_sum ( nz, meshi ,p->cao ) *ctan_y;
-                    p3m_tune_aliasing_sums_ik ( nx,ny,nz, s, p, &alias1,&alias2 );
-                    he_q += ( alias1  -  SQR ( alias2/cs ) / n2 );
-                }
-            }
+	  ctan_y = ctan_x * analytic_cotangent_sum ( ny, meshi, p->cao );
+	  for ( nz=-mesh/2; nz<mesh/2; nz++ ) {
+	    if ( ( nx!=0 ) || ( ny!=0 ) || ( nz!=0 ) ) {
+	      n2 = SQR ( nx ) + SQR ( ny ) + SQR ( nz );
+	      cs = analytic_cotangent_sum ( nz, meshi ,p->cao ) *ctan_y;
+	      p3m_tune_aliasing_sums_ik ( nx,ny,nz, s, p, &alias1,&alias2 );
+	      he_q += ( alias1  -  SQR ( alias2/cs ) / n2 );
+	    }
+	  }
         }
+      }
+#ifdef _OPENMP
+#pragma omp barrier
+#endif
+      he_q = fabs(he_q);
     }
-    he_q = fabs(he_q);
+
     return 2.0*s->q2*SQRT ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
 }
 

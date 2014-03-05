@@ -1,11 +1,24 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 #include "types.h"
 #include "common.h"
 #include "p3m-common.h"
 #include "p3m-ad-self-forces.h"
 
 #include <math.h>
-
-#define P3M_SELF_BRILLOUIN 1
 
 /* This is an implementation of equation (9) of
    V. Ballenegger et al., Computer Physics Communications 182(2011)
@@ -39,6 +52,9 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
 	true_ny = d->nshift[ny];
 	true_nz = d->nshift[nz];
 	//	printf("n[] = (%d %d %d), true_n[] = (%d %d %d)\n", nx, ny, nz, true_nx, true_ny, true_nz);
+	#ifdef _OPENMP
+#pragma omp parallel for private(U, U_shiftx) reduction( + : theSumOverK ) collapse(3)
+#endif
 	for (mx=-P3M_BRILLOUIN_LOCAL; mx<=P3M_BRILLOUIN_LOCAL; mx++) {
 	  for (my=-P3M_BRILLOUIN_LOCAL; my<=P3M_BRILLOUIN_LOCAL; my++) {
 	    for (mz=-P3M_BRILLOUIN_LOCAL; mz<=P3M_BRILLOUIN_LOCAL; mz++) {
@@ -55,6 +71,9 @@ FLOAT_TYPE P3M_k_space_calc_self_force( system_t *s, parameters_t *p, data_t *d,
 	    }
 	  }
 	}
+#ifdef _OPENMP
+#pragma omp barrier
+#endif
       }
  
   switch(dir) {
@@ -87,7 +106,9 @@ void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
 	/* printf("b(%d, %d, %d) = (%e, %e, %e)\n", m[0], m[1], m[2], FLOAT_CAST d->self_force_corrections[indp-3],  */
 	/*        FLOAT_CAST d->self_force_corrections[indp-2], FLOAT_CAST d->self_force_corrections[indp-1]);  */
       }
+#ifdef _OPENMP
 #pragma omp barrier
+#endif
 }
 
 void Substract_self_forces( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
@@ -96,22 +117,21 @@ void Substract_self_forces( system_t *s, parameters_t *p, data_t *d, forces_t *f
   int id, ind;
   FLOAT_TYPE sin_term;
   FLOAT_TYPE h = s->length / p->mesh;
-  FLOAT_TYPE f_self[3] = { 0.0, 0.0, 0.0};
+  //  FLOAT_TYPE f_self[3] = { 0.0, 0.0, 0.0};
 
   for(id=0;id<s->nparticles;id++) {
     ind = 0;
     for(m[0] = -P3M_SELF_BRILLOUIN; m[0]<=P3M_SELF_BRILLOUIN; m[0]++)
       for(m[1] = -P3M_SELF_BRILLOUIN; m[1]<=P3M_SELF_BRILLOUIN; m[1]++)
 	for(m[2] = -P3M_SELF_BRILLOUIN; m[2]<=P3M_SELF_BRILLOUIN; m[2]++) {
-	  sin_term = SIN(2*PI*(m[0] * s->p->x[id]/h +
+	  sin_term = SQR(s->q[id]) * SIN(2*PI*(m[0] * s->p->x[id]/h +
 			       m[1] * s->p->y[id]/h +
 			       m[2] * s->p->z[id]/h)); 
 	  /* printf("Selfforce: m (%d %d %d), sin_term %e, self_force_corrections (%e %e %e)\n", m[0], m[1], m[2], FLOAT_CAST sin_term, FLOAT_CAST d->self_force_corrections[ind], */
 	  /* 	 FLOAT_CAST d->self_force_corrections[ind+1], FLOAT_CAST d->self_force_corrections[ind+2]); */
 
 	  for(dir = 0; dir<3; dir++) {
-	    f->f->fields[dir][id] -= SQR(s->q[id]) * d->self_force_corrections[ind++] * sin_term;
-	    f_self[dir] += SQR(s->q[id]) * d->self_force_corrections[ind-1] * sin_term;
+	    f->f->fields[dir][id] -=  d->self_force_corrections[ind++] * sin_term;
 	  }
 	}
     /* printf("Selfforce: particle %d, force (%e %e %e)\n", id, FLOAT_CAST f_self[0], FLOAT_CAST f_self[1], FLOAT_CAST f_self[2]); */

@@ -1,3 +1,18 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 #ifndef TYPES_H
 #define TYPES_H
 
@@ -8,9 +23,6 @@
 #ifdef DETAILED_TIMINGS
 extern int __detailed_timings;
 #endif
-
-// Limit valgrind profiling to interesting part
-// #define __VALGRIND_PROFILE_KSPACE_ONLY
 
 #define DOUBLE_PREC 
 //#define LONG_DOUBLE_PREC
@@ -51,6 +63,8 @@ extern int __detailed_timings;
 #define FFTW_EXECUTE fftw_execute
 #define FFTW_COMPLEX fftw_complex
 #define FFTW_PLAN_DFT_3D fftw_plan_dft_3d
+#define FFTW_PLAN_DFT_R2C_3D fftw_plan_dft_r2c_3d
+#define FFTW_PLAN_DFT_C2R_3D fftw_plan_dft_c2r_3d
 #define FFTW_PLAN fftw_plan
 #define FFTW_DESTROY_PLAN fftw_destroy_plan
 #define ROUND round
@@ -74,6 +88,8 @@ extern int __detailed_timings;
 #define FFTW_EXECUTE fftwl_execute
 #define FFTW_COMPLEX fftwl_complex
 #define FFTW_PLAN_DFT_3D fftwl_plan_dft_3d
+#define FFTW_PLAN_DFT_R2C_3D fftw_plan_dft_r2c_3d
+#define FFTW_PLAN_DFT_C2R_3D fftw_plan_dft_c2r_3d
 #define FFTW_PLAN fftwl_plan
 #define FFTW_DESTROY_PLAN fftwl_destroy_plan
 #define ROUND roundl
@@ -96,7 +112,9 @@ enum {
     METHOD_P3M_ad = 2,
     METHOD_P3M_ad_i = 3,
     METHOD_EWALD = 4,
-    METHOD_P3M_ik_cuda = 5
+    METHOD_P3M_ik_cuda = 5,
+    METHOD_P3M_ik_r = 6,
+    METHOD_P3M_ad_r = 7
 };
 
 // Container type for arrays of 3d-vectors
@@ -190,6 +208,10 @@ typedef struct {
     int        cao;
     int        cao3;
     FLOAT_TYPE precision;
+    // Flag to tell the method where we are ing mode.
+    // If true, the method only has to have only accurate
+    // calculation time, the numerical result doesn't matter.
+    int        tuning;
 } parameters_t;
 
 typedef struct {
@@ -203,40 +225,45 @@ typedef struct {
   FLOAT_TYPE (*U_hat)(int, FLOAT_TYPE);
 } interpolation_t;
 
+typedef struct {
+  double t_c, t_f, t_g, t;
+} runtime_t;
+
 // Struct holding method data.
 
 typedef struct {
-    // Mesh size the struct is initialized for
-    int mesh;
-    // Influence function
-    FLOAT_TYPE *G_hat;
-    // Charge mesh
-    FLOAT_TYPE *Qmesh;
-    // Force mesh for k space differentiation
-    vector_array_t *Fmesh;
-    // Shifted kvectors (fftw convention)
-    FLOAT_TYPE *nshift;
-    // Fourier coefficients of the differential operator
-    FLOAT_TYPE *Dn;
-    // Derivatives of the charge assignment function for analytical differentiation
-    FLOAT_TYPE *dQdx[2], *dQdy[2], *dQdz[2];
-    // Cache for charge assignment
-    int *ca_ind[2];
-    FLOAT_TYPE *cf[2];
-    // Struct for interpolated charge assignment function
-    interpolation_t *inter;
-    // fftw plans
-    //number of plans
-    int forward_plans;
-    int backward_plans;
-    // actual plans
-    FFTW_PLAN forward_plan[3];
-    FFTW_PLAN backward_plan[3];
-    // neighbor list for real space calculation
-    neighbor_list_t *neighbor_list;
-    // Self forces corrections
-    FLOAT_TYPE *self_force_corrections;
-    void *method_data;
+  // Mesh size the struct is initialized for
+  int mesh;
+  // Influence function
+  FLOAT_TYPE *G_hat;
+  // Charge mesh
+  FLOAT_TYPE *Qmesh;
+  // Force mesh for k space differentiation
+  vector_array_t *Fmesh;
+  // Shifted kvectors (fftw convention)
+  FLOAT_TYPE *nshift;
+  // Fourier coefficients of the differential operator
+  FLOAT_TYPE *Dn;
+  // Derivatives of the charge assignment function for analytical differentiation
+  FLOAT_TYPE *dQdx[2], *dQdy[2], *dQdz[2];
+  // Cache for charge assignment
+  int *ca_ind[2];
+  FLOAT_TYPE *cf[2];
+  // Struct for interpolated charge assignment function
+  interpolation_t *inter;
+  // fftw plans
+  //number of plans
+  int forward_plans;
+  int backward_plans;
+  // actual plans
+  FFTW_PLAN forward_plan[3];
+  FFTW_PLAN backward_plan[3];
+  // neighbor list for real space calculation
+  neighbor_list_t *neighbor_list;
+  // Self forces corrections
+  FLOAT_TYPE *self_force_corrections;
+  void *method_data;
+  runtime_t runtime;
 } data_t;
 
 // Flags for method_t
@@ -254,7 +281,7 @@ enum {
 };
 
 // Common flags for all p3m methods for convinience
-#define METHOD_FLAG_P3M (METHOD_FLAG_nshift | METHOD_FLAG_G_hat | METHOD_FLAG_Qmesh | METHOD_FLAG_ca )
+#define METHOD_FLAG_P3M (METHOD_FLAG_nshift | METHOD_FLAG_G_hat | METHOD_FLAG_Qmesh | METHOD_FLAG_ca)
 // methode type
 
 typedef struct {

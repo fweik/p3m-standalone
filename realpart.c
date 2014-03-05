@@ -1,14 +1,25 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 #include <math.h>
 #include <string.h>
-
-#include <gsl/gsl_integration.h>
 
 #include "common.h"
 
 #include "realpart.h"
-
-#include "tools/cubature/cubature.h"
-
+#include "sort.h"
 
 int to_left=0;
 int to_right=0;
@@ -86,54 +97,6 @@ int *count_neighbors( system_t *s, parameters_t *p )
 /*     } */
 /*   } */
 /* } */
-
-void Realpart_pair( const FLOAT_TYPE *r_v, FLOAT_TYPE alpha, FLOAT_TYPE *f ) {
-  FLOAT_TYPE r, ar, fak;
-  const FLOAT_TYPE wupi = 1.77245385090551602729816748334;
-
-  r = SQRT(SQR(r_v[0]) + SQR(r_v[1]) + SQR(r_v[2]));
-  ar = r*alpha;
-    
-
-  fak = (ERFC(ar)/r+(2.0*alpha/wupi)*EXP(-ar*ar))/SQR(r);
-
-  f[0] = r_v[0] * fak;
-  f[1] = r_v[1] * fak;
-  f[2] = r_v[2] * fak;
-}
-
-void rp_error_integrand(unsigned int ndim, const double *x, void *fdata, unsigned int fdmin, double *fval) {
-  FLOAT_TYPE xi1[3], xi2[3];
-  FLOAT_TYPE *para = (double *) fdata;
-  FLOAT_TYPE dr, C;
-  const FLOAT_TYPE wupi = 1.77245385090551602729816748334;
-
-
-  if( (SQR(x[0]) + SQR(x[1]) + SQR(x[2]) < SQR(para[1])) ||
-      (SQR(x[3]) + SQR(x[4]) + SQR(x[5]) < SQR(para[1]))) {
-    fval[0] = 0.0;
-    return;
-  }
-
-  Realpart_pair( x, para[0], xi1 );
-  Realpart_pair( x + 3, para[0], xi2 );
-
-  dr = SQRT(SQR(x[0] - x[3]) + SQR(x[1] - x[4]) + SQR(x[2] - x[5]));
-  C = 1.0/(0.2*wupi) * EXP(-SQR(dr - 1.0)/0.04);
-
-  fval[0] = (xi1[0]*xi2[0] + xi1[1]*xi2[1] + xi1[2]*xi2[2]) * C;
-
-}
-
-FLOAT_TYPE Realpart_corr_error(FLOAT_TYPE rcut, FLOAT_TYPE alpha) {
-  FLOAT_TYPE param[2] = { alpha, rcut };
-  FLOAT_TYPE xmin[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-  FLOAT_TYPE xmax[6] = { 2*rcut, 2*rcut, 2*rcut, 2*rcut, 2*rcut, 2*rcut };
-  FLOAT_TYPE val,err;
-
-  adapt_integrate(1, rp_error_integrand, param, 3, xmin, xmax, 0, 0, 1e-4, &val, &err);
-
-}
 
 void Realteil( system_t *s, parameters_t *p, forces_t *f )
 {
@@ -359,6 +322,3 @@ FLOAT_TYPE Realspace_error( const system_t *s, const parameters_t *p )
   return (2.0*s->q2*EXP(-SQR(p->rcut * p->alpha))) / (SQRT((double)s->nparticles* p->rcut*s->length*s->length*s->length ));
 }
 
-FLOAT_TYPE Realspace_error_cor( FLOAT_TYPE r_cut, R_to_R K, R_to_R C) {
-
-}

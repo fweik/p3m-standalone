@@ -1,3 +1,18 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <gsl/gsl_rng.h>
@@ -107,6 +122,29 @@ system_t *generate_inner_box(int size, FLOAT_TYPE box) {
   return s;
 }
 
+system_t *generate_slab(int size, FLOAT_TYPE box) {
+  FLOAT_TYPE width = 0.1 * box;
+  FLOAT_TYPE lower_x = (0.45) * box;
+  printf("Generating slab system with %lf < x < %lf\n", lower_x, lower_x + width);
+  int i;
+  system_t *s;
+  gsl_rng *rng = gsl_rng_alloc(gsl_rng_default);
+
+  s = Init_system(size);
+  s->length = box;
+  s->q2 = 0.0;
+
+  for(i=0;i<size;i++) {
+      s->p->fields[1][i] = lower_x + width * gsl_rng_uniform(rng);
+      s->p->fields[0][i] = box * gsl_rng_uniform(rng);
+      s->p->fields[2][i] = box * gsl_rng_uniform(rng);
+      
+    s->q[i] = 1.0 - 2.0 * (i%2);
+    s->q2 += s->q[i] * s->q[i];
+  }
+  return s;
+}
+
 system_t *generate_random_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_charge ) {
   int i,j;
   system_t *s;
@@ -160,22 +198,24 @@ system_t *generate_gaussian_system(int size, FLOAT_TYPE box, FLOAT_TYPE max_char
 
 
 system_t *generate_system( int form_factor, int size, FLOAT_TYPE box, FLOAT_TYPE max_charge ) {
-  srand48(42);
   switch(form_factor) {
-  case FORM_FACTOR_RANDOM: 
+  case SYSTEM_RANDOM: 
     return generate_random_system( size, box, max_charge );
     break;
-  case FORM_FACTOR_GAUSSIAN: 
+  case SYSTEM_GAUSSIAN: 
     return generate_gaussian_system( size, box, max_charge );
     break;
-  case FORM_FACTOR_INNER_BOX:
+  case SYSTEM_INNER_BOX:
     return generate_inner_box(size, box);
     break;
-  case FORM_FACTOR_MADELUNG:
+  case SYSTEM_MADELUNG:
     return generate_madelung(size,box);
     break;
-  case FORM_FACTOR_SEPERATED_DIPOLE:
+  case SYSTEM_SEPARATED_DIPOLE:
     return generate_seperated_dipole(size,box);
+    break;
+  case SYSTEM_SLAB:
+    return generate_slab(size,box);
     break;
   default:
     fprintf( stderr, "Warning, form factor not known.\n");

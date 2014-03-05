@@ -1,3 +1,18 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,7 +27,6 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
 {
   FLOAT_TYPE dInterpol=(FLOAT_TYPE)MaxInterpol;
   FLOAT_TYPE x;
-  FLOAT_TYPE *buf;
   long   i,j;
 
   interpolation_function_t i_fct = ip_bspline;
@@ -50,6 +64,14 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
 
 //@TODO: remove memleak
 void Free_interpolation(interpolation_t *i) {
+  for( int j = 0; j < (2*MaxInterpol+1); j++)
+    FFTW_FREE(i->interpol[j]);
+  FFTW_FREE(i->interpol);
+  if(i->interpol_d != NULL) {
+    for( int j = 0; j < (2*MaxInterpol+1); j++)
+      FFTW_FREE(i->interpol_d[j]);
+    FFTW_FREE(i->interpol_d);
+  }
 
   FFTW_FREE(i);
 }

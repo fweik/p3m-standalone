@@ -1,0 +1,141 @@
+PURPOSE
+=======================
+This program calculates electrostatic interactions in many particle systems
+using different algorithms. It does not have a name.
+
+INSTALL
+========================
+To build execute "make" in the source directory.
+Prerequesits to build are an mpicc in the PATH, fftw3, the gnu scientific
+library and GNU make.
+
+RUN
+========================
+The binary is called "p3m". It is controlled via command line parameters.
+They should be somewhat selfexplanatory, but there is detailed documentation
+below. They are of the form <key> [<value>], their order is arbitrary.
+
+EXAMPLE
+========================
+./p3m particles 1000 box 10 mesh 16 cao 7 rcut 3.0 method 7 alphamin 0.1
+alphamax 2.5 alphastep 0.05 system_type 5 
+
+This generates a random system of 1000 particles of type 5 ( See system_type ) in a box of size 10^3.
+It then calculates reference forces using an Ewald summation with machine precision, 
+and executes the method no. 7 ( see methods ) a mesh of 16^3 interpolation
+order 7 and real space cutoff 3.0 for all alphas from 0.1 to 2.5 with a
+spacing of 0.05.
+
+
+PARAMETERS
+=======================
+
+* rcut <cutoff>
+The realspace cutoff.
+
+* alphamin <alphamin>
+The minimal alphavalue to calculate.
+
+* alphamax <alphamax>
+The maximal alphavalue to calculate.
+
+* alphastep <alphastep>
+The distance between alphas.
+
+* { positions <position_filename> [ forces <forces_filename> ] | paritcles
+<particles> box <box> [system_type <system_type] [ charge <charge> ] }
+Either a position file to read the system configuration from, or the
+parameters to generate one.
+
+The system_types are
+0   SYSTEM_RANDOM		uniformly distributed particles in the whole box.
+1   SYSTEM_INNER_BOX		randomly placed particles within [0.25*box,0.75*box)^3.
+2   SYSTEM_MADELUNG		A cubic cristall.
+3   SYSTEM_SEPARATED_DIPOLE	Randomly placed extended dipoles with distance 1.
+4   SYSTEM_GAUSSIAN		Gaussian distributed particles about the
+center of the box.
+5   SYSTEM_SLAB			Particles within [0.25*box,0.75*box)x[0,box)x[0,box) 
+ 
+If charge is set, then the particles carry charge <charge> instead of unit charges.
+
+The format of the position file is
+
+# Teilchenzahl: <number_of_particles>
+# Len: <box_length>
+<x_1> <y_1> <z_1> <q_1>
+...
+<x_number_of_particles> <y_number_of_particles> <z_number_of_particles>
+<q_number_of_particles>
+
+
+If forces is given the reference forces are read from <forces_filename>,
+the format is
+
+<fx_1> <fy_1> <fz_1>
+...
+<fx_number_of_particles> <fy_number_of_particles> <fz_number_of_particles>
+
+
+There have to be exactly as many lines in this file as there are particles
+in the particle file. If forces is not set, the reference forces are
+calculated.
+
+* mesh <mesh_size>
+The mesh size for the P3M methods.
+
+* cao <cao>
+The interpolation order for the various P3M methods.
+
+* [mc <mc>]
+The aliasing sum cutoff for the P3M influence function.
+
+* [mc_est <mc_est>]
+The aliasing sum cutoff for the P3M error estimate.
+
+* method <method>
+The method to use, where <method> is one of
+
+0   P3M, ik differentiated, complex to complex, not interlaced.
+1   P3M, ik differentiated, complex to complex, interlaced.
+2   P3M, ad differentiated, complex to complex, not interlaced.
+3   P3M, ad differentiated, complex to complex, interlaced.
+4   Ewald summation.
+6   P3M, ik differentiated, real to complex, not interlaced.
+7   P3M, ad differentiated, real to complex, not interlaced.
+
+For a description of the methods see
+
+Deserno, Markus, and Christian Holm. "How to mesh up Ewald sums. I. A
+theoretical and numerical comparison of various particle mesh routines." The
+Journal of chemical physics 109 (1998): 7678.
+
+and
+
+Neelov, Alexey, and Christian Holm. "Interlaced P3M algorithm with analytical
+and ik-differentiation." The Journal of chemical physics 132 (2010): 234103.
+
+For a more detailed intruduction see the textbook of Hockney and Eastwood:
+
+Hockney, Roger W., and James W. Eastwood. Computer simulation using particles. CRC Press, 2010.
+
+* [ no_estimate ]
+Disable calculation of the error estimate.
+
+* [ outfile <filename> ]
+Write output to <filename> instead of 'out.dat'.
+
+* [ reference_out <filename>]
+Write reference forces to file.
+
+* [ system_out <filename> ]
+Write system configuration to file.
+
+* [ no_calculation ]
+Skip the actual calculation.
+
+* [ no_reference_force ]
+Skip the reference force calculation even if no reference forces are given.
+
+
+
+

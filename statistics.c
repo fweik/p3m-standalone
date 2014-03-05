@@ -1,3 +1,18 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 #include <fftw3.h>
 
 #include "statistics.h"
@@ -111,7 +126,6 @@ FLOAT_TYPE *radial_distribution(FLOAT_TYPE r_min, FLOAT_TYPE r_max, int bins, sy
 
 void radial_distribution_species(FLOAT_TYPE r_min, FLOAT_TYPE r_max, int bins, system_t *s) {
   FLOAT_TYPE *rdf = Init_array( 4*bins, sizeof(FLOAT_TYPE));
-  char filename[8];
   FLOAT_TYPE dr = (r_max - r_min) / bins, dx, dy, dz, r2, r, r_min2, r_max2;
   FLOAT_TYPE lengthi = 1.0/s->length;
   int n[4], bin;
@@ -235,7 +249,4 @@ void rshif_array( int N, FLOAT_TYPE *data, int shift ) {
   fftw_free(buf);
 }
 
-double *make_even( int N, FLOAT_TYPE *data ) {
-  FLOAT_TYPE *new = Init_array( 2*N, sizeof(FLOAT_TYPE));
-  
-}
+

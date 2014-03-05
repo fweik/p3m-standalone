@@ -1,3 +1,18 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 
 #include <math.h>
 #include <stdio.h>
@@ -14,6 +29,8 @@
 #include "common.h"
 
 #include "realpart.h"
+
+#include "find_error.h"
 
 #ifdef __detailed_timings
 #include <mpi.h>
@@ -108,11 +125,13 @@ void Influence_function_ad_i( system_t *s, parameters_t *p, data_t *d )
   int ind = 0;
   int Mesh= d->mesh;
 
+#ifdef _OPENMP
+#pragma omp parallel for private(NZ, ind, Zaehler, Nenner1, Nenner2, Nenner3, Nenner4) collapse(3)
+#endif
   for (NX=0; NX<Mesh; NX++)
     {
       for (NY=0; NY<Mesh; NY++)
 	{
-#pragma omp parallel for private(NZ, ind, Zaehler, Nenner1, Nenner2, Nenner3, Nenner4)
 	  for (NZ=0; NZ<Mesh; NZ++)
 	    {
               ind = r_ind(NX,NY,NZ);
@@ -144,28 +163,18 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
   /* Set Qmesh to zero */
   memset(d->Qmesh, 0, 2*Mesh*Mesh*Mesh * sizeof(FLOAT_TYPE));
 
-  #ifdef __detailed_timings
-  timer = MPI_Wtime();
-  #endif
+  TIMING_START_C
 
   /* chargeassignment */
   assign_charge_and_derivatives( s, p, d, 0);
   assign_charge_and_derivatives( s, p, d, 1);
 
-  #ifdef __detailed_timings
-  timer = MPI_Wtime() - timer;
-  t_charge_assignment[3] = timer;
-  timer = MPI_Wtime();
-  #endif
+  TIMING_STOP_C
+  TIMING_START_G
+
   /* Forward Fast Fourier Transform */
   forward_fft(d);
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_fft[3] = timer;
-   timer = MPI_Wtime();
-  #endif
- 
   for (i=0; i<Mesh; i++)
     for (j=0; j<Mesh; j++)
       for (k=0; k<Mesh; k++)
@@ -177,29 +186,20 @@ void P3M_ad_i( system_t *s, parameters_t *p, data_t *d, forces_t *f )
 	  d->Qmesh[c_index+1] *= T1;
 	}
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_convolution[3] = timer;
-   timer = MPI_Wtime();
-  #endif
-
   /* Backward FFT */
   backward_fft(d);
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_fft[3] += timer;
-   timer = MPI_Wtime();
-  #endif
+  TIMING_STOP_G
+  TIMING_START_F 
 
   /* Force assignment */
-  assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0);
-  assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 1);
+  /* assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 0); */
+  /* assign_forces_ad( Mesh * Leni * Leni * Leni , s, p, d, f, 1); */
 
-  #ifdef __detailed_timings
-    timer = MPI_Wtime() - timer;
-    t_force_assignment[3] = timer;
-  #endif
+  assign_forces_interlacing_ad( Mesh*Leni*Leni*Leni, s, p, d, f);
+
+  TIMING_STOP_F
+
 }
 
 void P3M_tune_aliasing_sums_AD_interlaced(int nx, int ny, int nz, 
@@ -256,17 +256,28 @@ FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
   FLOAT_TYPE alias1, alias2, alias3, alias4, alias5, alias6;
   int mesh = p->mesh;
 
-  for (nx=-mesh/2; nx<mesh/2; nx++) {
-    for (ny=-mesh/2; ny<mesh/2; ny++) {
-      for (nz=-mesh/2; nz<mesh/2; nz++) {
-	if((nx!=0) && (ny!=0) && (nz!=0)) {
-	  P3M_tune_aliasing_sums_AD_interlaced(nx,ny,nz,s,p,&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
-	  he_q += (alias1  -  SQR(alias2) / (0.5*(alias3*alias4 + alias5*alias6)));
+  he_q = p3m_find_error(p->alpha*s->length, mesh, p->cao, 3);
+
+  if(he_q < 0) {
+
+#ifdef _OPENMP
+#pragma omp parallel for private(ny,nz,alias1, alias2, alias3, alias4,alias5, alias6) reduction(+ : he_q)
+#endif
+    for (nx=-mesh/2; nx<mesh/2; nx++) {
+      for (ny=-mesh/2; ny<mesh/2; ny++) {
+	for (nz=-mesh/2; nz<mesh/2; nz++) {
+	  if((nx!=0) && (ny!=0) && (nz!=0)) {
+	    P3M_tune_aliasing_sums_AD_interlaced(nx,ny,nz,s,p,&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
+	    he_q += (alias1  -  SQR(alias2) / (0.5*(alias3*alias4 + alias5*alias6)));
+	  }
 	}
       }
     }
+#ifdef _OPENMP
+#pragma omp barrier
+#endif
+    he_q = fabs(he_q);
   }
-  he_q = fabs(he_q);
   return 2.0*s->q2*sqrt(he_q/(FLOAT_TYPE)s->nparticles) / SQR(s->length);
 }
 

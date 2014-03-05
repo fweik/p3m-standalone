@@ -1,3 +1,18 @@
+/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -12,12 +27,18 @@
 
 #include "p3m-common.h"
 
+#include "parameters.h"
+
+#include <valgrind/callgrind.h>
+
 // Methods
 
 #include "p3m-ik-i.h"
 #include "p3m-ik.h"
 #include "p3m-ad.h"
 #include "p3m-ad-i.h"
+#include "p3m-ik-real.h"
+#include "p3m-ad-real.h"
 
 #include "ewald.h"
 
@@ -52,6 +73,7 @@
 
 // #define FORCE_DEBUG
 // #define CA_DEBUG
+#define ERROR_MAP_2D_PLANE 0.5
 
 static FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {
   /* compute the k space part of the error estimate */
@@ -71,14 +93,15 @@ int main ( int argc, char **argv ) {
 
     FLOAT_TYPE alphamin,alphamax,alphastep;
     FLOAT_TYPE alpha;
-    FLOAT_TYPE wtime;
+    FLOAT_TYPE wtime = 0;
 
     FILE* fout;
     
     system_t *system;
     method_t method;
     parameters_t parameters, parameters_ewald;
-    data_t *data, *data_ewald;
+    parameters.tuning = parameters_ewald.tuning = 0;
+    data_t *data = NULL, *data_ewald = NULL;
     forces_t *forces, *forces_ewald;
     char *pos_file = NULL, *force_file = NULL, *out_file = NULL, *ref_out = NULL, *sys_out = NULL, *rdf_file = NULL, *vtf_file = NULL, *cdf_file = NULL;
     error_t error;
@@ -91,8 +114,10 @@ int main ( int argc, char **argv ) {
 
     int inhomo_error_mesh = 64;
     int inhomo_error_cao = 5;
+    int inhomo_mc = 0;
+    char *inhomo_output = NULL;
 
-    FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est;
+    FLOAT_TYPE error_k=0.0, ewald_error_k_est, estimate=0.0, error_k_est = 0;
     int i,j, calc_k_error, calc_est;
 
     int error_map_mesh=64, error_map_cao=1;
@@ -139,8 +164,11 @@ int main ( int argc, char **argv ) {
     #ifdef _OPENMP
     add_param( "threads", ARG_TYPE_INT, ARG_OPTIONAL, &nthreads, &params );
     #endif
+    add_param( "inhomo_error", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     add_param( "inhomo_mesh", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_error_mesh, &params);
     add_param( "inhomo_cao", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_error_cao, &params);
+    add_param( "inhomo_mc", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_mc, &params);
+    add_param( "inhomo_output", ARG_TYPE_STRING, ARG_OPTIONAL, &inhomo_output, &params);
     add_param( "error_map", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     add_param( "error_map_mesh", ARG_TYPE_INT, ARG_OPTIONAL, &error_map_mesh, &params);
     add_param( "error_map_cao", ARG_TYPE_INT, ARG_OPTIONAL, &error_map_cao, &params);
@@ -148,7 +176,10 @@ int main ( int argc, char **argv ) {
     parse_parameters( argc - 1, argv + 1, params );
 
     calc_k_error = param_isset( "error_k", params );
-    calc_est = param_isset( "estimate", params );
+    calc_est = 0;
+
+    if(param_isset("no_estimate", params) == 1)
+      calc_est = 1;
 
     parameters.cao3 = parameters.cao*parameters.cao*parameters.cao;
     parameters.ip = parameters.cao - 1;
@@ -167,27 +198,27 @@ int main ( int argc, char **argv ) {
       exit(1);
     }
 
-    if( !(param_isset("positions", params) == 1) &&
-	!((param_isset("box", params) == 1) && (param_isset("particles", params))) ) {
+    if( !param_isset("positions", params) &&
+	!(param_isset("box", params) && param_isset("particles", params)))  {
       puts("Need to provide either 'positions' or 'box' and 'particles'.");
       exit(1);
     }
 
-    if( param_isset("positions", params) == 1) {
+    if( param_isset("positions", params)) {
     // Inits the system and reads particle data and parameters from file.
       puts("Reading file");
       system = Read_system ( &parameters, pos_file );
       puts("Done.");
     } else {
       puts("Generating system.");
-      if( !(param_isset("charge", params) == 1)) {
+      if( !param_isset("charge", params)) {
 	charge=1.0;
       }
       if(param_isset("system_type", params)) {
 	printf("Using system type %d\n", form_factor);
 	system = generate_system( form_factor, npart, length, charge);
       } else {
-	system = generate_system( FORM_FACTOR_RANDOM, npart, length, charge);
+	system = generate_system( SYSTEM_RANDOM, npart, length, charge);
       }
       puts("Done.");
     }
@@ -208,7 +239,7 @@ int main ( int argc, char **argv ) {
       printf("Using %d bins, %lf <= r <= %lf\n", rdf_bins, rdf_min, rdf_max);
       int bins = rdf_bins;
       FLOAT_TYPE *rdf = radial_distribution(rdf_min, rdf_max, rdf_bins, system);
-      FLOAT_TYPE *c;
+      /* FLOAT_TYPE *c; */
       /* FLOAT_TYPE *rdf_sym = Init_array( 2*bins-1, 2*sizeof(FLOAT_TYPE)); */
       /* c = low_pass_forward( bins, rdf, 0.3); */
       /* c = low_pass_backward(bins, c, 0.3); */
@@ -266,8 +297,6 @@ int main ( int argc, char **argv ) {
 	puts("Done.");
       }
 
-    if(param_isset("no_calculation", params) == 1)
-      return 0;
 
     if(param_isset("forces", params) == 1) {
       printf("Reading reference forces from '%s'.\n", force_file);
@@ -302,6 +331,14 @@ int main ( int argc, char **argv ) {
         method = method_p3m_ad_i;
     }
 #endif
+#ifdef P3M_IK_REAL_H
+    else if ( methodnr == method_p3m_ik_r.method_id )
+        method = method_p3m_ik_r;
+#endif
+#ifdef P3M_AD_R_H
+    else if ( methodnr == method_p3m_ad_r.method_id )
+        method = method_p3m_ad_r;
+#endif
     else {
         fprintf ( stderr, "Method %d not know.", methodnr );
         exit ( 126 );
@@ -319,34 +356,40 @@ int main ( int argc, char **argv ) {
     } else {
       fout = fopen ( "out.dat","w" );
     }
+ 
+    if(param_isset("no_calculation", params) != 1) {
+      printf ( "Init" );
+      fflush(stdout);
+      data = method.Init ( system, &parameters );
+      printf ( ".\n" );
+    }
 
-    printf ( "Init" );
-    fflush(stdout);
-    data = method.Init ( system, &parameters );
-    printf ( ".\n" );
-
-    printf ( "Init Ewald" );
-    data_ewald = method_ewald.Init ( system, &parameters_ewald );
-    printf ( ".\n" );
+    if(param_isset("no_reference_force", params) !=1) {
+      printf ( "Init Ewald" );
+      data_ewald = method_ewald.Init ( system, &parameters_ewald );
+      printf ( ".\n" );
+    }
 
     /* printf ( "Init neighborlist" ); */
     /* Init_neighborlist ( system, &parameters, data ); */
     /* printf ( ".\n" ); */
 
-    FLOAT_TYPE gen_err_dip, gen_err;
-
     printf ( "# %8s\t%8s\t%8s\t%8s\t%8s\n", "alpha", "DeltaF", "Estimate", "R-Error-Est", "K-Error-Est Generic-K-Space-err" );
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
       parameters_ewald.alpha = parameters.alpha;
 
-      method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
+      if(param_isset("no_calculation", params) != 1) {
+	method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
-      wtime = MPI_Wtime();
+	CALLGRIND_START_INSTRUMENTATION; 
+	wtime = MPI_Wtime();
 
-      Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
+	Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 
-      wtime = MPI_Wtime() - wtime;
+	wtime = MPI_Wtime() - wtime;
+	CALLGRIND_STOP_INSTRUMENTATION; 
 
+      }
       error_k =0.0;
       if(calc_k_error == 1) {
 	puts("kerror");
@@ -368,13 +411,18 @@ int main ( int argc, char **argv ) {
 	  FLOAT_TYPE *error_map;
 	  error_map = Error_map(system, forces, forces_ewald, error_map_mesh, error_map_cao);
 	  FILE *error_out = fopen("error_map.dat", "w");
+	  FILE *error_out_2d = fopen("error_map_2d.dat", "w");
 	  int nx,ny,nz;
+	  int nx_2d_plane = ERROR_MAP_2D_PLANE * error_map_mesh;
 	  int ind;
+	  printf("2d cut plane is nx = %d\n", nx_2d_plane);
 	  for (nx=0; nx<error_map_mesh; nx++) {
 	    for (ny=0; ny<error_map_mesh; ny++) {
 	      for (nz=0; nz<error_map_mesh; nz++) {
 		ind = 2*((error_map_mesh*error_map_mesh*nx) + error_map_mesh*(ny) + (nz));
 		fprintf(error_out, "%d %d %d %e\n", nx, ny, nz, FLOAT_CAST error_map[ind]);
+		if(nx == nx_2d_plane)
+		  fprintf(error_out_2d, "%d %d %e\n", ny, nz, FLOAT_CAST error_map[ind]);
 	      }
 	    }
 	  }
@@ -386,12 +434,15 @@ int main ( int argc, char **argv ) {
       error = Calculate_errors ( system, forces );
 
       if ( method.Error != NULL ) {
-	if( calc_est == 0 )
+	if( calc_est == 0 ) {
 	  estimate = method.Error ( system, &parameters );
-	error_k_est = method.Error_k ( system, &parameters);
+	  error_k_est = method.Error_k ( system, &parameters);
+	}
 
 	FLOAT_TYPE err_inhomo = 0.0;
-	err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, P3M_BRILLOUIN);
+	if(param_isset("inhomo_error", params)) {
+	  err_inhomo = Generic_error_estimate_inhomo(system, &parameters, inhomo_error_mesh, inhomo_error_cao, inhomo_mc, inhomo_output);
+	}
 	
 	FLOAT_TYPE rs_error = Realspace_error( system, &parameters );
 
