@@ -272,7 +272,7 @@ FLOAT_TYPE Gm(int nx, int ny, int nz, FLOAT_TYPE l, FLOAT_TYPE alpha, int m, int
       }
     }
   }
-  return (4*PI/k2) * EXP(-k2/(4*alpha*alpha));
+  return ret;
 }
 
 FLOAT_TYPE C(int nx, int ny, int nz, FLOAT_TYPE l, FLOAT_TYPE alpha, int mc, int m) {
@@ -431,7 +431,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	if( (tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0) ) 
 	  K2 = 0.0;
 	else {
-	  K2 = 2*PI*U2(tn[0],tn[1],tn[2], mesh, param.cao)*B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao)/A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao) - Gm(tn[0],tn[1],tn[2],s->length, param.alpha, mesh, 0);
+	  K2 = 2*PI*U2(tn[0],tn[1],tn[2], mesh, param.cao)*B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 1, param.cao)/A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 1, param.cao) - Gm(tn[0],tn[1],tn[2],s->length, param.alpha, mesh, 0);
 	}
 
 	Kernel[0][ind + 0] = 0;
@@ -481,7 +481,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	      if( (tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0) ) 
 		K2 = 0.0;
 	      else {
-		K2 = 2*PI*U(tn[0],tn[1],tn[2], mesh, param.cao)*U(-tn[0]-mx*mesh,-tn[1]-my*mesh,-tn[2]-mz*mesh, mesh, param.cao)*B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao)/A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
+		K2 = 2*PI*U(tn[0],tn[1],tn[2], mesh, param.cao)*U(-tn[0]-mx*mesh,-tn[1]-my*mesh,-tn[2]-mz*mesh, mesh, param.cao)*B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 1, param.cao)/A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 1, param.cao);
 	      }
 
 	      Kernel[0][ind + 0] = 0;

@@ -48,8 +48,6 @@
 #include "statistics.h"
 #include "common.h"
 
-#include "inhomogenous_error.h"
-
 // #define WRITE_FORCES
 
 // #define FORCE_DEBUG
