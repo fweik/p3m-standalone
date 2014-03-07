@@ -245,7 +245,8 @@ typedef struct {
   // Fourier coefficients of the differential operator
   FLOAT_TYPE *Dn;
   // Derivatives of the charge assignment function for analytical differentiation
-  FLOAT_TYPE *dQdx[2], *dQdy[2], *dQdz[2];
+  /* FLOAT_TYPE *dQdx[2], *dQdy[2], *dQdz[2]; */
+  FLOAT_TYPE *dQ[2];
   // Cache for charge assignment
   int *ca_ind[2];
   FLOAT_TYPE *cf[2];

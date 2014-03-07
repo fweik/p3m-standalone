@@ -1,6 +1,6 @@
 OMPI_CC=clang
 CC=mpicc
-CFLAGS=-Wall -O5 -I/home/fweik/Base/include -DNDEBUG
+CFLAGS=-Wall -O0 -g -I/home/fweik/Base/include
 CFLAGS+=-std=c99
 LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 #Uncomment to add long double 
