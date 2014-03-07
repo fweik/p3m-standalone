@@ -512,9 +512,9 @@ void assign_forces_interlacing_ad(FLOAT_TYPE force_prefac, system_t *s, paramete
 	  l2 = wrap_mesh_index(base2[2] + i2, mesh);
 	  B1 = d->Qmesh[c_ind(j1,k1,l1)+0];
 	  B2 = d->Qmesh[c_ind(j2,k2,l2)+1];
-	  field_x -= 0.5*force_prefac*(B1*dQ[0][cf_cnt+0] + B2*dQ[1][cf_cnt+0]);
-	  field_y -= 0.5*force_prefac*(B1*dQ[0][cf_cnt+1] + B2*dQ[1][cf_cnt+1]);
-	  field_z -= 0.5*force_prefac*(B1*dQ[0][cf_cnt+2] + B2*dQ[1][cf_cnt+2]);
+	  field_x -= 0.5*force_prefac*(B1*dQ0[cf_cnt+0] + B2*dQ1[cf_cnt+0]);
+	  field_y -= 0.5*force_prefac*(B1*dQ0[cf_cnt+1] + B2*dQ1[cf_cnt+1]);
+	  field_z -= 0.5*force_prefac*(B1*dQ0[cf_cnt+2] + B2*dQ1[cf_cnt+2]);
 	  cf_cnt+=3;
 	}
       }
