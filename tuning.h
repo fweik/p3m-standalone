@@ -25,8 +25,8 @@
 
 #define N_TUNING_SAMPLES 100
 
-double time_series[N_TUNING_SAMPLES];
-
 runtime_stat_t Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
+
+void write_hist(void);
 
 #endif

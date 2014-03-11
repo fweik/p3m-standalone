@@ -40,6 +40,12 @@ const int smooth_numbers[] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
 
 const int smooth_numbers_n = sizeof(smooth_numbers)/sizeof(int);
 
+double time_series[N_TUNING_SAMPLES];
+
+int time_fluctuation_hist[1000];
+int n_hist = 0;
+
+
 typedef struct {
   timing_t *mesh_timings;
   runtime_stat_t *cao_timings;
@@ -53,6 +59,17 @@ static int
 compare_ints (const void *a, const void *b)
 {
   return (*(int *)(a) - *(int *)(b));
+}
+
+void time_hist(double v) {
+  const int bins = sizeof(time_fluctuation_hist) / sizeof(int);
+  double x = fabs(v);
+  int bin = (int)floor(x*bins);
+  if (bin >= bins)
+    bin = bins-1;
+
+  time_fluctuation_hist[bin]++;
+  n_hist++;
 }
 
 timing_t time_mesh(const method_t  *m, system_t *s, parameters_t *p) {
@@ -119,27 +136,35 @@ runtime_stat_t time_full(const method_t  *m, system_t *s, parameters_t *p) {
   res.t.min = res.t_c.min + res.t_g.min + res.t_f.min;
   res.t.max = res.t_c.max + res.t_g.max + res.t_f.max;
 
-  double ep = (res.t.max - res.t.avg) / res.t.avg;
-  double em = (res.t.avg - res.t.min) / res.t.avg;
-
-  /* if( ( ep >= 0.1) || */
-  /*      ( em >= 0.1)) { */
   if(1) {
-  /* if( ( ep >= 0.1) || */
-  /*      ( em >= 0.1)) { */
+    double ep = (res.t.max - res.t.avg) / res.t.avg;
+    double em = (res.t.avg - res.t.min) / res.t.avg;
 
-	 printf("warning rel timing fluctuations +%e -%e\n", ep, em);
-	 printf("warning time series (avg %e)\n", res.t.avg);
-	 for(int i = 0; i < N_TUNING_SAMPLES; i++)
-	   printf("warning %d %e %e\n", i, time_series[i], (time_series[i] - res.t.avg)/res.t.avg);
-	 puts("warning");
-       }
+    printf("warning rel timing fluctuations +%e -%e\n", ep, em);
+    printf("warning time series (avg %e)\n", res.t.avg);
+    for(int i = 0; i < N_TUNING_SAMPLES; i++) {
+      printf("warning %d %e %e\n", i, time_series[i], (time_series[i] - res.t.avg)/res.t.avg);
+      time_hist((time_series[i] - res.t.avg)/res.t.avg);
+    }
+    puts("warning");
+  }
   
   Free_data(d);
 
   return res;
 }
 
+
+void write_hist(void) {
+  puts("write_host()");
+  FILE *f = fopen("hist.dat", "w");
+  const int bins = sizeof(time_fluctuation_hist) / sizeof(int);
+
+  for(int i = 0; i < bins; i++) {
+    fprintf(f, "%d %e\n", i, (double)(time_fluctuation_hist[i]));
+  }
+  fclose(f);
+}
 
 runtime_stat_t time_cao(const method_t *m, system_t *s, parameters_t *p) {
   parameters_t mp = *p;

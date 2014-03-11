@@ -143,6 +143,8 @@ int main(int argc, char **argv) {
     Free_system(s);
   }
 
+  write_hist();
+
   fclose(sys_params);
   for(int i = 0; i < 6; i++) {
     if((m_id != -1) && (i != m_id))
