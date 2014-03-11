@@ -41,8 +41,8 @@ const int smooth_numbers[] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
 const int smooth_numbers_n = sizeof(smooth_numbers)/sizeof(int);
 
 typedef struct {
-  double *mesh_timings;
-  runtime_t *cao_timings;
+  timing_t *mesh_timings;
+  runtime_stat_t *cao_timings;
   int n;
 } parameter_timings_t;
 
@@ -55,51 +55,117 @@ compare_ints (const void *a, const void *b)
   return (*(int *)(a) - *(int *)(b));
 }
 
-double time_mesh(const method_t  *m, system_t *s, parameters_t *p) {
+timing_t time_mesh(const method_t  *m, system_t *s, parameters_t *p) {
 parameters_t mp = *p;
 mp.cao = CAO_MIN;
 mp.cao3 = mp.cao*mp.cao*mp.cao;
 mp.ip = mp.cao - 1;
 mp.tuning = 1;
 data_t *d = m->Init(s, &mp);
-double res  = 0.0;
+timing_t res  = {0.0, 0.0, 1e99, 0.0, N_TUNING_SAMPLES};
 
-  m->Kspace_force( s, &mp, d, s->reference );
+ for(int i = 0; i < N_TUNING_SAMPLES; i++) {
+   m->Kspace_force( s, &mp, d, s->reference );
 
-  res = d->runtime.t_g;
+   res.avg += d->runtime.t_g;
+   res.min = ( d->runtime.t_g < res.min ) ? d->runtime.t_g : res.min;
+   res.max = ( d->runtime.t_g > res.max ) ? d->runtime.t_g : res.max;
+ }
 
+ res.avg /= res.n;
+
+ Free_data(d);
+ return res;
+}
+
+runtime_stat_t time_full(const method_t  *m, system_t *s, parameters_t *p) {
+  parameters_t mp = *p;
+  mp.tuning = 1;
+  data_t *d = m->Init(s, &mp);
+  runtime_stat_t res  = {{0.0, 0.0, 1e99, 0.0, N_TUNING_SAMPLES},
+			 {0.0, 0.0, 1e99, 0.0, N_TUNING_SAMPLES},
+			 {0.0, 0.0, 1e99, 0.0, N_TUNING_SAMPLES},
+			 {0.0, 0.0, 1e99, 0.0, N_TUNING_SAMPLES}};
+
+
+  for(int i = 0; i < N_TUNING_SAMPLES; i++) {
+
+    m->Kspace_force( s, &mp, d, s->reference );
+
+    res.t_g.avg += d->runtime.t_g;
+    res.t_g.min = ( d->runtime.t_g < res.t_g.min ) ? d->runtime.t_g : res.t_g.min;
+    res.t_g.max = ( d->runtime.t_g > res.t_g.max ) ? d->runtime.t_g : res.t_g.max;
+
+    res.t_f.avg += d->runtime.t_f;
+    res.t_f.min = ( d->runtime.t_f < res.t_f.min ) ? d->runtime.t_f : res.t_f.min;
+    res.t_f.max = ( d->runtime.t_f > res.t_f.max ) ? d->runtime.t_f : res.t_f.max;
+
+    res.t_c.avg += d->runtime.t_c;
+    res.t_c.min = ( d->runtime.t_c < res.t_c.min ) ? d->runtime.t_c : res.t_c.min;
+    res.t_c.max = ( d->runtime.t_c > res.t_c.max ) ? d->runtime.t_c : res.t_c.max;
+
+    time_series[i] = d->runtime.t_c + d->runtime.t_g + d->runtime.t_f;
+
+    memset(&(d->runtime), 0, sizeof(runtime_t));
+  }
+  
+
+
+  res.t_f.avg /= res.t_f.n;
+  res.t_c.avg /= res.t_c.n;
+  res.t_g.avg /= res.t_g.n;
+
+  res.t.avg = res.t_c.avg + res.t_g.avg + res.t_f.avg;
+  res.t.min = res.t_c.min + res.t_g.min + res.t_f.min;
+  res.t.max = res.t_c.max + res.t_g.max + res.t_f.max;
+
+  double ep = (res.t.max - res.t.avg) / res.t.avg;
+  double em = (res.t.avg - res.t.min) / res.t.avg;
+
+  /* if( ( ep >= 0.1) || */
+  /*      ( em >= 0.1)) { */
+  if(1) {
+  /* if( ( ep >= 0.1) || */
+  /*      ( em >= 0.1)) { */
+
+	 printf("warning rel timing fluctuations +%e -%e\n", ep, em);
+	 printf("warning time series (avg %e)\n", res.t.avg);
+	 for(int i = 0; i < N_TUNING_SAMPLES; i++)
+	   printf("warning %d %e %e\n", i, time_series[i], (time_series[i] - res.t.avg)/res.t.avg);
+	 puts("warning");
+       }
+  
   Free_data(d);
 
   return res;
 }
 
-runtime_t time_full(const method_t  *m, system_t *s, parameters_t *p) {
-parameters_t mp = *p;
-mp.tuning = 1;
-data_t *d = m->Init(s, &mp);
-runtime_t ret;
 
-  m->Kspace_force( s, &mp, d, s->reference );
-
-  ret = d->runtime;
-
-  Free_data(d);
-
-  return ret;
-}
-
-
-runtime_t time_cao(const method_t *m, system_t *s, parameters_t *p) {
+runtime_stat_t time_cao(const method_t *m, system_t *s, parameters_t *p) {
   parameters_t mp = *p;
   mp.tuning = 1;
   data_t *d = m->Init(s, &mp);
-  runtime_t res;
+  runtime_stat_t res  = {{0.0, 0.0, 1e99, 0.0, N_TUNING_SAMPLES},
+			 {0.0, 0.0, 1e99, 0.0, N_TUNING_SAMPLES},
+			 {0.0, 0.0, 1e99, 0.0, N_TUNING_SAMPLES},
+			 {0.0, 0.0, 1e99, 0.0, N_TUNING_SAMPLES}};
 
-  m->Kspace_force( s, &mp, d, s->reference );
+ for(int i = 0; i < N_TUNING_SAMPLES; i++) {
 
-  res = d->runtime;
-  res.t_g = 0.0;
+   m->Kspace_force( s, &mp, d, s->reference );
 
+   res.t_f.avg += d->runtime.t_f;
+   res.t_f.min = ( d->runtime.t_f < res.t_f.min ) ? d->runtime.t_f : res.t_f.min;
+   res.t_f.max = ( d->runtime.t_f > res.t_f.max ) ? d->runtime.t_f : res.t_f.max;
+
+   res.t_c.avg += d->runtime.t_c;
+   res.t_c.min = ( d->runtime.t_c < res.t_c.min ) ? d->runtime.t_c : res.t_c.min;
+   res.t_c.max = ( d->runtime.t_c > res.t_c.max ) ? d->runtime.t_c : res.t_c.max;
+ }
+
+ res.t_f.avg /= res.t_f.n;
+ res.t_c.avg /= res.t_c.n;
+ 
 /* TUNE_TRACE(printf("time_cao(%d): t_c = %e, t_f = %e\n", p->cao, d->runtime.t_c, d->runtime.t_f)); */
 
   Free_data(d);
@@ -107,10 +173,10 @@ runtime_t time_cao(const method_t *m, system_t *s, parameters_t *p) {
   return res;
 }
 
-runtime_t get_timing(const method_t *m, system_t *s, parameters_t *p) {
+runtime_stat_t get_timing(const method_t *m, system_t *s, parameters_t *p) {
   /* printf("get_timing(method_id %d, mesh %d, cao %d pt %p)\n", m->method_id, p->mesh, p->cao, pt); */
 
-runtime_t ret;
+runtime_stat_t ret;
 
   /* if(n_pt == 0) { */
   /*   pt = Init_array(1, sizeof(parameter_timings_t)); */
@@ -129,41 +195,42 @@ runtime_t ret;
   /* } */
 
   /* if(pt[m->method_id].mesh_timings == NULL) { */
-  /*   pt[m->method_id].mesh_timings = Init_array(smooth_numbers_n, sizeof(double)); */
-  /*   memset(pt[m->method_id].mesh_timings, 0, smooth_numbers_n * sizeof(double)); */
+  /*   pt[m->method_id].mesh_timings = Init_array(smooth_numbers_n, sizeof(timing_t)); */
+  /*   memset(pt[m->method_id].mesh_timings, 0, smooth_numbers_n * sizeof(timing_t)); */
   /* } */
   /* if((pt[m->method_id].cao_timings == NULL) || (pt[m->method_id].n != s->nparticles)) { */
   /*   puts("Resetting cao timings."); */
   /*   Free_array(pt[m->method_id].cao_timings); */
-  /*   pt[m->method_id].cao_timings = Init_array(CAO_MAX+1, sizeof(runtime_t)); */
-  /*   memset(pt[m->method_id].cao_timings, 0, (CAO_MAX+1) * sizeof(runtime_t)); */
+  /*   pt[m->method_id].cao_timings = Init_array(CAO_MAX+1, sizeof(runtime_stat_t)); */
+  /*   memset(pt[m->method_id].cao_timings, 0, (CAO_MAX+1) * sizeof(runtime_stat_t)); */
   /*   pt[m->method_id].n = s->nparticles; */
-  /* }   */
+  /* } */
 
   /* int *mesh_of = bsearch(&(p->mesh), smooth_numbers, smooth_numbers_n, sizeof(int), compare_ints); */
   /* int mesh_id = mesh_of - smooth_numbers; */
 
-  /* if(pt[m->method_id].mesh_timings[mesh_id] <= 0) { */
+  /* if(pt[m->method_id].mesh_timings[mesh_id].avg <= 0) { */
   /*   pt[m->method_id].mesh_timings[mesh_id] = time_mesh(m,s,p); */
   /*   /\* TUNE_TRACE(printf("mesh miss %d (id %d), time %e\n", p->mesh, mesh_id, pt[m->method_id].mesh_timings[mesh_id]);); *\/ */
   /* } */
-  /* if(pt[m->method_id].cao_timings[p->cao].t_c <= 0) { */
+  /* if(pt[m->method_id].cao_timings[p->cao].t_c.avg <= 0) { */
   /*   pt[m->method_id].cao_timings[p->cao] = time_cao(m,s,p); */
   /*   /\* TUNE_TRACE(printf("cao miss %d, time %e\n", p->cao, s->nparticles * pt[m->method_id].cao_timings[p->cao]);); *\/ */
   /* } */
 
-ret = time_full(m, s, p);
+ ret = time_full(m, s, p);
 
-//  ret = pt[m->method_id].cao_timings[p->cao];
-//  ret.t_g = pt[m->method_id].mesh_timings[mesh_id];
+ /* ret = pt[m->method_id].cao_timings[p->cao]; */
+ /* ret.t_g = pt[m->method_id].mesh_timings[mesh_id]; */
 
+ /* ret.t.avg = ret.t_c.avg + ret.t_g.avg + ret.t_f.avg; */
+ /* ret.t.min = ret.t_c.min + ret.t_g.min + ret.t_f.min; */
+ /* ret.t.max = ret.t_c.max + ret.t_g.max + ret.t_f.max; */
 
-  ret.t = ret.t_c + ret.t_g + ret.t_f;
-
-  return  ret;
+ return  ret;
 }
 
-runtime_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision ) {
+runtime_stat_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE precision ) {
   //Parameter iteraters, best parameter set
   parameters_t it, p_best;
   // Array to store forces
@@ -173,9 +240,10 @@ runtime_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE prec
 
   it.prefactor = 1.0;
 
-  runtime_t best_time;
-  best_time.t = DBL_MAX;
-  runtime_t time;
+  runtime_stat_t best_time;
+  best_time.t.avg = DBL_MAX;
+  best_time.t.min = DBL_MAX;
+  runtime_stat_t time;
 
   FLOAT_TYPE error = -1.0;
   FLOAT_TYPE V = pow( s->length, 3);
@@ -184,8 +252,8 @@ runtime_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE prec
   int success_once = 0;
   int cao_min, cao_max, cao_limit, cao_last;
 
-  runtime_t ret;
-  ret.t = -1;
+  runtime_stat_t ret;
+  ret.t.avg = -1;
 
   p_best.mesh = smooth_numbers[mesh_it_max] + 1;
   p_best.cao = CAO_MAX + 1;
@@ -229,11 +297,11 @@ runtime_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE prec
 
     // Check if we allready are slower than the best timing.
     // Then there is no point in going on, it will only get worse.
-    runtime_t min_time;
+    runtime_stat_t min_time;
     min_time = get_timing(m, s, &it);
 
-    if( min_time.t > best_time.t) {
-      TUNE_TRACE(printf("Best possible time for (%d %d) = %e slower than best %e\n", it.mesh, it.cao, min_time.t, best_time.t););
+    if( min_time.t.avg > best_time.t.avg) {
+      TUNE_TRACE(printf("Best possible time for (%d %d) = %e slower than best %e\n", it.mesh, it.cao, min_time.t.avg, best_time.t.avg););
       break;
     }
 
@@ -260,14 +328,14 @@ runtime_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE prec
 
       time = get_timing(m, s, &it);
      
-      TUNE_TRACE(printf("\n Timing mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time.t, error, it.alpha ););
+      TUNE_TRACE(printf("\n Timing mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time.t.avg, error, it.alpha ););
 	
-      if( time.t < best_time.t ) {
+      if( time.t.avg < best_time.t.avg ) {
 	p_best = it;
 	p_best.precision = error;
 	best_time = time;
 	ret = best_time;
-	TUNE_TRACE(printf("New best. mesh %d cao %d rcut %e time %e prec %e alpha %e\n", p_best.mesh, p_best.cao, p_best.rcut, time.t, error, p_best.alpha );)         ;
+	TUNE_TRACE(printf("New best. mesh %d cao %d rcut %e time %e prec %e alpha %e\n", p_best.mesh, p_best.cao, p_best.rcut, time.t.avg, error, p_best.alpha );)         ;
       }
     }
   }
@@ -280,7 +348,7 @@ runtime_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE prec
   p->ip = p->cao - 1;
   p->cao3 = p->cao * p->cao * p->cao;
 
-  TUNE_TRACE(printf("Using mesh %d cao %d rcut %e alpha %e with precision %e time %e\n", p->mesh, p->cao, p->rcut, p->alpha, p->precision, best_time.t);)
+  TUNE_TRACE(printf("Using mesh %d cao %d rcut %e alpha %e with precision %e time %e\n", p->mesh, p->cao, p->rcut, p->alpha, p->precision, best_time.t.avg);)
   return ret;
 }
 

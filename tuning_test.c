@@ -100,18 +100,18 @@ int main(int argc, char **argv) {
       p.rcut = rcut;
       p.tuning = 1;
 
-      runtime_t timing;
+      runtime_stat_t timing;
 
       printf("\t%s:\n", methods[j].method_name);
 
       t = MPI_Wtime();
       timing = Tune( methods+j, s, &p, prec);
       t = MPI_Wtime() - t;
-      if( timing.t < 0.0) {
+      if( timing.t.avg < 0.0) {
 	printf("\t\tTuning failed.\n");
 	continue;
       }
-      printf("\t\tmesh %d cao %d time %lf (t_c %e t_f %e t_g %e) (tuning time %lf)\n", p.mesh, p.cao, timing.t, timing.t_c, timing.t_f, timing.t_g, t);
+      printf("\t\tmesh %d cao %d time %lf (t_c %e t_f %e t_g %e) (tuning time %lf)\n", p.mesh, p.cao, timing.t.avg, timing.t_c.avg, timing.t_f.avg, timing.t_g.avg, t);
 
       double tt;
       runtime_t mt;
@@ -132,7 +132,9 @@ int main(int argc, char **argv) {
 	Free_data(d);
       }
     
-      fprintf(f[j], "%d %d %d %lf %e %e %e %e %e %e %e %e %e %e\n", i, p.mesh, p.cao, p.alpha, tt, timing.t, timing.t_c, timing.t_g, timing.t_f,
+      fprintf(f[j], "%d %d %d %lf %e %e %e %e %e %e %e %e %e %e %e %e\n", i, p.mesh, p.cao, p.alpha, tt, 
+	      timing.t.avg, timing.t.min, timing.t.max,
+	      timing.t_c.avg, timing.t_g.avg, timing.t_f.avg,
 	      mt.t, mt.t_c, mt.t_g, mt.t_f, p.precision);
       fflush(f[j]);
     }

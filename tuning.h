@@ -23,14 +23,10 @@
 #define CAO_MIN 2
 #define CAO_MAX 7
 
-#define N_TUNING_SAMPLES 1
+#define N_TUNING_SAMPLES 100
 
-typedef struct {
-  double avg;
-  double sgm;
-  int n;
-} timing_t;
+double time_series[N_TUNING_SAMPLES];
 
-runtime_t Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
+runtime_stat_t Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
 
 #endif

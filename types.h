@@ -226,8 +226,26 @@ typedef struct {
 } interpolation_t;
 
 typedef struct {
-  double t_c, t_f, t_g, t;
-} runtime_t;
+  double avg;
+  double sgm;
+  double min;
+  double max;
+  int n;
+} timing_t;
+
+typedef struct {
+  timing_t t;
+  timing_t t_c;
+  timing_t t_g;
+  timing_t t_f;
+ } runtime_stat_t;
+
+typedef struct {
+  double t;
+  double t_c;
+  double t_g;
+  double t_f;
+ } runtime_t;
 
 // Struct holding method data.
 
