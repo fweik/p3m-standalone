@@ -68,6 +68,11 @@
 
 #include "statistics.h"
 #include "common.h"
+
+// #define WRITE_FORCES
+
+// #define FORCE_DEBUG
+// #define CA_DEBUG
 #define ERROR_MAP_2D_PLANE 0.5
 
 static FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {

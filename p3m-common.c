@@ -509,6 +509,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	  /* printf("\t a = %e\n", FLOAT_CAST a); */
 	  /* printf("\t gm = %e\n", FLOAT_CAST gm); */
 	  /* printf("\t -2*PI*tn/s->length = %e %e %e\n", FLOAT_CAST -2*PI*tn[0]/s->length, FLOAT_CAST -2*PI*tn[1]/s->length, FLOAT_CAST -2*PI*tn[2]/s->length); */
+
 	}
 
 	Kernel[0][ind + 0] = 0;
@@ -576,7 +577,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 		b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
 		a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
 		k2 = 2*PI*u*um*b/a;
-		
 	      }
 
 	      Kernel[0][ind + 0] = 0;

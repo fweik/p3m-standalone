@@ -16,6 +16,9 @@ OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assig
 
 all: p3mstandalone
 
+shift_test: $(OBJECTS) shift-test.c Makefile
+	$(CC) $(CFLAGS) -o shift_test shift-test.c $(OBJECTS) $(LFLAGS)
+
 profile_charge_assignment: $(OBJECTS) profiling/prof_charge_assignment.c
 	$(CC) $(CFLAGS) -o prof_ca profiling/prof_charge_assignment.c $(OBJECTS) $(LFLAGS)
 
