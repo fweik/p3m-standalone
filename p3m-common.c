@@ -176,8 +176,8 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
       Init_nshift(d);
     }
 
-    d->dQdx[0] = d->dQdy[0] = d->dQdz[0] = NULL;
-    d->dQdx[1] = d->dQdy[1] = d->dQdz[1] = NULL;
+    d->dQ[0] = NULL;
+    d->dQ[1] = NULL;
 
     if( m->flags & METHOD_FLAG_self_force_correction)
       d->self_force_corrections = Init_array(my_power(1+2*P3M_SELF_BRILLOUIN, 3), 3*sizeof(FLOAT_TYPE));
@@ -187,9 +187,7 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
       int max = ( m->flags & METHOD_FLAG_interlaced) ? 2 : 1;
 
         for (i = 0; i < max; i++) {
-            d->dQdx[i] = Init_array( s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );
-            d->dQdy[i] = Init_array( s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );
-            d->dQdz[i] = Init_array( s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );
+            d->dQ[i] = Init_array( 3*s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );
         }
     }
 
@@ -266,12 +264,8 @@ void Free_data(data_t *d) {
         FFTW_FREE(d->Dn);
 
     for (i=0;i<2;i++) {
-        if (d->dQdx[i] != NULL)
-            FFTW_FREE(d->dQdx[i]);
-        if (d->dQdy[i] != NULL)
-            FFTW_FREE(d->dQdy[i]);
-        if (d->dQdz[i] != NULL)
-            FFTW_FREE(d->dQdz[i]);
+        if (d->dQ[i] != NULL)
+            FFTW_FREE(d->dQ[i]);
     }
 
     if((d->inter != NULL ) && (d->inter != dummy_inter)) {
