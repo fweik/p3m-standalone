@@ -29,8 +29,6 @@
 
 #include "parameters.h"
 
-#include <valgrind/callgrind.h>
-
 // Methods
 
 #include "p3m-ik-i.h"
@@ -381,14 +379,11 @@ int main ( int argc, char **argv ) {
       if(param_isset("no_calculation", params) != 1) {
 	method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
-	CALLGRIND_START_INSTRUMENTATION; 
 	wtime = MPI_Wtime();
 
 	Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 
 	wtime = MPI_Wtime() - wtime;
-	CALLGRIND_STOP_INSTRUMENTATION; 
-
       }
       error_k =0.0;
       if(calc_k_error == 1) {

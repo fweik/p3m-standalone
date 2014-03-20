@@ -37,8 +37,9 @@ int main(int argc, char **argv) {
   parameters_t p;
   int start, stop, step;  
   FLOAT_TYPE prec;
-  method_t methods[6] = { method_p3m_ik, method_p3m_ik_r, method_p3m_ik_i, method_p3m_ad, method_p3m_ad_i, method_p3m_ad_r };
-  FILE *f[6];
+  const method_t methods[] = { method_p3m_ik, method_p3m_ik_r, method_p3m_ik_i, method_p3m_ad, method_p3m_ad_i, method_p3m_ad_r };
+  const int n_methods = sizeof(methods)/sizeof(method_t);
+  FILE *f[n_methods];
   FILE *sys_params;
   FLOAT_TYPE box;
   FLOAT_TYPE rcut;
@@ -66,7 +67,7 @@ int main(int argc, char **argv) {
 
   printf("Running on '%s'\n", hostname);
 
-  for(int i = 0; i < 6; i++) {
+  for(int i = 0; i < n_methods; i++) {
     if((m_id != -1) && (i != m_id) )
       continue;
     sprintf(filename_buffer, "%s-%d-to-%d-prec-%.1e-rcut-%1.1lf-dens-%1.1lf-q-%1.1lf.dat", methods[i].method_name_short,
@@ -92,7 +93,7 @@ int main(int argc, char **argv) {
     s = generate_system( SYSTEM_RANDOM, i, box, charge);
     forces_t *forces = Init_forces( s->nparticles );
 
-    for(int j = 0; j < 6; j++) {
+    for(int j = 0; j < n_methods; j++) {
       if((m_id != -1) && (j != m_id))
 	continue;
 
@@ -146,7 +147,7 @@ int main(int argc, char **argv) {
   write_hist();
 
   fclose(sys_params);
-  for(int i = 0; i < 6; i++) {
+  for(int i = 0; i < n_methods; i++) {
     if((m_id != -1) && (i != m_id))
       continue;
     fclose(f[i]);
