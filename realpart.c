@@ -21,8 +21,8 @@
 #include "realpart.h"
 #include "sort.h"
 
-int to_left=0;
-int to_right=0;
+static int to_left=0;
+static int to_right=0;
 
 /* static inline void ewald_pair(parameters_t *p, forces_t *f, int id, int r, FLOAT_TYPE q12) { */
 /*   FLOAT_TYPE erfc_teil; */
