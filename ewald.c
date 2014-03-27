@@ -96,7 +96,7 @@ void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
   fak2 = SQR(PI/(p->alpha*s->length));
 
 #ifdef _OPENMP
-  #pragma omp parallel for collapse(3) private(n_sqr)
+  #pragma omp parallel for collapse(2) private(n_sqr)
 #endif 
   for (nx=0; nx <= kmax; nx++)
     for (ny=0; ny <= kmax; ny++)
