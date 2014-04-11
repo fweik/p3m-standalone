@@ -402,6 +402,8 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
   FLOAT_TYPE *fmesh_x = d->Fmesh->fields[0], *fmesh_y = d->Fmesh->fields[1], *fmesh_z = d->Fmesh->fields[2];
   int mesh = d->mesh;
 
+  /* unsigned long int loop_counter = 0; */
+
   const int cao = p->cao;
 
   cf_cnt = d->cf[ii];
@@ -420,6 +422,7 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
 	  field_x -= fmesh_x[l_ind]*B;
 	  field_y -= fmesh_y[l_ind]*B;
 	  field_z -= fmesh_z[l_ind]*B;
+	  /* loop_counter++; */
 	}
       }
     }
@@ -433,7 +436,7 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
       f->f_k->fields[2][i] *= 0.5;
     }
   }
-
+  /* printf("loop_counter %ld, %d\n", loop_counter, s->nparticles*cao*cao*cao); */
 }
 
 // assign the forces obtained from k-space
