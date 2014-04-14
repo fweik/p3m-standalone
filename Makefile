@@ -1,6 +1,7 @@
 OMPI_CC=clang
 CC=mpicc
-CFLAGS=-Wall -O5 -DNDEBUG -mavx
+#CFLAGS=-Wall -O5 -DNDEBUG -mavx
+CFLAGS=-Wall -O5 -DNDEBUG -march=native
 CFLAGS+=-std=c99
 #LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 LFLAGS=-L/scratch/fweik/Base/lib -lgsl -lgslcblas -lfftw3 

@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
       p.cao3 = j*j*j;
       p.ip = j-1;
       p.mesh = mesh;
-      d = Init_data(&method_p3m_ad_i, s, &p);
+      d = Init_data(&method_p3m_ik, s, &p);
 
       /* t = MPI_Wtime(); */
       /* assign_charge(s, &p, d, 0); */
@@ -77,61 +77,54 @@ int main(int argc, char **argv) {
 
       /* fprintf(f, "%e ", t); */
 
-      //      t = MPI_Wtime();
-      assign_charge_and_derivatives(s, &p, d, 0);
-      assign_charge_and_derivatives(s, &p, d, 1);
-      // t = MPI_Wtime() - t;
-
-      // fprintf(f, "%e ", t);
-
-
-      /* for(int i = 0; i < 2*mesh*mesh*mesh; i++) { */
-      /* 	d->Fmesh->fields[0][i] = 1.1*d->Qmesh[i]; */
-      /* 	d->Fmesh->fields[1][i] = 1.2*d->Qmesh[i]; */
-      /* 	d->Fmesh->fields[2][i] = 1.3*d->Qmesh[i]; */
-      /* } */
-
       /* t = MPI_Wtime(); */
       /* assign_forces(1.0, s, &p, d, s->reference, 0); */
       /* t  = MPI_Wtime() - t; */
       /* fprintf(f, "%e ", t); */
 
-      /* t = MPI_Wtime(); */
-      /* assign_charge_real(s, &p, d); */
-      /* t = MPI_Wtime() - t; */
-
-      /* fprintf(f, "%e ", t); */
-
-      /* t = MPI_Wtime(); */
-      /* assign_forces_real(1.0, s, &p, d, s->reference); */
-      /* t  = MPI_Wtime() - t; */
-      /* fprintf(f, "%e ", t); */
-
-      /* t = MPI_Wtime(); */
-      /* assign_charge_real_nostor(s, &p, d); */
-      /* t = MPI_Wtime() - t; */
-
-      /* fprintf(f, "%e ", t); */
-
-      /* t = MPI_Wtime(); */
-      /* assign_forces_real_nostor(1.0, s, &p, d, s->reference); */
-      /* t  = MPI_Wtime() - t; */
-      /* fprintf(f, "%e ", t); */
-
       t = MPI_Wtime();
-      assign_forces_ad(1.0, s, &p, d, s->reference, 0);
-      assign_forces_ad(1.0, s, &p, d, s->reference, 1);
+      assign_charge_real(s, &p, d);
       t = MPI_Wtime() - t;
 
       fprintf(f, "%e ", t);
 
-      assign_charge_and_derivatives(s, &p, d, 0);
-      assign_charge_and_derivatives(s, &p, d, 1);
+      for(int i = 0; i < 2*mesh*mesh*mesh; i++) {
+	d->Fmesh->x[i] = 1.1*d->Qmesh[i];
+	d->Fmesh->y[i] = 1.2*d->Qmesh[i];
+	d->Fmesh->z[i] = 1.3*d->Qmesh[i];
+      }
+      
 
       t = MPI_Wtime();
-      assign_forces_interlacing_ad(1.0, s, &p, d, s->reference);
+      assign_forces_real(1.0, s, &p, d, s->reference);
       t  = MPI_Wtime() - t;
       fprintf(f, "%e ", t);
+
+      t = MPI_Wtime();
+      assign_charge_real_nostor(s, &p, d);
+      t = MPI_Wtime() - t;
+
+      fprintf(f, "%e ", t);
+
+      t = MPI_Wtime();
+      assign_forces_real_nostor(1.0, s, &p, d, s->reference);
+      t  = MPI_Wtime() - t;
+      fprintf(f, "%e ", t);
+
+      /* t = MPI_Wtime(); */
+      /* assign_forces_ad(1.0, s, &p, d, s->reference, 0); */
+      /* assign_forces_ad(1.0, s, &p, d, s->reference, 1); */
+      /* t = MPI_Wtime() - t; */
+
+      /* fprintf(f, "%e ", t); */
+
+      /* assign_charge_and_derivatives(s, &p, d, 0); */
+      /* assign_charge_and_derivatives(s, &p, d, 1); */
+
+      /* t = MPI_Wtime(); */
+      /* assign_forces_interlacing_ad(1.0, s, &p, d, s->reference); */
+      /* t  = MPI_Wtime() - t; */
+      /* fprintf(f, "%e ", t); */
   
       Free_data(d);
       fflush(f);
@@ -143,9 +136,9 @@ int main(int argc, char **argv) {
 
     printf("total %e\n", total);
 
-    for(int k = 0; k < stop; k++)
-      for(int l = 0; l < 3; l++)
-	sum += s->reference->f_k->fields[l][k];
+    /* for(int l = 0; l < 3; l++) */
+    /*   for(int k = 0; k < i; k++) */
+    /* 	sum += s->reference->f_k->fields[l][k]; */
 
     Free_system(s);      
   }
