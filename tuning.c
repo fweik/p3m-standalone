@@ -136,7 +136,7 @@ runtime_stat_t time_full(const method_t  *m, system_t *s, parameters_t *p) {
   res.t.min = res.t_c.min + res.t_g.min + res.t_f.min;
   res.t.max = res.t_c.max + res.t_g.max + res.t_f.max;
 
-  if(1) {
+  if(0) {
     double ep = (res.t.max - res.t.avg) / res.t.avg;
     double em = (res.t.avg - res.t.min) / res.t.avg;
 
