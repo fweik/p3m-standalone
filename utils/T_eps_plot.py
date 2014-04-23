@@ -38,7 +38,7 @@ for i in os.listdir(sys.argv[1]):
                 values = map(float,  line.split())
                 query = "INSERT INTO data VALUES (%d, %e, %e, %e, %e, %d, %e, %e, %e, %e, %d, %d, %e)" % (method_id, float(ds['prec']), float(ds['rcut']), float(ds['dens']), float(ds['q']), int(values[0]), values[5],values[6],values[7],values[8], int(values[2]), int(values[3]), values[4])
                 c.execute(query)
-                
+                print query
         conn.commit()
         f.close()
 
