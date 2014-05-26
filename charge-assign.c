@@ -21,6 +21,7 @@
 
 // #define CA_DEBUG
 
+#ifdef WRAP1
 inline static int wrap_mesh_index(int ind, int mesh) {
   if((ind > 0) && (ind < mesh))
     return ind;
@@ -28,12 +29,17 @@ inline static int wrap_mesh_index(int ind, int mesh) {
     ind += mesh;
   else if(ind >= mesh)
     ind -= mesh;
+  return ind;
+}
+#else
+inline static int wrap_mesh_index(int ind, int mesh) {
+  return ind += (ind < 0)*mesh - (ind >= mesh)*mesh;
+}
+#endif
 
   // mesh > cao/2 !
   /* if((ret < 0) || (ret >= mesh)) */
   /*   return wrap_mesh_index(ret, mesh); */
-  return ind;
-}
 
 inline static int int_floor(FLOAT_TYPE x)
 {
@@ -769,7 +775,8 @@ void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t 
   int j,k,l;
   FLOAT_TYPE B;
   FLOAT_TYPE force_x, force_y, force_z;
-  int cao = p->cao;
+  const int cao = p->cao;
+  const int mesh = d->mesh;
 
   cf_cnt=0;
   for (i=0; i<s->nparticles; i++) {
@@ -777,11 +784,11 @@ void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t 
     base = d->ca_ind[ii] + 3*i;
     cf_cnt = 3*i*p->cao3;
     for (i0=0; i0<cao; i0++) {
-      j = wrap_mesh_index(base[0] + i0, d->mesh);
+      j = wrap_mesh_index(base[0] + i0, mesh);
       for (i1=0; i1<cao; i1++) {
-	k = wrap_mesh_index(base[1] + i1, d->mesh);
+	k = wrap_mesh_index(base[1] + i1, mesh);
 	for (i2=0; i2<cao; i2++) {
-	  l = wrap_mesh_index(base[2] + i2, d->mesh);
+	  l = wrap_mesh_index(base[2] + i2, mesh);
 
 	  B = force_prefac*d->Qmesh[c_ind(j,k,l)+ii];
 	  force_x -= B*d->dQ[ii][cf_cnt+0];
@@ -802,6 +809,7 @@ void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t 
   }
 }
 
+// @TODO: Linearize index
 // assign the forces obtained from k-space
 void assign_forces_ad_real(double force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f)
 {
@@ -811,8 +819,8 @@ void assign_forces_ad_real(double force_prefac, system_t *s, parameters_t *p, da
   int j,k,l;
   FLOAT_TYPE B;
   FLOAT_TYPE force_x, force_y, force_z;
-  int cao = p->cao;
-  int mesh = p->mesh;
+  const int cao = p->cao;
+  const int mesh = p->mesh;
 
   cf_cnt=0;
   for (i=0; i<s->nparticles; i++) {
@@ -820,11 +828,11 @@ void assign_forces_ad_real(double force_prefac, system_t *s, parameters_t *p, da
     base = d->ca_ind[0] + 3*i;
     cf_cnt = 3*i*p->cao3;
     for (i0=0; i0<cao; i0++) {
-      j = wrap_mesh_index(base[0] + i0, d->mesh);
+      j = wrap_mesh_index(base[0] + i0, mesh);
       for (i1=0; i1<cao; i1++) {
-	k = wrap_mesh_index(base[1] + i1, d->mesh);
+	k = wrap_mesh_index(base[1] + i1, mesh);
 	for (i2=0; i2<cao; i2++) {
-	  l = wrap_mesh_index(base[2] + i2, d->mesh);
+	  l = wrap_mesh_index(base[2] + i2, mesh);
 
 	  B = force_prefac*d->Qmesh[mesh*(mesh+2) * j + (mesh+2) * k + l];
 	  force_x -= B*d->dQ[0][cf_cnt+0];
