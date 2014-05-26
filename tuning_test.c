@@ -31,6 +31,7 @@
 #include "p3m-ad-i.h"
 #include "p3m-ik-real.h"
 #include "p3m-ad-real.h"
+#include "ewald.h"
 
 int main(int argc, char **argv) {
   system_t *s;
@@ -92,6 +93,21 @@ int main(int argc, char **argv) {
 
     s = generate_system( SYSTEM_RANDOM, i, box, charge);
     forces_t *forces = Init_forces( s->nparticles );
+    forces_t *forces_ewald = Init_forces( s->nparticles );
+    data_t *d_ewald = NULL;
+
+    if(1) {
+    FLOAT_TYPE V = pow( box, 3);
+    double alpha = SQRT(-LOG((prec*SQRT(s->nparticles*rcut*V))/(2*SQRT(2)*s->q2)))/rcut;
+    parameters_t ewald_parameters;
+    ewald_parameters.rcut = rcut;
+    ewald_parameters.alpha = alpha;
+    ewald_parameters.tuning = 0;
+
+    d_ewald = method_ewald.Init( s, &ewald_parameters);
+
+    method_ewald.Kspace_force( s, &ewald_parameters, d_ewald, forces_ewald);
+    }
 
     for(int j = 0; j < n_methods; j++) {
       if((m_id != -1) && (j != m_id))
@@ -117,7 +133,7 @@ int main(int argc, char **argv) {
       double tt;
       runtime_t mt;
       if(1) {
-
+	p.tuning = 0;
 	data_t *d = methods[j].Init( s, &p );
 
 	tt = MPI_Wtime();
@@ -130,6 +146,15 @@ int main(int argc, char **argv) {
 
 	mt.t = mt.t_c + mt.t_g + mt.t_f;
 
+	double actual_error = 0.0;
+ 
+	for(int i = 0; i < s->nparticles; i++)
+	  for(int j = 0; j < 3; j++) {
+	    actual_error += SQR(forces->f_k->fields[j][i] - forces_ewald->f_k->fields[j][i]);  
+	    //	    printf("id %d dim %d method_force %e ewald_force %e \n", i, j, forces->f_k->fields[j][i], forces_ewald->f_k->fields[j][i]);
+	  }
+
+	printf("actual_error %e\n", SQRT(actual_error / s->nparticles));
 	Free_data(d);
       }
     
@@ -141,6 +166,9 @@ int main(int argc, char **argv) {
     }
     
     Free_forces(forces);
+    Free_forces(forces_ewald);
+    if(d_ewald != NULL)
+      Free_data(d_ewald);
     Free_system(s);
   }
 

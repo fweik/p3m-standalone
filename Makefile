@@ -1,4 +1,3 @@
-OMPI_CC=clang
 CC=mpicc
 #CFLAGS=-Wall -O5 -DNDEBUG -mavx
 CFLAGS=-Wall -O5 -DNDEBUG -march=native

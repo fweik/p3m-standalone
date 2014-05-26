@@ -53,8 +53,10 @@ for i in values:
     dens = 1.0
     rcut = 3.0
     blocks = 0
-    for dens in densities:
-        query = "SELECT npart,timing,prec,type,dens,rcut FROM data WHERE (dens = %e) AND (rcut = %e) AND ( (npart = 5000) OR (npart=1000) OR (npart=10000) OR (npart=20000)) ORDER BY npart,type,prec" % (dens, rcut)
+    dens_tmp = []
+    dens_tmp.append(1.0);
+    for dens in dens_tmp:
+        query = "SELECT npart,timing,prec,type,dens,rcut FROM data WHERE (dens = %e) AND (rcut = %e) AND ( (npart = 100000) OR (npart = 50000) OR (npart=1000) OR (npart=10000) OR (npart=100)) ORDER BY npart,type,prec" % (dens, rcut)
         values = c.execute(query).fetchall()
         for row in values:
             if row[3] != pold:
