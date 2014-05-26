@@ -107,19 +107,18 @@ void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
 	else {
 	  d->G_hat[r_ind(nx,ny,nz)] = fak1/n_sqr * EXP(-fak2*n_sqr);
 	}
+        //printf("d->G_hat[r_ind(nx,ny,nz)] = %e, n_sqr = %e,fak2 = %e, s->length = %e, kmax %d, kmax2 %d\n", d->G_hat[r_ind(nx,ny,nz)], n_sqr, fak2, s->length, kmax, kmax2);
       }
 }  
 
 data_t *Ewald_init(system_t *s, parameters_t *p)
 {
   p->mesh = kmax+1;
-
-
-  data_t *d = Init_data( &method_ewald, s, p );
   kmax2     = SQR(kmax);
 
+  data_t *d = Init_data( &method_ewald, s, p );
   d->mesh = kmax+1;
-  
+
   return d;
 }
 
@@ -158,7 +157,7 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
 	     
             force_factor = s->q[i] * ghat 
               * (rhohat_re*SIN(kr) + rhohat_im*COS(kr));
-	      
+
             f->f_k->x[i] += nx * force_factor;
             f->f_k->y[i] += ny * force_factor;
             f->f_k->z[i] += nz * force_factor;

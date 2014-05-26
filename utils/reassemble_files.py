@@ -8,17 +8,20 @@ file_re = re.compile('p3m-(.*?)-([0-9]*)-to-([0-9]*)-prec-(.*)-rcut-(.*)-dens-(.
 
 params = ['method', 'lownum', 'highnum', 'prec', 'rcut', 'dens', 'q']
 
-color_mapping = {'ad': 'red', 'ik': 'blue', 'ik-i': 'deepskyblue', 'ad-i': 'firebrick', 'ad-r': 'brown', 'ik-r': 'cyan'}
+color_mapping = {'ad': 'red', 'ik': 'blue', 'ik-i': 'blue', 'ad-i': 'red', 'ad-r': 'red', 'ik-r': 'blue'}
+
+#color_mapping = {}
 
 def build_plot_string(dataset, color_mapping):
     if dataset['method'] in color_mapping:
         color_string = "lc rgb '%s'" % color_mapping[dataset['method']]
     else:
-        color_string = "lc rgb 'black'"
-    return "'%s' w lp t '%s' %s" % (dataset['filename'],dataset['method'],color_string)
+        color_string = ""
+    return "'%s' u 1:5 w lp t '%s' %s" % (dataset['filename'],dataset['method'],color_string)
 
 def write_plot_file(filename, plot_strings):
     f = open("%s.gnuplot" % filename, 'w')
+    f.write("set title '%s'\n"  % filename)
     f.write("set key left top\n")
     f.write("set terminal postscript enhanced color\n")
     f.write("set output '%s.ps'\n" % filename) 
