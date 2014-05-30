@@ -1,7 +1,8 @@
 CC=mpicc
 #CFLAGS=-Wall -O5 -DNDEBUG -mavx
-CFLAGS=-Wall -O5 -DNDEBUG -march=native
-CFLAGS+=-std=c99
+#CFLAGS=-Wall -O5 -DNDEBUG -march=native
+CFLAGS=-Wall -O0 -g
+CFLAGS+=-std=gnu99
 #LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 LFLAGS=-L/scratch/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 #Uncomment to add long double 
@@ -21,8 +22,11 @@ all: p3mstandalone
 profile_charge_assignment: $(OBJECTS) Makefile profiling/prof_charge_assignment.c
 	$(CC) $(CFLAGS) -o prof_ca profiling/prof_charge_assignment.c $(OBJECTS) $(LFLAGS)
 
+make_reference: $(OBJECTS) Makefile make_reference.c
+	$(CC) $(CFLAGS) -o make_reference make_reference.c $(OBJECTS) $(LFLAGS)
+
 time_assignment: $(OBJECTS) Makefile profiling/time_assignment.c
-	$(CC) $(CFLAGS) -I.. -o time_assignment profiling/time_assignment.c $(OBJECTS) $(LFLAGS)
+	$(CC) $(CFLAGS) -I. -o time_assignment profiling/time_assignment.c $(OBJECTS) $(LFLAGS)
 
 test_tuning: $(OBJECTS) Makefile tuning_test.c
 	$(CC) $(CFLAGS) -o test_tuning tuning_test.c $(OBJECTS) $(LFLAGS)
@@ -39,9 +43,6 @@ dipolar_system: $(OBJECTS) Makefile dipolar_system.c
 test: $(OBJECTS) Makefile test.c
 	$(CC) $(CFLAGS) -o test test.c $(OBJECTS) $(LFLAGS)
 
-time_method: $(OBJECTS) Makefile time_method.c
-	$(CC) $(CFLAGS) -o time_method time_method.c $(OBJECTS) $(LFLAGS)
-
 makefile.dep : *.[ch] Makefile
 	for i in *.[c]; do $(CC) -MM $(CFLAGS) "$${i}"; done > $@
 
@@ -49,9 +50,6 @@ include makefile.dep
 
 visit_writer.o:
 	gcc -I./tools -c tools/visit_writer.c
-
-p3m_ik_cuda_i.o:
-	$(CUDA_COMPILER) $(CUDA_COMPILER_FLAGS) -c -o p3m_ik_cuda_i.o cuda/p3m-ik.cu $(CUDA_COMPILER_LFLAGS)
 
 clean:
 	rm -rf *.o
