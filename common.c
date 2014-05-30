@@ -38,6 +38,7 @@ double t_fft[4];
 double timer;
 #endif
 
+#define REFERENCE_PRECISION 1e-8
 
 void *Init_array(int size, size_t field_size) {
     void *a;
@@ -327,7 +328,13 @@ FLOAT_TYPE Calculate_reference_forces ( system_t *s, parameters_t *p ) {
 
     op.alpha = Ewald_compute_optimal_alpha ( s, &op );
 
-    printf("Reference Forces: alpha %lf, r_cut %lf\n", FLOAT_CAST op.alpha, FLOAT_CAST op.rcut);
+    op.mesh = 2;
+    while(method_ewald.Error( s, &op ) > REFERENCE_PRECISION)
+      op.mesh += 2;
+
+    op.mesh = 30;
+
+    printf("Reference Forces: alpha %lf, r_cut %lf, kmax %d\n", FLOAT_CAST op.alpha, FLOAT_CAST op.rcut, op.mesh);
 
     d = method_ewald.Init ( s, &op );
 

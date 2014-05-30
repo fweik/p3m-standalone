@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <mpi.h>
+
 #include <unistd.h>
 
 #include "types.h"
@@ -96,7 +97,17 @@ int main(int argc, char **argv) {
     forces_t *forces_ewald = Init_forces( s->nparticles );
     data_t *d_ewald = NULL;
 
-    if(1) {
+    for (int i=0; i<3; i++ ) {
+        memset ( forces->f->fields[i]  , 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+        memset ( forces->f_k->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+        memset ( forces->f_r->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+        memset ( forces_ewald->f->fields[i]  , 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+        memset ( forces_ewald->f_k->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+        memset ( forces_ewald->f_r->fields[i], 0, s->nparticles*sizeof ( FLOAT_TYPE ) );
+    }
+
+
+    if(0) {
     FLOAT_TYPE V = pow( box, 3);
     double alpha = SQRT(-LOG((prec*SQRT(s->nparticles*rcut*V))/(2*SQRT(2)*s->q2)))/rcut;
     parameters_t ewald_parameters;
@@ -132,7 +143,7 @@ int main(int argc, char **argv) {
 
       double tt;
       runtime_t mt;
-      if(1) {
+      if(0) {
 	p.tuning = 0;
 	data_t *d = methods[j].Init( s, &p );
 
@@ -151,7 +162,7 @@ int main(int argc, char **argv) {
 	for(int i = 0; i < s->nparticles; i++)
 	  for(int j = 0; j < 3; j++) {
 	    actual_error += SQR(forces->f_k->fields[j][i] - forces_ewald->f_k->fields[j][i]);  
-	    //	    printf("id %d dim %d method_force %e ewald_force %e \n", i, j, forces->f_k->fields[j][i], forces_ewald->f_k->fields[j][i]);
+	    printf("id %d dim %d method_force %e ewald_force %e \n", i, j, forces->f_k->fields[j][i], forces_ewald->f_k->fields[j][i]);
 	  }
 
 	printf("actual_error %e\n", SQRT(actual_error / s->nparticles));

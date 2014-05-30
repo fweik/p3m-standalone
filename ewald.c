@@ -32,7 +32,6 @@
 /* Maximal k-vector allowed in Ewald_k_space. 
    Defines the size of the influence function array.
 */
-#define kmax 30
 
 /* Square of the maximal k-vector used for the computation of the
    Kolafa-Perram diagonal term. */
@@ -70,8 +69,6 @@ FLOAT_TYPE Ewald_self_energy( system_t *s, parameters_t *p ) {
 
 /* Some global variables, internal to ewald.c. */
 
-static int     kmax2; /* reciprocal space cutoff and its square */
-
 /*----------------------------------------------------------------------*/
 /* HELPER FUNCTIONS */
 /*----------------------------------------------------------------------*/
@@ -91,7 +88,9 @@ void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
   
   int    nx,ny,nz;
   FLOAT_TYPE n_sqr,fak1,fak2;
-
+  const int kmax = p->mesh - 1;
+  const int kmax2 = kmax*kmax;
+  
   fak1 = 2.0/SQR(s->length);
   fak2 = SQR(PI/(p->alpha*s->length));
 
@@ -102,9 +101,10 @@ void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
     for (ny=0; ny <= kmax; ny++)
       for (nz=0; nz <= kmax; nz++) {
 	n_sqr = SQR(nx) + SQR(ny) + SQR(nz);
-	if ((nx==0 && ny==0 && nz==0) || n_sqr > kmax2)
+	if ((nx==0 && ny==0 && nz==0) || (n_sqr > kmax2)) {
+  //  printf("%d %d %d, kmax %d, kmax2 %d\n", nx, ny, nz, kmax, kmax2);
 	  d->G_hat[r_ind(nx,ny,nz)] = 0.0;
-	else {
+        } else {
 	  d->G_hat[r_ind(nx,ny,nz)] = fak1/n_sqr * EXP(-fak2*n_sqr);
 	}
         //printf("d->G_hat[r_ind(nx,ny,nz)] = %e, n_sqr = %e,fak2 = %e, s->length = %e, kmax %d, kmax2 %d\n", d->G_hat[r_ind(nx,ny,nz)], n_sqr, fak2, s->length, kmax, kmax2);
@@ -113,11 +113,11 @@ void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
 
 data_t *Ewald_init(system_t *s, parameters_t *p)
 {
-  p->mesh = kmax+1;
-  kmax2     = SQR(kmax);
-
+  p->tuning = 0;
+  p->mesh = p->mesh + 1; 
   data_t *d = Init_data( &method_ewald, s, p );
-  d->mesh = kmax+1;
+  d->mesh = p->mesh;
+  p->mesh--;
 
   return d;
 }
@@ -130,6 +130,8 @@ void Ewald_k_space(system_t *s, parameters_t *p, data_t *d, forces_t *f)
   FLOAT_TYPE rhohat_re=0, rhohat_im=0, ghat=0;
   FLOAT_TYPE force_factor;
   FLOAT_TYPE Leni = 1.0/s->length;
+  const int kmax = p->mesh;
+  const int kmax2 = kmax*kmax;
   
   for (nx=-kmax; nx<=kmax; nx++)
     for (ny=-kmax; ny<=kmax; ny++)
@@ -185,6 +187,7 @@ FLOAT_TYPE compute_error_estimate_r(system_t *s, parameters_t *p, FLOAT_TYPE alp
 static FLOAT_TYPE compute_error_estimate_k(system_t *s, parameters_t *p, FLOAT_TYPE alpha) {
   /* compute the k space part of the error estimate */
   FLOAT_TYPE res, Leni = 1.0/s->length;
+  const int kmax = p->mesh;
 
   /* Kolafa Perram, eq. 31 */
 /*   res = Q2 * alpha * my_power(PI, -2.0) * my_power(kmax, -1.5)  */
