@@ -44,7 +44,10 @@ double p3m_find_q_ik(double alphaL, int mesh_id, int cao_id) {
   int l = (int)floor(d);
   d -= l;
 
-  return (1.-d)*Q_ik[mesh_id][cao_id][l] + d*Q_ik[mesh_id][cao_id][l];
+  /* printf("alphaL = %e, mesh_id = %d, cao_id = %d, l = %d, d = %e, ret = %e\n", */
+  /* 	 alphaL, mesh_id, cao_id, l, d, (1.-d)*Q_ik_i[mesh_id][cao_id][l] + d*Q_ik_i[mesh_id][cao_id][l]); */
+
+  return (1.-d)*Q_ik[mesh_id][cao_id][l] + d*Q_ik[mesh_id][cao_id][l+1];
 }  
 
 double p3m_find_q_ik_i(double alphaL, int mesh_id, int cao_id) {
@@ -55,7 +58,7 @@ double p3m_find_q_ik_i(double alphaL, int mesh_id, int cao_id) {
   int l = (int)floor(d);
   d -= l;
 
-  return (1.-d)*Q_ik_i[mesh_id][cao_id][l] + d*Q_ik_i[mesh_id][cao_id][l];
+  return (1.-d)*Q_ik_i[mesh_id][cao_id][l] + d*Q_ik_i[mesh_id][cao_id][l+1];
 }  
 
 double p3m_find_q_ad(double alphaL, int mesh_id, int cao_id) {
@@ -66,7 +69,7 @@ double p3m_find_q_ad(double alphaL, int mesh_id, int cao_id) {
   int l = (int)floor(d);
   d -= l;
 
-  return (1.-d)*Q_ad[mesh_id][cao_id][l] + d*Q_ad[mesh_id][cao_id][l];
+  return (1.-d)*Q_ad[mesh_id][cao_id][l] + d*Q_ad[mesh_id][cao_id][l+1];
 }  
 
 double p3m_find_q_ad_i(double alphaL, int mesh_id, int cao_id) {
@@ -77,7 +80,7 @@ double p3m_find_q_ad_i(double alphaL, int mesh_id, int cao_id) {
   int l = (int)floor(d);
   d -= l;
 
-  return (1.-d)*Q_ad_i[mesh_id][cao_id][l] + d*Q_ad_i[mesh_id][cao_id][l];
+  return (1.-d)*Q_ad_i[mesh_id][cao_id][l] + d*Q_ad_i[mesh_id][cao_id][l+1];
 }  
 
 

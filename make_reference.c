@@ -8,7 +8,9 @@ int main(void) {
   int particles = 1000;
   system_t *system = generate_system(SYSTEM_RANDOM, particles, box, 1. );
   parameters_t parameters;
+  double acc;
 
-  Calculate_reference_forces( system, &parameters );
+  acc = Calculate_reference_forces( system, &parameters );
+  printf("accuracy %e\n", acc);
 }
 

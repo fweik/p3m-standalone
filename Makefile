@@ -1,7 +1,7 @@
 CC=mpicc
 #CFLAGS=-Wall -O5 -DNDEBUG -mavx
 #CFLAGS=-Wall -O5 -DNDEBUG -march=native
-CFLAGS=-Wall -O0 -g
+CFLAGS=-Wall -O3 -DNDEBUG -fopenmp
 CFLAGS+=-std=gnu99
 #LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 LFLAGS=-L/scratch/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
