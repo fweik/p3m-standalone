@@ -1,4 +1,4 @@
-/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+/**    Copyright (C) 2011,2012,2013,2014 Florian Weik <fweik@icp.uni-stuttgart.de>
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #include "interpol.h"
 #include "realpart.h"
 
-#define TUNE_DEBUG
+//#define TUNE_DEBUG
 
 #ifdef TUNE_DEBUG
   #include <stdio.h>
@@ -37,7 +37,6 @@
 #endif
 
 const int smooth_numbers[] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128, 130, 132, 140, 144, 150, 154, 156, 160, 162, 168, 176, 180, 182, 192, 196, 198, 200, 208, 210, 216, 220, 224, 234, 240, 242, 250, 252, 256, 260, 264, 270, 280, 288, 294, 300};
-
 const int smooth_numbers_n = sizeof(smooth_numbers)/sizeof(int);
 
 const int powers_of_two[] = { 2, 2 << 1, 2 << 2,2 << 3,2 << 4,2 << 5,2 << 6,2 << 7,2 << 8,2 << 9,2 << 10};
@@ -128,8 +127,6 @@ runtime_stat_t time_full(const method_t  *m, system_t *s, parameters_t *p) {
 
     memset(&(d->runtime), 0, sizeof(runtime_t));
   }
-  
-
 
   res.t_f.avg /= res.t_f.n;
   res.t_c.avg /= res.t_c.n;

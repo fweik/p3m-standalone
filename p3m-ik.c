@@ -261,46 +261,43 @@ FLOAT_TYPE Error_ik( system_t *s, parameters_t *p) {
 }
 
 FLOAT_TYPE p3m_k_space_error_ik ( FLOAT_TYPE prefac, const system_t *s, const parameters_t *p ) {
-    // The pair force error Q
-    int mesh = p->mesh;
-    // Check whether value pair is tabulated.
+  int mesh = p->mesh;
 
-    FLOAT_TYPE he_q = p3m_find_error(p->alpha*s->length, mesh, p->cao, 0);
+  // Check whether value pair is tabulated.
+  FLOAT_TYPE he_q = p3m_find_error(p->alpha*s->length, mesh, p->cao, 0);
 
-    /* printf("alpha %lf alphaL %lf mesh %d cao %d he_q = %e\n", p->alpha, p->alpha*s->length, mesh, p->cao, he_q); */
-
-    // Parameter set not found
-    if(he_q < 0) {
-      // Mesh loop counters 
-      int  nx, ny, nz;
-      // Helper variables
-      FLOAT_TYPE alias1, alias2, n2, cs;
-      FLOAT_TYPE ctan_x, ctan_y;
-      FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
+  // Parameter set not found
+  if(he_q < 0) {
+    // Mesh loop counters 
+    int  nx, ny, nz;
+    // Helper variables
+    FLOAT_TYPE alias1, alias2, n2, cs;
+    FLOAT_TYPE ctan_x, ctan_y;
+    FLOAT_TYPE meshi = 1.0/(FLOAT_TYPE)(p->mesh);
 #ifdef _OPENMP
 #pragma omp parallel for private(ctan_x, ctan_y, n2, cs, alias1, alias2, ny, nz) reduction( + : he_q )
 #endif
-      for ( nx=-mesh/2; nx<mesh/2; nx++ ) {
-        ctan_x = analytic_cotangent_sum ( nx, meshi,p->cao );
-        for ( ny=-mesh/2; ny<mesh/2; ny++ ) {
-	  ctan_y = ctan_x * analytic_cotangent_sum ( ny, meshi, p->cao );
-	  for ( nz=-mesh/2; nz<mesh/2; nz++ ) {
-	    if ( ( nx!=0 ) || ( ny!=0 ) || ( nz!=0 ) ) {
-	      n2 = SQR ( nx ) + SQR ( ny ) + SQR ( nz );
-	      cs = analytic_cotangent_sum ( nz, meshi ,p->cao ) *ctan_y;
-	      p3m_tune_aliasing_sums_ik ( nx,ny,nz, s, p, &alias1,&alias2 );
-	      he_q += ( alias1  -  SQR ( alias2/cs ) / n2 );
-	    }
+    for ( nx=-mesh/2; nx<mesh/2; nx++ ) {
+      ctan_x = analytic_cotangent_sum ( nx, meshi,p->cao );
+      for ( ny=-mesh/2; ny<mesh/2; ny++ ) {
+	ctan_y = ctan_x * analytic_cotangent_sum ( ny, meshi, p->cao );
+	for ( nz=-mesh/2; nz<mesh/2; nz++ ) {
+	  if ( ( nx!=0 ) || ( ny!=0 ) || ( nz!=0 ) ) {
+	    n2 = SQR ( nx ) + SQR ( ny ) + SQR ( nz );
+	    cs = analytic_cotangent_sum ( nz, meshi ,p->cao ) *ctan_y;
+	    p3m_tune_aliasing_sums_ik ( nx,ny,nz, s, p, &alias1,&alias2 );
+	    he_q += ( alias1  -  SQR ( alias2/cs ) / n2 );
 	  }
-        }
+	}
       }
+    }
 #ifdef _OPENMP
 #pragma omp barrier
 #endif
-      he_q = fabs(he_q);
-    }
+    he_q = fabs(he_q);
+  }
 
-    return 2.0*s->q2*SQRT ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
+  return 2.0*s->q2*SQRT ( he_q/ ( FLOAT_TYPE ) s->nparticles ) / ( SQR ( s->length ) );
 }
 
 

@@ -376,7 +376,7 @@ int main ( int argc, char **argv ) {
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
       parameters_ewald.alpha = parameters.alpha;
 
-      if(param_isset("no_calculation", params) != 1) {
+      if(!param_isset("no_calculation", params)) {
 	method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
 	wtime = MPI_Wtime();

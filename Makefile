@@ -1,7 +1,7 @@
 CC=mpicc
 #CFLAGS=-Wall -O5 -DNDEBUG -mavx
 #CFLAGS=-Wall -O5 -DNDEBUG -march=native
-CFLAGS=-Wall -O3 -DNDEBUG -fopenmp
+CFLAGS=-Wall -O0 -march=native -g
 CFLAGS+=-std=gnu99
 #LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 LFLAGS=-L/scratch/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
@@ -15,7 +15,7 @@ CUDA_COMPILER_LFLAGS=-lcufft
 
 OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o statistics.o tuning.o p3m-ik-real.o parameters.o p3m-ad-real.o q_ik.o q_ad.o q_ik_i.o q_ad_i.o find_error.o q.o p3m-ik-real-ns.o
 
-BINARIES=prof_ca time_assignment test_tuning p3m
+BINARIES=prof_ca time_assignment test_tuning p3m tuning_density
 
 all: p3mstandalone
 
@@ -30,6 +30,9 @@ time_assignment: $(OBJECTS) Makefile profiling/time_assignment.c
 
 test_tuning: $(OBJECTS) Makefile tuning_test.c
 	$(CC) $(CFLAGS) -o test_tuning tuning_test.c $(OBJECTS) $(LFLAGS)
+
+tuning_density: $(OBJECTS) Makefile tuning_density.c
+	$(CC) $(CFLAGS) -o tuning_density tuning_density.c $(OBJECTS) $(LFLAGS)
 
 p3mstandalone: $(OBJECTS) Makefile main.c
 	$(CC) $(CFLAGS) -o p3m main.c $(OBJECTS) $(LFLAGS)
