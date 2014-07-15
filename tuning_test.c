@@ -16,11 +16,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
-#include <mpi.h>
 
 #include <unistd.h>
 
 #include "types.h"
+#include "wtime.h"
 #include "generate_system.h"
 #include "tuning.h"
 #include "error.h"
@@ -141,9 +141,9 @@ int main(int argc, char **argv) {
 
       printf("\t%s:\n", methods[j].method_name);
 
-      t = MPI_Wtime();
+      t = wtime();
       timing = Tune( methods+j, s, &p, prec);
-      t = MPI_Wtime() - t;
+      t = wtime() - t;
       if( timing.t.avg < 0.0) {
 	printf("\t\tTuning failed.\n");
 	continue;
@@ -159,9 +159,9 @@ int main(int argc, char **argv) {
 	for(int i = 0; i < 3; i++)
 	  memset(forces->f_k->fields[i], 0, s->nparticles*sizeof(FLOAT_TYPE));
 
-	tt = MPI_Wtime();
+	tt = wtime();
 	methods[j].Kspace_force( s, &p, d, forces );
-	tt = MPI_Wtime() - tt;
+	tt = wtime() - tt;
 
 	printf("\t\tMeasured total time %e (t_c %e t_f %e t_g %e)\n", tt, d->runtime.t_c, d->runtime.t_f, d->runtime.t_g);
 

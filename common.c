@@ -38,6 +38,7 @@ double timer;
 #endif
 
 #define REFERENCE_PRECISION 1e-8
+#define ZERO_INIT
 
 void *Init_array(int size, size_t field_size) {
     void *a;
@@ -46,6 +47,10 @@ void *Init_array(int size, size_t field_size) {
     assert(field_size > 0);
 
     a = FFTW_MALLOC(size * field_size);
+
+    #ifdef ZERO_INIT
+    memset(a, 0, size*field_size);
+    #endif
 
     assert(a != NULL);
     return a;
@@ -63,6 +68,10 @@ void *Resize_array(void *a, size_t new_size, size_t old_size) {
   } else {
     b = FFTW_MALLOC(new_size);
     assert(b != NULL);
+    #ifdef ZERO_INIT
+    if(new_size > old_size)
+      memset(b + old_size, 0, new_size - old_size);
+    #endif
     memcpy(b, a, copy_size);
     if(a != NULL)
       FFTW_FREE(a);

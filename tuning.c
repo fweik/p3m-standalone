@@ -55,12 +55,6 @@ typedef struct {
 parameter_timings_t *pt = NULL;
 int n_pt = 0;
 
-static int
-compare_ints (const void *a, const void *b)
-{
-  return (*(int *)(a) - *(int *)(b));
-}
-
 void time_hist(double v) {
   const int bins = sizeof(time_fluctuation_hist) / sizeof(int);
   double x = fabs(v);
