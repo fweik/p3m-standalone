@@ -69,6 +69,29 @@ int *count_neighbors( system_t *s, parameters_t *p )
     return nb;
 }
 
+int *count_neighbors_dd(domain_decomposition_t *dd, parameters_t *p) {
+  celllist_t *next;
+  FLOAT_TYPE rcut2= SQR(p->rcut);
+  FLOAT_TYPE dx,dy,dz,r;
+  const FLOAT_TYPE box = dd->h*dd->cells_per_direction;
+  const FLOAT_TYPE lengthi = dd->h;
+  FLOAT_TYPE xi[3];
+
+  for(int i = 0; i < dd->total_cells; i++) {
+    for(int j = 0; j < dd->cells[i].n_particles; j++) {
+      next = dd->cells[i].neighbors->next;
+      xi[0] = dd->cells[i].p->x[j];
+      xi[1] = dd->cells[i].p->y[j];
+      xi[2] = dd->cells[i].p->z[j];
+      while(next != NULL) {
+	for(int k = 0; k < next->c->n_particles; k++) {
+	  ;
+	}
+	next=next->next;
+      }
+    }
+  }
+}
 
 /* void Shortrange_Interactions( domain_decomposition_t *dd, parameters_t *p, forces_t *f ) { */
 /*   for(int id = 0; id < dd->total_cells; id++) { */

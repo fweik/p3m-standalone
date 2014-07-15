@@ -38,62 +38,25 @@
 int main(int argc, char **argv) {
   system_t *s;
   parameters_t p;
-  int start, stop, step;  
-  FLOAT_TYPE prec;
-  const method_t methods[] = { method_p3m_ik_r, method_p3m_ik_i, method_p3m_ad_r, method_p3m_ad_i };
+  FLOAT_TYPE start=0.1, stop=10.0, step=0.1;  
+  FLOAT_TYPE prec=1e-3;
+  const method_t methods[] = { method_p3m_ik_r };
   const int n_methods = sizeof(methods)/sizeof(method_t);
   FILE *f[n_methods];
-  FILE *sys_params;
   FLOAT_TYPE box;
-  FLOAT_TYPE rcut;
-  char filename_buffer[256];
-  FLOAT_TYPE density;
-  FLOAT_TYPE charge;
+  FLOAT_TYPE rcut=3.0;
+  FLOAT_TYPE charge = 1.0;
   FLOAT_TYPE t;
   int m_id = -1;
 
-  start = atoi(argv[1]);
-  stop = atoi(argv[2]);
-  step = atoi(argv[3]);
-  prec = atof(argv[4]);
-  rcut = atof(argv[5]);
-  density = atof(argv[6]);
-  charge = atof(argv[7]);
+  int npart = 10;
 
-  if(argc == 9) {
-    m_id = atoi(argv[8]);
-  }
+  for(double density = start; density <= stop; density+= step) {
+    printf("Tuning for density %e.\n", density);
+    box = pow((double)(npart)/density, 0.3333);
+    printf("density %lf (%lf), box %lf npart %d \n", FLOAT_CAST (double)(npart)/(box*box*box), FLOAT_CAST density, FLOAT_CAST box, npart);    
 
-  char hostname[255];
-
-  gethostname(hostname, sizeof(hostname));
-
-  printf("Running on '%s'\n", hostname);
-
-  for(int i = 0; i < n_methods; i++) {
-    if((m_id != -1) && (i != m_id) )
-      continue;
-    sprintf(filename_buffer, "%s-%d-to-%d-prec-%.1e-rcut-%1.1lf-dens-%1.1lf-q-%1.1lf.dat", methods[i].method_name_short,
-	    start, stop, prec, rcut, density, charge);
-    f[i] = fopen( filename_buffer, "w");
-    fprintf(f[i], "# %s\n", methods[i].method_name);
-    fprintf(f[i], "# number_of_part mesh cao alpha time\n");
-  }
-
-  sprintf(filename_buffer, "%s-%d-to-%d-prec-%.1e-rcut-%1.1lf-dens-%1.1lf-q-%1.1lf.dat", "params",
-	  start, stop, prec, rcut, density, charge);
-  sys_params = fopen( filename_buffer, "w");
-
-  fprintf(sys_params, "# npart density box\n");
-
-  for(int i = start; i <= stop; i+= step) {
-    printf("Tuning for %d particles.\n", i);
-    box = pow((double)(i)/density, 0.3333);
-    printf("density %lf (%lf), box %lf npart %d \n", FLOAT_CAST (double)(i)/(box*box*box), FLOAT_CAST density, FLOAT_CAST box, i);    
-    fprintf(sys_params, "%d %lf %lf\n", i, FLOAT_CAST (double)(i)/(box*box*box), FLOAT_CAST box);
-    fflush(sys_params);
-
-    s = generate_system( SYSTEM_RANDOM, i, box, charge);
+    s = generate_system( SYSTEM_RANDOM, npart, box, charge);
     forces_t *forces = Init_forces( s->nparticles );
     forces_t *forces_ewald = Init_forces( s->nparticles );
     data_t *d_ewald = NULL;
@@ -181,11 +144,10 @@ int main(int argc, char **argv) {
 	Free_data(d);
       }
     
-      fprintf(f[j], "%d %d %d %lf %e %e %e %e %e %e %e %e %e %e %e %e\n", i, p.mesh, p.cao, p.alpha, tt, 
+      printf("out %d %e %d %d %lf %e %e %e %e %e %e %e %e %e %e %e %e\n", npart, density, p.mesh, p.cao, p.alpha, tt, 
 	      timing.t.avg, timing.t.min, timing.t.max,
 	      timing.t_c.avg, timing.t_g.avg, timing.t_f.avg,
 	      mt.t, mt.t_c, mt.t_g, mt.t_f, p.precision);
-      fflush(f[j]);
     }
     
     Free_forces(forces);
@@ -193,9 +155,6 @@ int main(int argc, char **argv) {
     Free_system(s);
   }
 
-  write_hist();
-
-  fclose(sys_params);
   for(int i = 0; i < n_methods; i++) {
     if((m_id != -1) && (i != m_id))
       continue;

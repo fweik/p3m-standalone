@@ -26,4 +26,6 @@ void Write_system_cuda( system_t *s, parameters_t *p, char *filename);
 
 void write_vtf(char *filename, system_t *s);
 
+void print_parameters(parameters_t p);
+
 #endif

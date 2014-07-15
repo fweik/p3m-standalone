@@ -20,17 +20,13 @@
 
 #define ILIST_STEP 100
 
+typedef struct celllist_t celllist_t;
+
 typedef struct {
   int real_size;
   int used_size;
   int *data;
 } intlist_t;
-
-typedef struct {
-  void *c;
-  void *next;
-  void *prev;
-} celllist_t;
 
 typedef struct {
   int n_particles;
@@ -43,6 +39,12 @@ typedef struct {
   celllist_t *neighbors;
   int coords[3];
 } cell_t;
+
+struct celllist_t {
+  cell_t *c;
+  celllist_t *next;
+  celllist_t *prev;
+};
 
 typedef struct {
   int cells_per_direction;

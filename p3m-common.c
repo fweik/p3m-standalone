@@ -1,4 +1,4 @@
-/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+/**    Copyright (C) 2011,2012,2013,2014 Florian Weik <fweik@icp.uni-stuttgart.de>
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -42,21 +42,15 @@ static int dummy_g_size = 0;
 static interpolation_t *dummy_inter = NULL;
 
 static void dummy_g_realloc(int mesh) {
-  //  printf("dummy_g_realloc(mesh %d): MIN_SIZE %d MAX_SIZE %d, dummy_g_size %d\n",
-  //	 mesh, DUMMY_G_MIN_SIZE, DUMMY_G_MAX_SIZE, dummy_g_size);
   size_t new_size;
   if((dummy_g != NULL) && (mesh <= dummy_g_size))
     return;
 
   new_size = ((mesh - dummy_g_size) < DUMMY_G_STEP) ? (dummy_g_size + DUMMY_G_STEP) : mesh;
-// printf("new_size %ld mesh %d, dummy_g_size %d\n", new_size, mesh, dummy_g_size);
   new_size = (new_size < DUMMY_G_MIN_SIZE) ? DUMMY_G_MIN_SIZE : new_size;
-// printf("new_size %ld mesh %d, dummy_g_size %d\n", new_size, mesh, dummy_g_size);
   new_size = (new_size > DUMMY_G_MAX_SIZE) ? mesh : new_size;
 
   dummy_g_size = new_size;
-
-// printf("new_size %ld mesh %d, dummy_g_size %d\n", new_size, mesh, dummy_g_size);
 
   new_size = new_size*new_size*new_size*sizeof(FLOAT_TYPE);
 
@@ -67,8 +61,6 @@ static void dummy_g_realloc(int mesh) {
 
   assert(dummy_g != NULL);
   
-// printf("size of dummy_g is %ld, mesh3 is %d, dummy_g_size %d\n", new_size/sizeof(double), mesh*mesh*mesh, dummy_g_size);
-
   for(int i = 0; i < mesh*mesh*mesh; i++)
     dummy_g[i] = 1.0;
 }
@@ -502,14 +494,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	  gm = Gm(tn[0],tn[1],tn[2],s->length, param.alpha, mesh, 1);
 
 	  k2 = (u2*b/a) - gm;
-
-	  /* printf("(%d, %d, %d): tn = (%d, %d, %d), K2 = %.10e * %.10e / %.10e - %.10e = %.10e, %e\n", nx, ny, nz, tn[0], tn[1], tn[2], FLOAT_CAST u2, FLOAT_CAST b, FLOAT_CAST a, FLOAT_CAST gm, FLOAT_CAST k2, FLOAT_CAST (u2*b/a - gm)); */
-	  /* printf("\t u2 = %e\n", FLOAT_CAST u2); */
-	  /* printf("\t b = %e\n", FLOAT_CAST b); */
-	  /* printf("\t a = %e\n", FLOAT_CAST a); */
-	  /* printf("\t gm = %e\n", FLOAT_CAST gm); */
-	  /* printf("\t -2*PI*tn/s->length = %e %e %e\n", FLOAT_CAST -2*PI*tn[0]/s->length, FLOAT_CAST -2*PI*tn[1]/s->length, FLOAT_CAST -2*PI*tn[2]/s->length); */
-
 	}
 
 	Kernel[0][ind + 0] = 0;
@@ -517,13 +501,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	Kernel[1][ind + 0] = 0;
 	Kernel[1][ind + 1] = -2*PI*tn[1]/s->length*k2;
 	Kernel[2][ind + 0] = 0;
-	Kernel[2][ind + 1] = -2*PI*tn[2]/s->length*k2;	  
-
-	/* for(int i = 0; i < 3; i++) { */
-	/*   printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
-	/* } */
-
-
+	Kernel[2][ind + 1] = -2*PI*tn[2]/s->length*k2;
       }
     }
   }
@@ -544,7 +522,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	kr = 0;
 	for(int i = 0; i < 3; i++) {
 	  kr += SQR(Kernel[i][ind + 0]);
-	  /* printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
 	}
 	Kernel[3][ind + 0] = kr;
 	Kernel[3][ind + 1] = 0;
@@ -585,16 +562,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	      Kernel[1][ind + 1] = -(tn[1]/s->length)*k2;
 	      Kernel[2][ind + 0] = 0;
 	      Kernel[2][ind + 1] = -(tn[2]/s->length)*k2;	  
-
-	      /* printf("(%d, %d, %d): tn = (%d, %d, %d), k2 = %e\n", nx, ny, nz, tn[0], tn[1], tn[2], FLOAT_CAST k2); */
-	      /* printf("\t u = %e\n", FLOAT_CAST u); */
-	      /* printf("\t um = %e\n", FLOAT_CAST um); */
-	      /* printf("\t b = %e\n", FLOAT_CAST b); */
-	      /* printf("\t a = %e\n", FLOAT_CAST a); */
-	      /* for(int i = 0; i < 3; i++) { */
-	      /* 	printf("\tkernel[%d](%d %d %d) = %e + I * %e\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
-	      /* } */
-
 	    }
 	  }
 	}
@@ -615,7 +582,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	      kr = 0;
 	      for(int i = 0; i < 3; i++) {
 		kr += SQR(Kernel[i][ind + 0]);
-		/* printf("kernel[%d](%d, %d, %d) = %lf + I * %lf\n", i, nx, ny, nz, FLOAT_CAST Kernel[i][ind + 0], FLOAT_CAST Kernel[i][ind + 1]); */
 	      }
 	      Kernel[3][ind + 0] += kr;
 	    }
@@ -630,8 +596,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   /* Transform \rho^2 to k-space */
   
   FFTW_EXECUTE(forward_plan);
-
-
 
   /* Calculate convolution [\rho^2 * K] */
 
@@ -648,7 +612,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   /* Transform back to get real space error density. */
 
   FFTW_EXECUTE(backward_plan);
-
   
   FLOAT_TYPE *rms = (FLOAT_TYPE *)Init_array(s->nparticles, sizeof(FLOAT_TYPE));
   memset(rms, 0, s->nparticles * sizeof(FLOAT_TYPE));
@@ -656,7 +619,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   /* Interpolate on particles */
 
   collect_rms_nocf(s, p, Kmesh, rms, mesh, inter);
-
 
   FLOAT_TYPE sum = 0.0;
   FILE *inhomo_out = NULL;
@@ -720,18 +682,11 @@ FLOAT_TYPE Generic_error_estimate(R3_to_R A, R3_to_R B, R3_to_R C, system_t *s, 
 	  c = C(nx,ny,nz,s,p);
 
 	  Q_HE += a * SQR(G_hat) - 2.0 * b * G_hat + c;
-
-	  /* printf("A\t%e\tB\t%e\tC\t%e\n", FLOAT_CAST a , FLOAT_CAST b, FLOAT_CAST c); */
-	  /* printf("B/A\t%e\tG_hat\t%e\n", FLOAT_CAST (b / a), FLOAT_CAST G_hat); */
-	  /* printf("Q_HE\t%lf\tQ_opt\t%lf\n", FLOAT_CAST Q_HE, FLOAT_CAST Q_opt); */
 	}
       }
     }
   }
-  /* printf("Final Q_HE\t%lf\tQ_opt\t%lf\n", Q_HE, Q_opt); */
-  /* printf("dF_opt = %e\n", s->q2* SQRT( FLOAT_ABS(Q_opt) / (FLOAT_TYPE)s->nparticles) / V); */
 
-  return  Q_HE;
- 
+  return  Q_HE; 
 }
 

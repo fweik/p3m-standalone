@@ -38,6 +38,7 @@ double t_fft[4];
 double timer;
 #endif
 
+#define REFERENCE_PRECISION 1e-8
 
 void *Init_array(int size, size_t field_size) {
     void *a;
@@ -300,7 +301,9 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
     CALLGRIND_STOP_INSTRUMENTATION;
     #endif
 
-    //#pragma omp parallel for private( i )
+#ifdef _OPENMP
+#pragma omp parallel for private( i )
+#endif
     for ( j=0; j < 3; j++ ) {
         for ( i=0; i<s->nparticles; i++ ) {
             f->f->fields[j][i] += f->f_k->fields[j][i] + f->f_r->fields[j][i];
@@ -327,7 +330,12 @@ FLOAT_TYPE Calculate_reference_forces ( system_t *s, parameters_t *p ) {
 
     op.alpha = Ewald_compute_optimal_alpha ( s, &op );
 
-    printf("Reference Forces: alpha %lf, r_cut %lf\n", FLOAT_CAST op.alpha, FLOAT_CAST op.rcut);
+    op.mesh = 2;
+    FLOAT_TYPE err;
+    while((err = method_ewald.Error( s, &op )) > REFERENCE_PRECISION)
+      op.mesh += 2;
+
+    printf("Reference Forces: alpha %lf, r_cut %lf, kmax %d, err %e\n", FLOAT_CAST op.alpha, FLOAT_CAST op.rcut, op.mesh, err);
 
     d = method_ewald.Init ( s, &op );
 

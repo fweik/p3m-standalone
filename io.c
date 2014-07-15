@@ -24,6 +24,11 @@
 
 #include "tools/visit_writer.h"
 
+void print_parameters(parameters_t p) {
+  printf("alpha %e, rcut %e, prefactor %e, mesh %d, cao %d, tuning %d\n",
+	 p.alpha, p.rcut, p.mesh, p.cao, p.tuning);
+}
+
 void write_vtf(char *filename, system_t *s) {
   FILE *f = fopen( filename, "w");
   int i;

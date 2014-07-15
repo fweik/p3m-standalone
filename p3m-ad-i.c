@@ -256,9 +256,11 @@ FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
   FLOAT_TYPE alias1, alias2, alias3, alias4, alias5, alias6;
   int mesh = p->mesh;
 
-  he_q = p3m_find_error(p->alpha*s->length, mesh, p->cao, 3);
+  //  puts("p3m_k_space_error_ad_i");
 
-  if(he_q < 0) {
+  // he_q = p3m_find_error(p->alpha*s->length, mesh, p->cao, 3);
+
+  if(1) {
 
 #ifdef _OPENMP
 #pragma omp parallel for private(ny,nz,alias1, alias2, alias3, alias4,alias5, alias6) reduction(+ : he_q)
@@ -284,6 +286,9 @@ FLOAT_TYPE p3m_k_space_error_ad_i( system_t *s, parameters_t *p )
 FLOAT_TYPE Error_ad_i( system_t *s, parameters_t *p ) {
   FLOAT_TYPE real = Realspace_error( s, p);
   FLOAT_TYPE recp = p3m_k_space_error_ad_i( s, p );
+
+    /* printf("Error_ad_i real %e, recp %e, l %e, npart %d, alpha %e, rcut %e, mesh %d, cao %d tuning %d\n",  */
+    /* 	 real, recp, s->length, s->nparticles, p->alpha, p->rcut, p->mesh, p->cao, p->tuning); */
 
   return sqrt( SQR ( real ) + SQR ( recp ) );
 }
