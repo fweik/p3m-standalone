@@ -23,7 +23,7 @@ static void init_neighbors(domain_decomposition_t *d, cell_t *c) {
   celllist_t *i, *last=NULL, *buf;
   int n[3], m[3], ind=0;
   
-  buf = Init_array( 26, sizeof(celllist_t));
+  buf = (celllist_t *)Init_array( 26, sizeof(celllist_t));
   c->neighbors = buf;
 
   for(n[0]=(c->coords[0]-1);n[0]<=(c->coords[0]+1);n[0]++)
@@ -47,10 +47,10 @@ static void init_neighbors(domain_decomposition_t *d, cell_t *c) {
 	  continue;
 
 	i = buf + ind;
-	i->prev = (struct celllist_t *) last;
+	i->prev = (celllist_t *) last;
 	if(last != NULL)
-	  last->next = (struct celllist_t *)i;
-	i->c = (struct cell_t *)  &(d->cells[d->cells_per_direction * d->cells_per_direction * m[0] +
+	  last->next = (celllist_t *)i;
+	i->c = (cell_t *)  &(d->cells[d->cells_per_direction * d->cells_per_direction * m[0] +
 			  d->cells_per_direction * m[1] + m[2]]);
 	last = i;
 	ind++;

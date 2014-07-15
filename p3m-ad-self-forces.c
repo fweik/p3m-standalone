@@ -95,7 +95,7 @@ void Init_self_forces( system_t *s, parameters_t *p, data_t *d ) {
 
   SF_TRACE(puts("Init_self_forces()"));
 
-  d->self_force_corrections = Init_array(my_power(1+2*P3M_SELF_BRILLOUIN, 3), 3*sizeof(FLOAT_TYPE));
+  d->self_force_corrections = (FLOAT_TYPE *)Init_array(my_power(1+2*P3M_SELF_BRILLOUIN, 3), 3*sizeof(FLOAT_TYPE));
 
   for(m[0] = -P3M_SELF_BRILLOUIN; m[0]<=P3M_SELF_BRILLOUIN; m[0]++)
     for(m[1] = -P3M_SELF_BRILLOUIN; m[1]<=P3M_SELF_BRILLOUIN; m[1]++)

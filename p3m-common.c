@@ -58,12 +58,12 @@ static void dummy_g_realloc(int mesh) {
 
 // printf("new_size %ld mesh %d, dummy_g_size %d\n", new_size, mesh, dummy_g_size);
 
-  new_size = new_size*new_size*new_size*sizeof(double);
+  new_size = new_size*new_size*new_size*sizeof(FLOAT_TYPE);
 
   if(dummy_g != NULL)
     FFTW_FREE(dummy_g);
 
-  dummy_g = FFTW_MALLOC(new_size);
+  dummy_g = (FLOAT_TYPE *)FFTW_MALLOC(new_size);
 
   assert(dummy_g != NULL);
   
@@ -150,18 +150,18 @@ void Init_nshift(data_t *d)
 
 data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
     int mesh3 = p->mesh*p->mesh*p->mesh;
-    data_t *d = Init_array(1, sizeof(data_t));
+    data_t *d = (data_t *)Init_array(1, sizeof(data_t));
 
     d->mesh = p->mesh;
     
     if ( m->flags & METHOD_FLAG_Qmesh)
-        d->Qmesh = Init_array(2*mesh3, sizeof(FLOAT_TYPE));
+      d->Qmesh = (FLOAT_TYPE *)Init_array(2*mesh3, sizeof(FLOAT_TYPE));
     else
-        d->Qmesh = NULL;
+      d->Qmesh = NULL;
 
     if ( m->flags & METHOD_FLAG_ik ) {
         d->Fmesh = Init_vector_array(2*mesh3);
-        d->Dn = Init_array(d->mesh, sizeof(FLOAT_TYPE));
+        d->Dn = (FLOAT_TYPE *)Init_array(d->mesh, sizeof(FLOAT_TYPE));
         Init_differential_operator(d);
     }
     else {
@@ -172,7 +172,7 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
     d->nshift = NULL;
 
     if ( m->flags & METHOD_FLAG_nshift ) {
-      d->nshift = Init_array(d->mesh, sizeof(FLOAT_TYPE));
+      d->nshift = (FLOAT_TYPE *)Init_array(d->mesh, sizeof(FLOAT_TYPE));
       Init_nshift(d);
     }
 
@@ -180,14 +180,14 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
     d->dQ[1] = NULL;
 
     if( m->flags & METHOD_FLAG_self_force_correction)
-      d->self_force_corrections = Init_array(my_power(1+2*P3M_SELF_BRILLOUIN, 3), 3*sizeof(FLOAT_TYPE));
+      d->self_force_corrections = (FLOAT_TYPE *)Init_array(my_power(1+2*P3M_SELF_BRILLOUIN, 3), 3*sizeof(FLOAT_TYPE));
 
     if ( m->flags & METHOD_FLAG_ad ) {
       int i;
       int max = ( m->flags & METHOD_FLAG_interlaced) ? 2 : 1;
 
         for (i = 0; i < max; i++) {
-            d->dQ[i] = Init_array( 3*s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );
+	  d->dQ[i] = (FLOAT_TYPE *)Init_array( 3*s->nparticles*p->cao3, sizeof(FLOAT_TYPE) );
         }
     }
 
@@ -198,8 +198,8 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
       d->ca_ind[1] = NULL;
       
       for (i = 0; i < max; i++) {
-	d->cf[i] = Init_array( p->cao3 * s->nparticles, sizeof(FLOAT_TYPE));
-	d->ca_ind[i] = Init_array( 3*s->nparticles, sizeof(int));
+	d->cf[i] = (FLOAT_TYPE *)Init_array( p->cao3 * s->nparticles, sizeof(FLOAT_TYPE));
+	d->ca_ind[i] = (int *)Init_array( 3*s->nparticles, sizeof(int));
       }
 	
       if( !p->tuning )
@@ -220,7 +220,7 @@ data_t *Init_data(const method_t *m, system_t *s, parameters_t *p) {
 
     if ( m->flags & METHOD_FLAG_G_hat) {
       if( !p->tuning) {
-	d->G_hat = Init_array(mesh3, sizeof(FLOAT_TYPE));
+	d->G_hat = (FLOAT_TYPE *)Init_array(mesh3, sizeof(FLOAT_TYPE));
         m->Influence_function( s, p, d );   
       } else {
 	dummy_g_realloc(d->mesh);
@@ -416,7 +416,7 @@ FLOAT_TYPE *Error_map(system_t *s, forces_t *f, forces_t *f_ref, int mesh, int c
   interpolation_t *inter = Init_interpolation( cao - 1, 0 );
 
   FLOAT_TYPE dF, dF_total = 0.0, dF_total_mesh = 0.0;
-  FLOAT_TYPE *error_mesh = Init_array( mesh*mesh*mesh, 2*sizeof(FLOAT_TYPE));
+  FLOAT_TYPE *error_mesh = (FLOAT_TYPE *)Init_array( mesh*mesh*mesh, 2*sizeof(FLOAT_TYPE));
   memset( error_mesh, 0, 2*mesh*mesh*mesh*sizeof(FLOAT_TYPE));
 
   for(int i = 0; i<s->nparticles; i++) {
@@ -445,8 +445,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   int ind = 0;
   int nx, ny, nz;
   // puts("Init Qmesh.");
-  FLOAT_TYPE *Qmesh = Init_array( mesh*mesh*mesh*2, sizeof(FLOAT_TYPE));
-  FLOAT_TYPE *Kmesh = Init_array( mesh*mesh*mesh*2, sizeof(FLOAT_TYPE));
+  FLOAT_TYPE *Qmesh = (FLOAT_TYPE *)Init_array( mesh*mesh*mesh*2, sizeof(FLOAT_TYPE));
+  FLOAT_TYPE *Kmesh = (FLOAT_TYPE *)Init_array( mesh*mesh*mesh*2, sizeof(FLOAT_TYPE));
   FLOAT_TYPE *Kernel[4];
   // puts("Plan FFT.");
   // printf("Mesh size %d, Mesh %p\n", mesh, Qmesh);
@@ -454,7 +454,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   FFTW_PLAN backward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX*) Kmesh, (FFTW_COMPLEX*)Kmesh, FFTW_BACKWARD, FFTW_MEASURE);
   FFTW_PLAN kernel_backward_plan[3];
   for(int i = 0; i < 4; i++) {
-    Kernel[i] = Init_array( 2*mesh*mesh*mesh, sizeof(FLOAT_TYPE));
+    Kernel[i] = (FLOAT_TYPE *)Init_array( 2*mesh*mesh*mesh, sizeof(FLOAT_TYPE));
     // printf("Kernel[%d] at %p\n", i, Kernel[i]);
     if(i < 3)
       kernel_backward_plan[i] = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX *) Kernel[i], (FFTW_COMPLEX *) Kernel[i],FFTW_BACKWARD, FFTW_MEASURE);
@@ -650,7 +650,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   FFTW_EXECUTE(backward_plan);
 
   
-  FLOAT_TYPE *rms = Init_array(s->nparticles, sizeof(FLOAT_TYPE));
+  FLOAT_TYPE *rms = (FLOAT_TYPE *)Init_array(s->nparticles, sizeof(FLOAT_TYPE));
   memset(rms, 0, s->nparticles * sizeof(FLOAT_TYPE));
 
   /* Interpolate on particles */

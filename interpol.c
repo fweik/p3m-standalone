@@ -33,20 +33,20 @@ interpolation_t *Init_interpolation(int ip, int derivatives)
   
 
   interpolation_t *ret;
-  ret = Init_array( 1, sizeof(interpolation_t));
+  ret = (interpolation_t *)Init_array( 1, sizeof(interpolation_t));
 
-  ret->interpol = Init_array( (2* MaxInterpol + 1), sizeof(FLOAT_TYPE *));
+  ret->interpol = (FLOAT_TYPE **)Init_array( (2* MaxInterpol + 1), sizeof(FLOAT_TYPE *));
 
   ret->interpol_d = NULL;
 
   for( i = 0; i < (2* MaxInterpol + 1); i++) {
-    ret->interpol[i] = Init_array( ip+2 , sizeof(FLOAT_TYPE));
+    ret->interpol[i] = (FLOAT_TYPE *)Init_array( ip+2 , sizeof(FLOAT_TYPE));
   }
 
   if(derivatives) {
-    ret->interpol_d = Init_array(  (2* MaxInterpol + 1), sizeof(FLOAT_TYPE *));
+    ret->interpol_d = (FLOAT_TYPE **)Init_array(  (2* MaxInterpol + 1), sizeof(FLOAT_TYPE *));
     for( i = 0; i < (2* MaxInterpol + 1); i++) {
-      ret->interpol_d[i] = Init_array( ip + 2, sizeof(FLOAT_TYPE) );
+      ret->interpol_d[i] = (FLOAT_TYPE *)Init_array( ip + 2, sizeof(FLOAT_TYPE) );
     }
   }
 

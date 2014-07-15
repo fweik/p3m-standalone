@@ -1,7 +1,7 @@
-CC=mpicc
+CC=mpic++
 CFLAGS=-Wall
-CFLAGS+=-march=native -O5 -DNDEBUG -g
-CFLAGS+=-std=c99
+CFLAGS+=-march=native -O3 -DNDEBUG
+#CFLAGS+=-std=c99
 #LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 LFLAGS=-L/scratch/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 #Uncomment to add long double 

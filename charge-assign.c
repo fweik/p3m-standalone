@@ -1,4 +1,4 @@
-/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+/**    Copyright (C) 2011,2012,2013,2014 Florian Weik <fweik@icp.uni-stuttgart.de>
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -41,11 +41,11 @@ inline static int wrap_mesh_index(int ind, int mesh) {
   /* if((ret < 0) || (ret >= mesh)) */
   /*   return wrap_mesh_index(ret, mesh); */
 
-inline static int int_floor(FLOAT_TYPE x)
+inline static int int_floor(const FLOAT_TYPE x)
 {
-  int i = (int)x; /* truncate */
-  int n = ( x != (FLOAT_TYPE)i );
-  int g = ( x < 0 );
+  const int i = (int)x; /* truncate */
+  const int n = ( x != (FLOAT_TYPE)i );
+  const int g = ( x < 0 );
   return i - ( n & g ); /* i-1 if x<0 and x!=i */
 }
 
@@ -127,9 +127,9 @@ void assign_charge_real(system_t *s, parameters_t *p, data_t *d)
     // Mesh coordinates of the closest mesh point
     int base[3];
     int i,j,k;
-    FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
+    const FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
 
-    FLOAT_TYPE Hi = (double)d->mesh/(double)s->length;
+    const FLOAT_TYPE Hi = (double)d->mesh/(double)s->length;
 
     FLOAT_TYPE *cf = d->cf[0];
     FLOAT_TYPE **interpol = d->inter->interpol;
@@ -137,6 +137,7 @@ void assign_charge_real(system_t *s, parameters_t *p, data_t *d)
     FLOAT_TYPE q;
     const int cao = p->cao;
     const int mesh = d->mesh;
+    int indx, indy;
 
     // Make sure parameter-set and data-set are compatible
 
@@ -157,20 +158,23 @@ void assign_charge_real(system_t *s, parameters_t *p, data_t *d)
         cf_cnt = cf + id*p->cao3;
 	for (i0=0; i0<cao; i0++) {
 	  i = wrap_mesh_index(base[0] + i0, mesh);
+	  indx = mesh*(mesh+2) * i;
 	  tmp0 = q * interpol[arg[0]][i0];
 	  for (i1=0; i1<cao; i1++) {
 	    tmp1 = tmp0 * interpol[arg[1]][i1];
 	    j = wrap_mesh_index(base[1] + i1, mesh);
+	    indy = indx + (mesh+2) * j;
 	    for (i2=0; i2<cao; i2++) {
 	      cur_ca_frac_val = tmp1 * interpol[arg[2]][i2];
 	      k = wrap_mesh_index(base[2] + i2, mesh);
-	      *cf_cnt++ = cur_ca_frac_val;
-	      Qmesh[mesh*(mesh+2) * i + (mesh+2) * j + k] += cur_ca_frac_val;
+	      *cf_cnt++ = cur_ca_frac_val;	      
+	      Qmesh[indy + k] += cur_ca_frac_val;
 	    }
 	  }
 	} 
     }
 }
+
 
 void assign_charge_real_nostor(system_t *s, parameters_t *p, data_t *d)
 {
@@ -720,7 +724,7 @@ void assign_charge_and_derivatives_real(system_t *s, parameters_t *p, data_t *d)
 
     int base[3];
     int i,j,k;
-    int Mesh = p->mesh;
+    const int Mesh = p->mesh;
     FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
 
     FLOAT_TYPE Hi = (double)Mesh/s->length;
@@ -738,21 +742,21 @@ void assign_charge_and_derivatives_real(system_t *s, parameters_t *p, data_t *d)
         for (dim=0;dim<3;dim++) {
 	  pos    = s->p->fields[dim][id]*Hi - pos_shift;
 	  nmp = int_floor(pos + 0.5);
-	  base[dim]  = wrap_mesh_index( nmp, d->mesh);
+	  base[dim]  = wrap_mesh_index( nmp, Mesh);
 	  arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
 	  d->ca_ind[0][3*id + dim] = base[dim];
         }
 
         for (i0=0; i0<p->cao; i0++) {
-	  i = wrap_mesh_index(base[0] + i0, d->mesh);
+	  i = wrap_mesh_index(base[0] + i0, Mesh);
 	  tmp0 = d->inter->interpol[arg[0]][i0];
 	  tmp0_x = d->inter->interpol_d[arg[0]][i0];
 	  for (i1=0; i1<p->cao; i1++) {
-	    j = wrap_mesh_index(base[1] + i1, d->mesh);
+	    j = wrap_mesh_index(base[1] + i1, Mesh);
 	    tmp1 = d->inter->interpol[arg[1]][i1];
 	    tmp1_y = d->inter->interpol_d[arg[1]][i1];
 	    for (i2=0; i2<p->cao; i2++) {
-	      k = wrap_mesh_index(base[2] + i2, d->mesh);
+	      k = wrap_mesh_index(base[2] + i2, Mesh);
 	      tmp2 = d->inter->interpol[arg[2]][i2];
 	      tmp2_z = d->inter->interpol_d[arg[2]][i2];
 
