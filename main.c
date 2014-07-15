@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <mpi.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -60,7 +59,7 @@
 
 // Helper functions for timings
 
-#include "timings.h"
+#include "wtime.h"
 
 #include "generate_system.h"
 
@@ -91,7 +90,7 @@ int main ( int argc, char **argv ) {
 
     FLOAT_TYPE alphamin,alphamax,alphastep;
     FLOAT_TYPE alpha;
-    FLOAT_TYPE wtime = 0;
+    FLOAT_TYPE walltime = 0;
 
     FILE* fout;
     
@@ -379,11 +378,11 @@ int main ( int argc, char **argv ) {
       if(!param_isset("no_calculation", params)) {
 	method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
-	wtime = MPI_Wtime();
+	walltime = wtime();
 
 	Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 
-	wtime = MPI_Wtime() - wtime;
+	walltime = wtime() - walltime;
       }
       error_k =0.0;
       if(calc_k_error == 1) {

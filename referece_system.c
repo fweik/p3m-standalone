@@ -46,8 +46,6 @@
 
 // Helper functions for timings
 
-#include "timings.h"
-
 #include "generate_system.h"
 
 // #define WRITE_FORCES

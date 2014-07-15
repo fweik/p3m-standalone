@@ -17,8 +17,7 @@
 #define P3M_COMMON_H
 
 #include "types.h"
-
-#include <mpi.h>
+#include "wtime.h"
 
 extern int P3M_BRILLOUIN_TUNING;
 extern int P3M_BRILLOUIN;
@@ -54,7 +53,7 @@ FLOAT_TYPE *Error_map(system_t *s, forces_t *f, forces_t *f_ref, int mesh, int c
 #define TIMING_STOP_F TIMING_STOP(t_f)
 #define TIMING_STOP_G TIMING_STOP(t_g)
 
-#define TIMING_START(A) if(p->tuning) d->runtime.A = MPI_Wtime();
-#define TIMING_STOP(A) if(p->tuning) d->runtime.A = MPI_Wtime() - d->runtime.A;
+#define TIMING_START(A) if(p->tuning) d->runtime.A = wtime();
+#define TIMING_STOP(A) if(p->tuning) d->runtime.A = wtime() - d->runtime.A;
 
 #endif

@@ -15,7 +15,6 @@
 
 #include <stdlib.h>
 #include <math.h>
-#include <mpi.h>
 #include <string.h>
 #include <float.h>
 
@@ -23,7 +22,6 @@
 
 #include "common.h"
 #include "p3m-common.h"
-#include "timings.h"
 #include "interpol.h"
 #include "realpart.h"
 

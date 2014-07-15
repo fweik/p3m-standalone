@@ -20,13 +20,12 @@
 #include <string.h>
 #include <fftw3.h>
 
-#include <mpi.h>
-
 #include "types.h"
 #include "common.h"
 #include "realpart.h"
 #include "ewald.h"
 #include "p3m-common.h"
+#include "wtime.h"
 
 #ifdef __detailed_timings
 double t_charge_assignment[4];
@@ -271,18 +270,18 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
 
 #ifdef DETAILED_TIMINGS
     if(__detailed_timings)
-      t = MPI_Wtime();
+      t = wtime();
 #endif
     //Realpart_neighborlist ( s, p, d, f );
 #ifdef DETAILED_TIMINGS
     if(__detailed_timings)
-      printf(" %e", MPI_Wtime() - t);
+      printf(" %e", wtime() - t);
 #endif
 
     if(p->rcut != 0.0) {
-      t = MPI_Wtime();
+      t = wtime();
       Realteil( s, p, f );
-      t  = MPI_Wtime() - t;
+      t  = wtime() - t;
     }
     /* printf("Realpart %lf sec\n", FLOAT_CAST t); */
     //Realpart_neighborlist( s, p, d, f );
@@ -293,9 +292,9 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
     CALLGRIND_START_INSTRUMENTATION; 
     #endif
 
-    t = MPI_Wtime();
+    t = wtime();
     m->Kspace_force ( s, p, d, f );
-    t  = MPI_Wtime() - t;
+    t  = wtime() - t;
 
     #ifdef __VALGRIND_PROFILE_KSPACE_ONLY
     CALLGRIND_STOP_INSTRUMENTATION;
