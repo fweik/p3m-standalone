@@ -325,7 +325,7 @@ runtime_stat_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE
     runtime_stat_t min_time;
     min_time = get_timing(m, s, &it);
 
-    if( min_time.t.avg > best_time.t.avg) {
+    if( min_time.t.min > best_time.t.min) {
       TUNE_TRACE(printf("Best possible time for (%d %d) = %e slower than best %e\n", it.mesh, it.cao, min_time.t.avg, best_time.t.avg););
       break;
     }
@@ -355,7 +355,7 @@ runtime_stat_t Tune( const method_t *m, system_t *s, parameters_t *p, FLOAT_TYPE
      
       TUNE_TRACE(printf("\n Timing mesh %d cao %d rcut %e time %e prec %e alpha %e\n", it.mesh, it.cao, it.rcut, time.t.avg, error, it.alpha ););
 	
-      if( time.t.avg < best_time.t.avg ) {
+      if( time.t.min < best_time.t.min ) {
 	p_best = it;
 	p_best.precision = error;
 	best_time = time;

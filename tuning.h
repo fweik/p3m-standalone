@@ -23,7 +23,7 @@
 #define CAO_MIN 2
 #define CAO_MAX 7
 
-#define N_TUNING_SAMPLES 100
+#define N_TUNING_SAMPLES 50
 
 runtime_stat_t Tune( const method_t *, system_t *, parameters_t *, FLOAT_TYPE );
 

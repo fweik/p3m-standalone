@@ -448,9 +448,9 @@ void assign_forces_interlacing(FLOAT_TYPE force_prefac, system_t *s, parameters_
   FLOAT_TYPE B1, B2;
   FLOAT_TYPE field_x, field_y, field_z;
   int l_ind1, l_ind2;
-  FLOAT_TYPE *fmesh_x = d->Fmesh->fields[0], *fmesh_y = d->Fmesh->fields[1], *fmesh_z = d->Fmesh->fields[2];
-  int mesh = d->mesh;
+  const FLOAT_TYPE *fmesh_x = d->Fmesh->fields[0], *fmesh_y = d->Fmesh->fields[1], *fmesh_z = d->Fmesh->fields[2];
 
+  const int mesh = d->mesh;
   const int cao = p->cao;
 
   cf_cnt1 = d->cf[0];
