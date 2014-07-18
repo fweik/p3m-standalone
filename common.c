@@ -20,13 +20,12 @@
 #include <string.h>
 #include <fftw3.h>
 
-#include <mpi.h>
-
 #include "types.h"
 #include "common.h"
 #include "realpart.h"
 #include "ewald.h"
 #include "p3m-common.h"
+#include "wtime.h"
 
 #ifdef __detailed_timings
 double t_charge_assignment[4];
@@ -39,6 +38,7 @@ double timer;
 #endif
 
 #define REFERENCE_PRECISION 1e-8
+#define ZERO_INIT
 
 void *Init_array(int size, size_t field_size) {
     void *a;
@@ -47,6 +47,10 @@ void *Init_array(int size, size_t field_size) {
     assert(field_size > 0);
 
     a = FFTW_MALLOC(size * field_size);
+
+    #ifdef ZERO_INIT
+    memset(a, 0, size*field_size);
+    #endif
 
     assert(a != NULL);
     return a;
@@ -64,6 +68,10 @@ void *Resize_array(void *a, size_t new_size, size_t old_size) {
   } else {
     b = FFTW_MALLOC(new_size);
     assert(b != NULL);
+    #ifdef ZERO_INIT
+    if(new_size > old_size)
+      memset(b + old_size, 0, new_size - old_size);
+    #endif
     memcpy(b, a, copy_size);
     if(a != NULL)
       FFTW_FREE(a);
@@ -79,7 +87,7 @@ void Free_array(void *a) {
 }
 
 buffered_list_t *Init_buffered_list(size_t size) {
-  buffered_list_t *l = Init_array( 1, sizeof(buffered_list_t));
+  buffered_list_t *l = (buffered_list_t *)Init_array( 1, sizeof(buffered_list_t));
   
   l->size = size;
   l->bufsize = size+BLIST_STEP;
@@ -103,17 +111,17 @@ vector_array_t *Init_vector_array(int n) {
     int i;
     vector_array_t *v;
 
-    v = Init_array( 1, sizeof(vector_array_t));
+    v = (vector_array_t *)Init_array( 1, sizeof(vector_array_t));
 
     assert(n >= 0 );
 
-    v->fields = Init_array( 3, sizeof(FLOAT_TYPE *));
+    v->fields = (FLOAT_TYPE **)Init_array( 3, sizeof(FLOAT_TYPE *));
 
 
     assert( v->fields != NULL );
 
     for (i=0;i<3;i++) {
-        v->fields[i] = Init_array( n, sizeof(FLOAT_TYPE));
+      v->fields[i] = (FLOAT_TYPE *)Init_array( n, sizeof(FLOAT_TYPE));
     }
 
     v->x = v->fields[0];
@@ -129,7 +137,7 @@ void Resize_vector_array(vector_array_t *d, int new_size) {
   assert(d != NULL);
 
   for(int i=0; i<3; i++)
-    d->fields[i] = Resize_array(d->fields[i], new_size*sizeof(FLOAT_TYPE), d->size*sizeof(FLOAT_TYPE));
+    d->fields[i] = (FLOAT_TYPE *)Resize_array(d->fields[i], new_size*sizeof(FLOAT_TYPE), d->size*sizeof(FLOAT_TYPE));
 
   d->x = d->fields[0];
   d->y = d->fields[1];
@@ -142,18 +150,18 @@ bvector_array_t *Init_bvector_array(int n) {
     int i;
     bvector_array_t *v;
 
-    v = Init_array( 1, sizeof(bvector_array_t));
+    v = (bvector_array_t *)Init_array( 1, sizeof(bvector_array_t));
 
     assert(n >= 0 );
 
-    v->fields = Init_array( 3, sizeof(FLOAT_TYPE *));
-    v->data = Init_array( 3, sizeof(buffered_list_t *));
+    v->fields = (FLOAT_TYPE **)Init_array( 3, sizeof(FLOAT_TYPE *));
+    v->data = (buffered_list_t **)Init_array( 3, sizeof(buffered_list_t *));
 
     assert( v->fields != NULL );
 
     for (i=0;i<3;i++) {
       v->data[i] = Init_buffered_list(n*sizeof(FLOAT_TYPE));
-      v->fields[i] = v->data[i]->data;
+      v->fields[i] = (FLOAT_TYPE *)v->data[i]->data;
     }
 
     v->x = v->fields[0];
@@ -170,7 +178,7 @@ void Resize_bvector_array(bvector_array_t *d, int new_size) {
 
   for(int i=0; i<3; i++) {
     Resize_buffered_list( d->data[i], new_size*sizeof(FLOAT_TYPE));
-    d->fields[i] = d->data[i]->data;
+    d->fields[i] = (FLOAT_TYPE *)d->data[i]->data;
   }
 
   d->x = d->fields[0];
@@ -186,7 +194,7 @@ system_t *Init_system(int n) {
 
     assert( n > 0 );
 
-    s = Init_array( 1, sizeof(system_t));
+    s = (system_t *)Init_array( 1, sizeof(system_t));
 
     s-> nparticles = n;
 
@@ -194,7 +202,7 @@ system_t *Init_system(int n) {
 
     s->reference = Init_forces(s->nparticles);
 
-    s->q = Init_array(s->nparticles, sizeof(FLOAT_TYPE));
+    s->q = (FLOAT_TYPE *)Init_array(s->nparticles, sizeof(FLOAT_TYPE));
 
     return s;
 }
@@ -202,7 +210,7 @@ system_t *Init_system(int n) {
 forces_t *Init_forces(int n) {
     forces_t *f;
 
-    f = Init_array( 1, sizeof(forces_t));
+    f = (forces_t *)Init_array( 1, sizeof(forces_t));
 
     f->f = Init_vector_array(n);
     f->f_k = Init_vector_array(n);
@@ -271,18 +279,18 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
 
 #ifdef DETAILED_TIMINGS
     if(__detailed_timings)
-      t = MPI_Wtime();
+      t = wtime();
 #endif
     //Realpart_neighborlist ( s, p, d, f );
 #ifdef DETAILED_TIMINGS
     if(__detailed_timings)
-      printf(" %e", MPI_Wtime() - t);
+      printf(" %e", wtime() - t);
 #endif
 
     if(p->rcut != 0.0) {
-      t = MPI_Wtime();
+      t = wtime();
       Realteil( s, p, f );
-      t  = MPI_Wtime() - t;
+      t  = wtime() - t;
     }
     /* printf("Realpart %lf sec\n", FLOAT_CAST t); */
     //Realpart_neighborlist( s, p, d, f );
@@ -293,9 +301,9 @@ void Calculate_forces ( const method_t *m, system_t *s, parameters_t *p, data_t 
     CALLGRIND_START_INSTRUMENTATION; 
     #endif
 
-    t = MPI_Wtime();
+    t = wtime();
     m->Kspace_force ( s, p, d, f );
-    t  = MPI_Wtime() - t;
+    t  = wtime() - t;
 
     #ifdef __VALGRIND_PROFILE_KSPACE_ONLY
     CALLGRIND_STOP_INSTRUMENTATION;

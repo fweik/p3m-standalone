@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
   fprintf(f, "#particles ");
   
-  for(int j = 1; j < 7; j++) {
+  for(int j = 1; j <= 7; j++) {
     fprintf(f, "assign_charge-%d assign_forces-%d assign_charge_real-%d assign_forces_real-%d assign_charge_real_nostor-%d assign_forces_nostor-%d", j,j,j,j,j,j);
   }
   fprintf(f, "\n");
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
 
     total = MPI_Wtime();
 
-    for(int j = 2; j <= 7; j++) {
+    for(int j = 4; j <= 4; j++) {
       memset(&p, 0, sizeof(parameters_t));
       p.tuning = 1;
       p.cao = j;
@@ -86,30 +86,34 @@ int main(int argc, char **argv) {
       assign_charge_real(s, &p, d);
       t = MPI_Wtime() - t;
 
-      fprintf(f, "%e ", t);
-
-      for(int i = 0; i < 2*mesh*mesh*mesh; i++) {
-	d->Fmesh->x[i] = 1.1*d->Qmesh[i];
-	d->Fmesh->y[i] = 1.2*d->Qmesh[i];
-	d->Fmesh->z[i] = 1.3*d->Qmesh[i];
-      }
-      
-
       t = MPI_Wtime();
-      assign_forces_real(1.0, s, &p, d, s->reference);
-      t  = MPI_Wtime() - t;
-      fprintf(f, "%e ", t);
-
-      t = MPI_Wtime();
-      assign_charge_real_nostor(s, &p, d);
+      assign_charge_real(s, &p, d);
       t = MPI_Wtime() - t;
 
       fprintf(f, "%e ", t);
 
-      t = MPI_Wtime();
-      assign_forces_real_nostor(1.0, s, &p, d, s->reference);
-      t  = MPI_Wtime() - t;
-      fprintf(f, "%e ", t);
+      /* for(int i = 0; i < 2*mesh*mesh*mesh; i++) { */
+      /* 	d->Fmesh->x[i] = 1.1*d->Qmesh[i]; */
+      /* 	d->Fmesh->y[i] = 1.2*d->Qmesh[i]; */
+      /* 	d->Fmesh->z[i] = 1.3*d->Qmesh[i]; */
+      /* } */
+      
+
+      /* t = MPI_Wtime(); */
+      /* assign_forces_real(1.0, s, &p, d, s->reference); */
+      /* t  = MPI_Wtime() - t; */
+      /* fprintf(f, "%e ", t); */
+
+      /* t = MPI_Wtime(); */
+      /* assign_charge_real_nostor(s, &p, d); */
+      /* t = MPI_Wtime() - t; */
+
+      /* fprintf(f, "%e ", t); */
+
+      /* t = MPI_Wtime(); */
+      /* assign_forces_real_nostor(1.0, s, &p, d, s->reference); */
+      /* t  = MPI_Wtime() - t; */
+      /* fprintf(f, "%e ", t); */
 
       /* t = MPI_Wtime(); */
       /* assign_forces_ad(1.0, s, &p, d, s->reference, 0); */

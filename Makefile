@@ -1,8 +1,7 @@
-CC=mpicc
-#CFLAGS=-Wall -O5 -DNDEBUG -mavx
-CFLAGS=-Wall -O5 -DNDEBUG -march=native
-#CFLAGS=-Wall -O0 -march=native -g
-CFLAGS+=-std=gnu99
+CC=clang
+CFLAGS=-Wall
+CFLAGS+=-march=native -O3 -DNDEBUG
+CFLAGS+=-std=c99
 #LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 LFLAGS=-L/scratch/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 #Uncomment to add long double 
@@ -13,7 +12,7 @@ CUDA_COMPILER=nvcc
 CUDA_COMPILER_FLAGS=-arch=sm_30 -g -G
 CUDA_COMPILER_LFLAGS=-lcufft
 
-OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o timings.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o statistics.o tuning.o p3m-ik-real.o parameters.o p3m-ad-real.o q_ik.o q_ad.o q_ik_i.o q_ad_i.o find_error.o q.o p3m-ik-real-ns.o
+OBJECTS=sort.o generate_system.o visit_writer.o window-functions.o  charge-assign.o common.o error.o ewald.o interpol.o io.o p3m-common.o p3m-ik.o realpart.o p3m-ik-i.o p3m-ad.o p3m-ad-i.o p3m-ad-self-forces.o domain-decomposition.o statistics.o tuning.o p3m-ik-real.o parameters.o p3m-ad-real.o q_ik.o q_ad.o q_ik_i.o q_ad_i.o find_error.o q.o p3m-ik-real-ns.o wtime.o
 
 BINARIES=prof_ca time_assignment test_tuning p3m tuning_density
 

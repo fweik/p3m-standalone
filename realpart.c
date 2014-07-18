@@ -21,8 +21,8 @@
 #include "realpart.h"
 #include "sort.h"
 
-int to_left=0;
-int to_right=0;
+static int to_left=0;
+static int to_right=0;
 
 /* static inline void ewald_pair(parameters_t *p, forces_t *f, int id, int r, FLOAT_TYPE q12) { */
 /*   FLOAT_TYPE erfc_teil; */
@@ -43,7 +43,7 @@ int *count_neighbors( system_t *s, parameters_t *p )
     /* Minimum-Image-Abstand: */
     FLOAT_TYPE dx,dy,dz,r;
     FLOAT_TYPE lengthi = 1.0/s->length;
-    int *nb = fftw_malloc(s->nparticles*sizeof(int));
+    int *nb = (int *)FFTW_MALLOC(s->nparticles*sizeof(int));
 
     memset(nb, 0, s->nparticles * sizeof(int));
 
@@ -233,8 +233,8 @@ static void build_neighbor_list_for_particle(system_t *s, parameters_t *p, data_
       }
     }
     neighbor_list[id].p = Init_vector_array(np);
-    neighbor_list[id].q = Init_array(np, sizeof(FLOAT_TYPE));
-    neighbor_list[id].id = Init_array(np, sizeof(int));
+    neighbor_list[id].q = (FLOAT_TYPE *)Init_array(np, sizeof(FLOAT_TYPE));
+    neighbor_list[id].id = (int *)Init_array(np, sizeof(int));
 
     for (j=0;j<3;j++)
         memcpy(neighbor_list[id].p->fields[j], buffer->fields[j], np*sizeof(FLOAT_TYPE));
@@ -255,13 +255,13 @@ void Init_neighborlist(system_t *s, parameters_t *p, data_t *d) {
     FLOAT_TYPE *charges_buffer = NULL;
     neighbor_list_t *neighbor_list;
 
-    neighbor_id_buffer = Init_array(s->nparticles, sizeof(int));
+    neighbor_id_buffer = (int *)Init_array(s->nparticles, sizeof(int));
     position_buffer = Init_vector_array(s->nparticles);
-    charges_buffer = Init_array(s->nparticles, sizeof(FLOAT_TYPE));
+    charges_buffer = (FLOAT_TYPE *)Init_array(s->nparticles, sizeof(FLOAT_TYPE));
 
     // Allocate the actual list.
 
-    d->neighbor_list = Init_array(s->nparticles + 1, sizeof(neighbor_list_t));
+    d->neighbor_list = (neighbor_list_t *)Init_array(s->nparticles + 1, sizeof(neighbor_list_t));
     neighbor_list = d->neighbor_list;   
 
     // Sort particles

@@ -25,7 +25,7 @@
 #include "tools/visit_writer.h"
 
 void print_parameters(parameters_t p) {
-  printf("alpha %e, rcut %e, prefactor %e, mesh %d, cao %d, tuning %d\n",
+  printf("alpha %e, rcut %e, mesh %d, cao %d, tuning %d\n",
 	 p.alpha, p.rcut, p.mesh, p.cao, p.tuning);
 }
 
@@ -55,7 +55,7 @@ void write_mesh(char *filename, FLOAT_TYPE *data, int *dims, FLOAT_TYPE *spacing
   int centering[] = {1};
   float *data_col_maj=NULL;
 
-  data_col_maj = malloc(dims[0]*dims[1]*dims[2]*data_size*sizeof(float));
+  data_col_maj = (float *)malloc(dims[0]*dims[1]*dims[2]*data_size*sizeof(float));
 
   for(k=0;k<dims[2];k++)
     for(j=0;j<dims[1];j++)

@@ -19,7 +19,7 @@
 #include "types.h"
 #include "window-functions.h"
 
-#define MaxInterpol (2*100096)
+#define MaxInterpol (2*32768)
 
 /* Interpolation types */
 enum {

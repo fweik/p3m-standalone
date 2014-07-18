@@ -21,7 +21,6 @@
 
 #include "common.h"
 #include "p3m-common.h"
-#include "timings.h"
 #include "interpol.h"
 #include "realpart.h"
 

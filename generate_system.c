@@ -220,5 +220,5 @@ system_t *generate_system( int form_factor, int size, FLOAT_TYPE box, FLOAT_TYPE
   default:
     fprintf( stderr, "Warning, form factor not known.\n");
   }
-  return (void *)NULL;
+  return (system_t *)NULL;
 }

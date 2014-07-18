@@ -19,7 +19,10 @@
 #include "interpol.h"
 #include "charge-assign.h"
 
+#ifdef c_ind
+#undef c_ind
 #define c_ind(A,B,C) (2*Mesh*Mesh*(A)+2*Mesh*(B)+2*(C))
+#endif
 
 int main(void) {
   double theMesh[2*32*32*32];

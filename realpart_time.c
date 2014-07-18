@@ -16,8 +16,6 @@
 #include "common.h"
 #include "types.h"
 
-#include "timings.h"
-
 #include "realpart.h"
 
 #include "generate_system.h"

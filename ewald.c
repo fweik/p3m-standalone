@@ -14,8 +14,6 @@
        along with this program.  If not, see <http://www.gnu.org/licenses/>. **/
 
 /* Computes the Ewald sum of a system of point charges. */
-/* Time-stamp: <2007-07-31 11:57 olenz> */
-
  
 #include <stdlib.h>
 #include <stdio.h>
@@ -95,7 +93,7 @@ void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
   fak2 = SQR(PI/(p->alpha*s->length));
 
 #ifdef _OPENMP
-  #pragma omp parallel for collapse(3) private(n_sqr)
+#pragma omp parallel for collapse(2) private(n_sqr)
 #endif 
   for (nx=0; nx <= kmax; nx++)
     for (ny=0; ny <= kmax; ny++)
@@ -107,7 +105,6 @@ void Ewald_compute_influence_function(system_t *s, parameters_t *p, data_t *d)
         } else {
 	  d->G_hat[r_ind(nx,ny,nz)] = fak1/n_sqr * EXP(-fak2*n_sqr);
 	}
-        //printf("d->G_hat[r_ind(nx,ny,nz)] = %e, n_sqr = %e,fak2 = %e, s->length = %e, kmax %d, kmax2 %d\n", d->G_hat[r_ind(nx,ny,nz)], n_sqr, fak2, s->length, kmax, kmax2);
       }
 }  
 

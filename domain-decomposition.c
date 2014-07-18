@@ -23,7 +23,7 @@ static void init_neighbors(domain_decomposition_t *d, cell_t *c) {
   celllist_t *i, *last=NULL, *buf;
   int n[3], m[3], ind=0;
   
-  buf = Init_array( 26, sizeof(celllist_t));
+  buf = (celllist_t *)Init_array( 26, sizeof(celllist_t));
   c->neighbors = buf;
 
   for(n[0]=(c->coords[0]-1);n[0]<=(c->coords[0]+1);n[0]++)
@@ -47,10 +47,10 @@ static void init_neighbors(domain_decomposition_t *d, cell_t *c) {
 	  continue;
 
 	i = buf + ind;
-	i->prev = (struct celllist_t *) last;
+	i->prev = (celllist_t *) last;
 	if(last != NULL)
-	  last->next = (struct celllist_t *)i;
-	i->c = (struct cell_t *)  &(d->cells[d->cells_per_direction * d->cells_per_direction * m[0] +
+	  last->next = (celllist_t *)i;
+	i->c = (cell_t *)  &(d->cells[d->cells_per_direction * d->cells_per_direction * m[0] +
 			  d->cells_per_direction * m[1] + m[2]]);
 	last = i;
 	ind++;
@@ -91,7 +91,7 @@ void Free_dd( domain_decomposition_t *dd) {
 }
 
 domain_decomposition_t *Init_dd( int cells_per_direction, FLOAT_TYPE box ) {
-  domain_decomposition_t *d = Init_array( 1, sizeof(domain_decomposition_t) );
+  domain_decomposition_t *d = (domain_decomposition_t *)Init_array( 1, sizeof(domain_decomposition_t) );
   int n[3], ind=0;
 
   assert(cells_per_direction != 0);
@@ -102,7 +102,7 @@ domain_decomposition_t *Init_dd( int cells_per_direction, FLOAT_TYPE box ) {
 
   d->cells_per_direction = cells_per_direction;
 
-  d->cells = Init_array( d->total_cells, sizeof(cell_t));
+  d->cells = (cell_t *)Init_array( d->total_cells, sizeof(cell_t));
 
   for(n[0]=0;n[0]<cells_per_direction;n[0]++)
     for(n[1]=0;n[1]<cells_per_direction;n[1]++)
@@ -110,9 +110,9 @@ domain_decomposition_t *Init_dd( int cells_per_direction, FLOAT_TYPE box ) {
 	cell_t *c = &(d->cells[ind++]);
 	c->p = Init_bvector_array(0);
 	c->__q = Init_buffered_list(0);
-	c->q = c->__q->data;
+	c->q = (FLOAT_TYPE *)c->__q->data;
 	c->__ids = Init_buffered_list(0);
-	c->ids = c->__ids->data;
+	c->ids = (int *)c->__ids->data;
 	c->neighbors = NULL;
 	c->n_particles = 0;
 	for(int j=0;j<3;j++)
@@ -130,16 +130,14 @@ static inline void add_particle_to_cell( cell_t *c, int id, FLOAT_TYPE pos[3], F
 
   Resize_bvector_array( c->p, new_size );
   Resize_buffered_list(c->__q, new_size*sizeof(FLOAT_TYPE));
-  c->q = c->__q->data;
+  c->q = (FLOAT_TYPE *)c->__q->data;
   Resize_buffered_list(c->__ids, new_size*sizeof(int));
-  c->ids = c->__ids->data;
+  c->ids = (int *)c->__ids->data;
 
   for(int i = 0; i<3; i++)
     c->p->fields[i][old_size] = pos[i];
 
   c->q[old_size] = q;
-
-  //  (c->ids.data)[old_size] = id;
 
   c->n_particles++;     
 }

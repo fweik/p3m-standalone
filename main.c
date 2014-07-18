@@ -1,4 +1,4 @@
-/**    Copyright (C) 2011,2012,2013 Florian Weik <fweik@icp.uni-stuttgart.de>
+/**    Copyright (C) 2011,2012,2013,2014 Florian Weik <fweik@icp.uni-stuttgart.de>
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <mpi.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -60,7 +59,7 @@
 
 // Helper functions for timings
 
-#include "timings.h"
+#include "wtime.h"
 
 #include "generate_system.h"
 
@@ -91,7 +90,7 @@ int main ( int argc, char **argv ) {
 
     FLOAT_TYPE alphamin,alphamax,alphastep;
     FLOAT_TYPE alpha;
-    FLOAT_TYPE wtime = 0;
+    FLOAT_TYPE walltime = 0;
 
     FILE* fout;
     
@@ -379,11 +378,11 @@ int main ( int argc, char **argv ) {
       if(!param_isset("no_calculation", params)) {
 	method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
-	wtime = MPI_Wtime();
+	walltime = wtime();
 
 	Calculate_forces ( &method, system, &parameters, data, forces ); /* Hockney/Eastwood */
 
-	wtime = MPI_Wtime() - wtime;
+	walltime = wtime() - walltime;
       }
       error_k =0.0;
       if(calc_k_error == 1) {
@@ -444,7 +443,7 @@ int main ( int argc, char **argv ) {
 	/* printf("Q_uncorr %e, Q_corr %e, Q_nonfluc %e\n", Q_uncorr, Q_corr, Q_nonfluc); */
 
 	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
-		 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime, FLOAT_CAST err_inhomo );
+		 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST walltime, FLOAT_CAST err_inhomo );
 
 	/* printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate, */
 	/* 	 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime ); */
