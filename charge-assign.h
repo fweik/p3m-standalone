@@ -49,6 +49,11 @@ void collect_rms_nocf(system_t *s, parameters_t *p, FLOAT_TYPE *Qmesh, FLOAT_TYP
 void assign_charge_real_nostor(system_t *s, parameters_t *p, data_t *d);
 void assign_forces_real_nostor(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f);
 
+void assign_charge_real_res(system_t *s, parameters_t *p, data_t *d);
+void assign_charge_real_nostor_res(system_t *s, parameters_t *p, data_t *d);
+
+void assign_charge_real_nostor_res_5(system_t *s, parameters_t *p, data_t *d);
+
 #ifdef CA_DEBUG
 #define CA_TRACE(A) A
 #else

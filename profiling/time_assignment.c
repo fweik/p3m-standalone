@@ -16,8 +16,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
-#include <mpi.h>
 
+#include "wtime.h"
 #include "types.h"
 #include "generate_system.h"
 #include "charge-assign.h"
@@ -60,9 +60,9 @@ int main(int argc, char **argv) {
 
     fprintf(f, "%d ", i);
 
-    total = MPI_Wtime();
+    total = wtime();
 
-    for(int j = 4; j <= 4; j++) {
+    for(int j = 5; j <= 5; j++) {
       memset(&p, 0, sizeof(parameters_t));
       p.tuning = 1;
       p.cao = j;
@@ -71,24 +71,48 @@ int main(int argc, char **argv) {
       p.mesh = mesh;
       d = Init_data(&method_p3m_ik, s, &p);
 
-      /* t = MPI_Wtime(); */
+      /* t = wtime(); */
       /* assign_charge(s, &p, d, 0); */
-      /* t = MPI_Wtime() - t; */
+      /* t = wtime() - t; */
 
       /* fprintf(f, "%e ", t); */
 
-      /* t = MPI_Wtime(); */
+      /* t = wtime(); */
       /* assign_forces(1.0, s, &p, d, s->reference, 0); */
-      /* t  = MPI_Wtime() - t; */
+      /* t  = wtime() - t; */
       /* fprintf(f, "%e ", t); */
 
-      t = MPI_Wtime();
-      assign_charge_real(s, &p, d);
-      t = MPI_Wtime() - t;
+      /* t = wtime(); */
+      /* assign_charge_real(s, &p, d); */
+      /* t = wtime() - t; */
 
-      t = MPI_Wtime();
+      t = wtime();
       assign_charge_real(s, &p, d);
-      t = MPI_Wtime() - t;
+      t = wtime() - t;
+
+      fprintf(f, "%e ", t);
+
+      t = wtime();
+      assign_charge_real_res(s, &p, d);
+      t = wtime() - t;
+
+      fprintf(f, "%e ", t);
+
+      t = wtime();
+      assign_charge_real_nostor(s, &p, d);
+      t = wtime() - t;
+
+      fprintf(f, "%e ", t);
+
+      t = wtime();
+      assign_charge_real_nostor_res(s, &p, d);
+      t = wtime() - t;
+
+      fprintf(f, "%e ", t);
+
+      t = wtime();
+      assign_charge_real_nostor_res_5(s, &p, d);
+      t = wtime() - t;
 
       fprintf(f, "%e ", t);
 
@@ -99,35 +123,35 @@ int main(int argc, char **argv) {
       /* } */
       
 
-      /* t = MPI_Wtime(); */
+      /* t = wtime(); */
       /* assign_forces_real(1.0, s, &p, d, s->reference); */
-      /* t  = MPI_Wtime() - t; */
+      /* t  = wtime() - t; */
       /* fprintf(f, "%e ", t); */
 
-      /* t = MPI_Wtime(); */
+      /* t = wtime(); */
       /* assign_charge_real_nostor(s, &p, d); */
-      /* t = MPI_Wtime() - t; */
+      /* t = wtime() - t; */
 
       /* fprintf(f, "%e ", t); */
 
-      /* t = MPI_Wtime(); */
+      /* t = wtime(); */
       /* assign_forces_real_nostor(1.0, s, &p, d, s->reference); */
-      /* t  = MPI_Wtime() - t; */
+      /* t  = wtime() - t; */
       /* fprintf(f, "%e ", t); */
 
-      /* t = MPI_Wtime(); */
+      /* t = wtime(); */
       /* assign_forces_ad(1.0, s, &p, d, s->reference, 0); */
       /* assign_forces_ad(1.0, s, &p, d, s->reference, 1); */
-      /* t = MPI_Wtime() - t; */
+      /* t = wtime() - t; */
 
       /* fprintf(f, "%e ", t); */
 
       /* assign_charge_and_derivatives(s, &p, d, 0); */
       /* assign_charge_and_derivatives(s, &p, d, 1); */
 
-      /* t = MPI_Wtime(); */
+      /* t = wtime(); */
       /* assign_forces_interlacing_ad(1.0, s, &p, d, s->reference); */
-      /* t  = MPI_Wtime() - t; */
+      /* t  = wtime() - t; */
       /* fprintf(f, "%e ", t); */
   
       Free_data(d);
@@ -136,7 +160,7 @@ int main(int argc, char **argv) {
 
     fprintf(f, "\n");
 
-    total = MPI_Wtime() - total;
+    total = wtime() - total;
 
     printf("total %e\n", total);
 
