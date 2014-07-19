@@ -93,7 +93,19 @@ int main(int argc, char **argv) {
       fprintf(f, "%e ", t);
 
       t = wtime();
+      assign_charge_real_5(s, &p, d);
+      t = wtime() - t;
+
+      fprintf(f, "%e ", t);
+
+      t = wtime();
       assign_charge_real_res(s, &p, d);
+      t = wtime() - t;
+
+      fprintf(f, "%e ", t);
+
+      t = wtime();
+      assign_charge_real_res_5(s, &p, d);
       t = wtime() - t;
 
       fprintf(f, "%e ", t);

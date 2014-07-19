@@ -52,7 +52,9 @@ void assign_forces_real_nostor(FLOAT_TYPE force_prefac, system_t *s, parameters_
 void assign_charge_real_res(system_t *s, parameters_t *p, data_t *d);
 void assign_charge_real_nostor_res(system_t *s, parameters_t *p, data_t *d);
 
+void assign_charge_real_5(system_t *s, parameters_t *p, data_t *d);
 void assign_charge_real_nostor_res_5(system_t *s, parameters_t *p, data_t *d);
+void assign_charge_real_res_5(system_t *s, parameters_t *p, data_t *d);
 
 #ifdef CA_DEBUG
 #define CA_TRACE(A) A
