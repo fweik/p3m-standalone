@@ -175,68 +175,69 @@ void assign_charge_real(system_t *s, parameters_t *p, data_t *d)
     }
 }
 
-void assign_charge_real_5(system_t *s, parameters_t *p, data_t *d)
-{
-    int dim, i0, i1, i2, id;
-    FLOAT_TYPE tmp0, tmp1;
-    /* position of a particle in local mesh units */
-    FLOAT_TYPE pos;
-    /* 1d-index of nearest mesh point */
-    int nmp;
-    /* index for caf interpolation grid */
-    int arg[3];
-    /* index, index jumps for rs_mesh array */
-    FLOAT_TYPE cur_ca_frac_val;
-    FLOAT_TYPE *cf_cnt;
-    // Mesh coordinates of the closest mesh point
-    int base[3];
-    int i,j,k;
-    const FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
+#define assign_charge_real_template(cao) void assign_charge_real_##cao(system_t *s, parameters_t *p, data_t *d) \
+{ \
+    int dim, i0, i1, i2, id; \
+    FLOAT_TYPE tmp0, tmp1; \
+    FLOAT_TYPE pos; \
+    int nmp; \
+    int arg[3]; \
+    FLOAT_TYPE cur_ca_frac_val; \
+    FLOAT_TYPE *cf_cnt; \
+    int base[3]; \
+    int i,j,k; \
+    const FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol; \
+\
+    const FLOAT_TYPE Hi = (double)d->mesh/(double)s->length; \
+\
+    FLOAT_TYPE *cf = d->cf[0]; \
+    FLOAT_TYPE **interpol = d->inter->interpol; \
+    FLOAT_TYPE *Qmesh = d->Qmesh; \
+    FLOAT_TYPE q; \
+    const int mesh = d->mesh; \
+    int indx, indy; \
+ \
+    FLOAT_TYPE pos_shift; \
+\
+    pos_shift = (FLOAT_TYPE)((cao-1)/2); \
+\
+    for (id=0;id<s->nparticles;id++) { \
+        for (dim=0;dim<3;dim++) { \
+            pos    = s->p->fields[dim][id]*Hi - pos_shift; \
+            nmp = int_floor(pos + 0.5); \
+	    base[dim]  = wrap_mesh_index( nmp, d->mesh); \
+            arg[dim] = int_floor((pos - nmp + 0.5)*MI2); \
+            d->ca_ind[0][3*id + dim] = base[dim]; \
+        }	q = s->q[id]; \
+        cf_cnt = cf + id*cao*cao*cao; \
+	for (i0=0; i0<cao; i0++) { \
+	  i = wrap_mesh_index(base[0] + i0, mesh); \
+	  indx = mesh*(mesh+2) * i; \
+	  tmp0 = q * interpol[arg[0]][i0]; \
+	  for (i1=0; i1<cao; i1++) { \
+	    tmp1 = tmp0 * interpol[arg[1]][i1]; \
+	    j = wrap_mesh_index(base[1] + i1, mesh); \
+	    indy = indx + (mesh+2) * j; \
+	    for (i2=0; i2<cao; i2++) { \
+	      cur_ca_frac_val = tmp1 * interpol[arg[2]][i2]; \
+	      k = wrap_mesh_index(base[2] + i2, mesh); \
+	      *cf_cnt++ = cur_ca_frac_val; \
+	      Qmesh[indy + k] += cur_ca_frac_val; \
+	    } \
+	  } \
+	}  \
+    } \
+} \
 
-    const FLOAT_TYPE Hi = (double)d->mesh/(double)s->length;
 
-    FLOAT_TYPE *cf = d->cf[0];
-    FLOAT_TYPE **interpol = d->inter->interpol;
-    FLOAT_TYPE *Qmesh = d->Qmesh;
-    FLOAT_TYPE q;
-    const int mesh = d->mesh;
-    int indx, indy;
+assign_charge_real_template(1)
+assign_charge_real_template(2)
+assign_charge_real_template(3)
+assign_charge_real_template(4)
+assign_charge_real_template(5)
+assign_charge_real_template(6)
+assign_charge_real_template(7)
 
-    // Make sure parameter-set and data-set are compatible
-
-    FLOAT_TYPE pos_shift;
-
-    /* Shift for odd charge assignment order */
-    pos_shift = (FLOAT_TYPE)((5-1)/2);
-
-    for (id=0;id<s->nparticles;id++) {
-        /* particle position in mesh coordinates */
-        for (dim=0;dim<3;dim++) {
-            pos    = s->p->fields[dim][id]*Hi - pos_shift;
-            nmp = int_floor(pos + 0.5);
-	    base[dim]  = wrap_mesh_index( nmp, d->mesh);
-            arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
-            d->ca_ind[0][3*id + dim] = base[dim];
-        }	q = s->q[id];
-        cf_cnt = cf + id*5*5*5;
-	for (i0=0; i0<5; i0++) {
-	  i = wrap_mesh_index(base[0] + i0, mesh);
-	  indx = mesh*(mesh+2) * i;
-	  tmp0 = q * interpol[arg[0]][i0];
-	  for (i1=0; i1<5; i1++) {
-	    tmp1 = tmp0 * interpol[arg[1]][i1];
-	    j = wrap_mesh_index(base[1] + i1, mesh);
-	    indy = indx + (mesh+2) * j;
-	    for (i2=0; i2<5; i2++) {
-	      cur_ca_frac_val = tmp1 * interpol[arg[2]][i2];
-	      k = wrap_mesh_index(base[2] + i2, mesh);
-	      *cf_cnt++ = cur_ca_frac_val;	      
-	      Qmesh[indy + k] += cur_ca_frac_val;
-	    }
-	  }
-	} 
-    }
-}
 
 
 void assign_charge_real_res(system_t *s, parameters_t *p, data_t *d)
