@@ -37,6 +37,7 @@ void assign_forces_interlacing_ad(FLOAT_TYPE force_prefac, system_t *s, paramete
 void assign_forces_ad(double force_prefac, system_t* s, parameters_t* p, data_t* d, forces_t *, int ii);
 void assign_charge_and_derivatives(system_t *, parameters_t *, data_t *, int);
 void assign_charge_and_derivatives_real(system_t *s, parameters_t *p, data_t *d);
+void assign_charge_and_derivatives_real_res(system_t *s, parameters_t *p, data_t *d);
 
 void assign_charge_real_nowrap(system_t *s, parameters_t *p, data_t *d);
 
@@ -52,9 +53,7 @@ void assign_forces_real_nostor(FLOAT_TYPE force_prefac, system_t *s, parameters_
 void assign_charge_real_res(system_t *s, parameters_t *p, data_t *d);
 void assign_charge_real_nostor_res(system_t *s, parameters_t *p, data_t *d);
 
-void assign_charge_real_5(system_t *s, parameters_t *p, data_t *d);
-void assign_charge_real_nostor_res_5(system_t *s, parameters_t *p, data_t *d);
-void assign_charge_real_res_5(system_t *s, parameters_t *p, data_t *d);
+void assign_charge_real_dynamic(system_t *s, parameters_t *p, data_t *d);
 
 #ifdef CA_DEBUG
 #define CA_TRACE(A) A

@@ -62,14 +62,14 @@ int main(int argc, char **argv) {
 
     total = wtime();
 
-    for(int j = 5; j <= 5; j++) {
+    for(int j = 1; j <= 7; j++) {
       memset(&p, 0, sizeof(parameters_t));
       p.tuning = 1;
       p.cao = j;
       p.cao3 = j*j*j;
       p.ip = j-1;
       p.mesh = mesh;
-      d = Init_data(&method_p3m_ik, s, &p);
+      d = Init_data(&method_p3m_ad_i, s, &p);
 
       /* t = wtime(); */
       /* assign_charge(s, &p, d, 0); */
@@ -87,46 +87,40 @@ int main(int argc, char **argv) {
       /* t = wtime() - t; */
 
       t = wtime();
-      assign_charge_real(s, &p, d);
-      t = wtime() - t;
-
-      fprintf(f, "%e ", t);
-
-      t = wtime();
-      assign_charge_real_5(s, &p, d);
-      t = wtime() - t;
-
-      fprintf(f, "%e ", t);
-
-      t = wtime();
       assign_charge_real_res(s, &p, d);
       t = wtime() - t;
 
       fprintf(f, "%e ", t);
 
+      /* t = wtime(); */
+      /* assign_charge_and_derivatives_real( s, &p, d); */
+      /* t = wtime() - t; */
+
+      /* fprintf(f, "%e ", t); */
+
       t = wtime();
-      assign_charge_real_res_5(s, &p, d);
+      assign_charge_and_derivatives_real_res( s, &p, d);
       t = wtime() - t;
 
       fprintf(f, "%e ", t);
 
-      t = wtime();
-      assign_charge_real_nostor(s, &p, d);
-      t = wtime() - t;
+      /* t = wtime(); */
+      /* assign_charge_real_nostor(s, &p, d); */
+      /* t = wtime() - t; */
 
-      fprintf(f, "%e ", t);
+      /* fprintf(f, "%e ", t); */
 
-      t = wtime();
-      assign_charge_real_nostor_res(s, &p, d);
-      t = wtime() - t;
+      /* t = wtime(); */
+      /* assign_charge_real_nostor_res(s, &p, d); */
+      /* t = wtime() - t; */
 
-      fprintf(f, "%e ", t);
+      /* fprintf(f, "%e ", t); */
 
-      t = wtime();
-      assign_charge_real_nostor_res_5(s, &p, d);
-      t = wtime() - t;
+      /* t = wtime(); */
+      /* assign_charge_real_nostor_res_5(s, &p, d); */
+      /* t = wtime() - t; */
 
-      fprintf(f, "%e ", t);
+      /* fprintf(f, "%e ", t); */
 
       /* for(int i = 0; i < 2*mesh*mesh*mesh; i++) { */
       /* 	d->Fmesh->x[i] = 1.1*d->Qmesh[i]; */

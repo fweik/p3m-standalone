@@ -111,7 +111,7 @@ void assign_charge(system_t *s, parameters_t *p, data_t *d, int ii)
     }
 }
 
-void assign_charge_real(system_t *s, parameters_t *p, data_t *d)
+void assign_charge_real_dynamic(system_t *s, parameters_t *p, data_t *d)
 {
     int dim, i0, i1, i2, id;
     FLOAT_TYPE tmp0, tmp1;
@@ -238,138 +238,127 @@ assign_charge_real_template(5)
 assign_charge_real_template(6)
 assign_charge_real_template(7)
 
+void assign_charge_real(system_t *s, parameters_t *p, data_t *d) {
+  switch(p->cao) {
+  case 1:
+    assign_charge_real_1(s, p, d);
+    break;
+  case 2:
+    assign_charge_real_2(s, p, d);
+    break;
+  case 3:
+    assign_charge_real_3(s, p, d);
+    break;
+  case 4:
+    assign_charge_real_4(s, p, d);
+    break;
+  case 5:
+    assign_charge_real_5(s, p, d);
+    break;
+  case 6:
+    assign_charge_real_6(s, p, d);
+    break;
+  case 7:
+    assign_charge_real_7(s, p, d);
+    break;
+  default:
+    fprintf(stderr, "Charge assinment order %d not known.", p->cao);
+    break;
+  }
+}
+ 
+#define assign_charge_real_res_template(cao) void assign_charge_real_res_##cao(system_t *s, parameters_t *p, data_t *d) \
+{ \
+    int dim, i0, i1, i2, id; \
+    FLOAT_TYPE tmp0, tmp1; \
+    FLOAT_TYPE pos; \
+    int nmp; \
+    int arg[3]; \
+    FLOAT_TYPE cur_ca_frac_val; \
+    FLOAT_TYPE *cf_cnt; \
+    int base[3]; \
+    int i,j,k; \
+    const FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol; \
+ \
+    const FLOAT_TYPE Hi = (double)d->mesh/(double)s->length; \
+ \
+    FLOAT_TYPE * restrict cf = d->cf[0]; \
+    FLOAT_TYPE ** restrict interpol = d->inter->interpol; \
+    FLOAT_TYPE * restrict Qmesh = d->Qmesh; \
+    FLOAT_TYPE q; \
+    const int mesh = d->mesh; \
+    int indx, indy; \
+ \
+    FLOAT_TYPE pos_shift; \
+ \
+    pos_shift = (FLOAT_TYPE)((cao-1)/2); \
+ \
+    for (id=0;id<s->nparticles;id++) { \
+        for (dim=0;dim<3;dim++) { \
+            pos    = s->p->fields[dim][id]*Hi - pos_shift; \
+            nmp = int_floor(pos + 0.5); \
+	    base[dim]  = wrap_mesh_index( nmp, d->mesh); \
+            arg[dim] = int_floor((pos - nmp + 0.5)*MI2); \
+            d->ca_ind[0][3*id + dim] = base[dim]; \
+        }	q = s->q[id]; \
+        cf_cnt = cf + id*cao*cao*cao; \
+	for (i0=0; i0<cao; i0++) { \
+	  i = wrap_mesh_index(base[0] + i0, mesh); \
+	  indx = mesh*(mesh+2) * i; \
+	  tmp0 = q * interpol[arg[0]][i0]; \
+	  for (i1=0; i1<cao; i1++) { \
+	    tmp1 = tmp0 * interpol[arg[1]][i1]; \
+	    j = wrap_mesh_index(base[1] + i1, mesh); \
+	    indy = indx + (mesh+2) * j; \
+	    for (i2=0; i2<cao; i2++) { \
+	      cur_ca_frac_val = tmp1 * interpol[arg[2]][i2]; \
+	      k = wrap_mesh_index(base[2] + i2, mesh); \
+	      *cf_cnt++ = cur_ca_frac_val;	       \
+	      Qmesh[indy + k] += cur_ca_frac_val; \
+	    } \
+	  } \
+	}  \
+    } \
+} \
 
+assign_charge_real_res_template(1)
+assign_charge_real_res_template(2)
+assign_charge_real_res_template(3)
+assign_charge_real_res_template(4)
+assign_charge_real_res_template(5)
+assign_charge_real_res_template(6)
+assign_charge_real_res_template(7)
 
-void assign_charge_real_res(system_t *s, parameters_t *p, data_t *d)
-{
-    int dim, i0, i1, i2, id;
-    FLOAT_TYPE tmp0, tmp1;
-    /* position of a particle in local mesh units */
-    FLOAT_TYPE pos;
-    /* 1d-index of nearest mesh point */
-    int nmp;
-    /* index for caf interpolation grid */
-    int arg[3];
-    /* index, index jumps for rs_mesh array */
-    FLOAT_TYPE cur_ca_frac_val;
-    FLOAT_TYPE *cf_cnt;
-    // Mesh coordinates of the closest mesh point
-    int base[3];
-    int i,j,k;
-    const FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
-
-    const FLOAT_TYPE Hi = (double)d->mesh/(double)s->length;
-
-    FLOAT_TYPE * restrict cf = d->cf[0];
-    FLOAT_TYPE ** restrict interpol = d->inter->interpol;
-    FLOAT_TYPE * restrict Qmesh = d->Qmesh;
-    FLOAT_TYPE q;
-    const int cao = p->cao;
-    const int mesh = d->mesh;
-    int indx, indy;
-
-    // Make sure parameter-set and data-set are compatible
-
-    FLOAT_TYPE pos_shift;
-
-    /* Shift for odd charge assignment order */
-    pos_shift = (FLOAT_TYPE)((p->cao-1)/2);
-
-    for (id=0;id<s->nparticles;id++) {
-        /* particle position in mesh coordinates */
-        for (dim=0;dim<3;dim++) {
-            pos    = s->p->fields[dim][id]*Hi - pos_shift;
-            nmp = int_floor(pos + 0.5);
-	    base[dim]  = wrap_mesh_index( nmp, d->mesh);
-            arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
-            d->ca_ind[0][3*id + dim] = base[dim];
-        }	q = s->q[id];
-        cf_cnt = cf + id*p->cao3;
-	for (i0=0; i0<cao; i0++) {
-	  i = wrap_mesh_index(base[0] + i0, mesh);
-	  indx = mesh*(mesh+2) * i;
-	  tmp0 = q * interpol[arg[0]][i0];
-	  for (i1=0; i1<cao; i1++) {
-	    tmp1 = tmp0 * interpol[arg[1]][i1];
-	    j = wrap_mesh_index(base[1] + i1, mesh);
-	    indy = indx + (mesh+2) * j;
-	    for (i2=0; i2<cao; i2++) {
-	      cur_ca_frac_val = tmp1 * interpol[arg[2]][i2];
-	      k = wrap_mesh_index(base[2] + i2, mesh);
-	      *cf_cnt++ = cur_ca_frac_val;	      
-	      Qmesh[indy + k] += cur_ca_frac_val;
-	    }
-	  }
-	} 
-    }
+void assign_charge_real_res(system_t *s, parameters_t *p, data_t *d) {
+  switch(p->cao) {
+  case 1:
+    assign_charge_real_res_1(s, p, d);
+    break;
+  case 2:
+    assign_charge_real_res_2(s, p, d);
+    break;
+  case 3:
+    assign_charge_real_res_3(s, p, d);
+    break;
+  case 4:
+    assign_charge_real_res_4(s, p, d);
+    break;
+  case 5:
+    assign_charge_real_res_5(s, p, d);
+    break;
+  case 6:
+    assign_charge_real_res_6(s, p, d);
+    break;
+  case 7:
+    assign_charge_real_res_7(s, p, d);
+    break;
+  default:
+    fprintf(stderr, "Charge assinment order %d not known.", p->cao);
+    break;
+  }
 }
 
-
-void assign_charge_real_res_5(system_t *s, parameters_t *p, data_t *d)
-{
-    int dim, i0, i1, i2, id;
-    FLOAT_TYPE tmp0, tmp1;
-    /* position of a particle in local mesh units */
-    FLOAT_TYPE pos;
-    /* 1d-index of nearest mesh point */
-    int nmp;
-    /* index for caf interpolation grid */
-    int arg[3];
-    /* index, index jumps for rs_mesh array */
-    FLOAT_TYPE cur_ca_frac_val;
-    FLOAT_TYPE *cf_cnt;
-    // Mesh coordinates of the closest mesh point
-    int base[3];
-    int i,j,k;
-    const FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
-
-    const FLOAT_TYPE Hi = (double)d->mesh/(double)s->length;
-
-    FLOAT_TYPE * restrict cf = d->cf[0];
-    FLOAT_TYPE ** restrict interpol = d->inter->interpol;
-    FLOAT_TYPE * restrict Qmesh = d->Qmesh;
-    FLOAT_TYPE q;
-    const int mesh = d->mesh;
-    int indx, indy;
-
-    // Make sure parameter-set and data-set are compatible
-
-    FLOAT_TYPE pos_shift;
-
-    /* Shift for odd charge assignment order */
-    pos_shift = (FLOAT_TYPE)((5-1)/2);
-
-    for (id=0;id<s->nparticles;id++) {
-        /* particle position in mesh coordinates */
-        for (dim=0;dim<3;dim++) {
-            pos    = s->p->fields[dim][id]*Hi - pos_shift;
-            nmp = int_floor(pos + 0.5);
-	    base[dim]  = wrap_mesh_index( nmp, d->mesh);
-            arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
-            d->ca_ind[0][3*id + dim] = base[dim];
-        }	q = s->q[id];
-        cf_cnt = cf + id*5*5*5;
-	for (i0=0; i0<5; i0++) {
-	  i = wrap_mesh_index(base[0] + i0, mesh);
-	  indx = mesh*(mesh+2) * i;
-	  tmp0 = q * interpol[arg[0]][i0];
-	  for (i1=0; i1<5; i1++) {
-	    tmp1 = tmp0 * interpol[arg[1]][i1];
-	    j = wrap_mesh_index(base[1] + i1, mesh);
-	    indy = indx + (mesh+2) * j;
-	    for (i2=0; i2<5; i2++) {
-	      cur_ca_frac_val = tmp1 * interpol[arg[2]][i2];
-	      k = wrap_mesh_index(base[2] + i2, mesh);
-	      *cf_cnt++ = cur_ca_frac_val;	      
-	      Qmesh[indy + k] += cur_ca_frac_val;
-	    }
-	  }
-	} 
-    }
-}
-
-
-void assign_charge_real_nostor(system_t *s, parameters_t *p, data_t *d)
+void assign_charge_real_nostor_dynamic(system_t *s, parameters_t *p, data_t *d)
 {
     int dim, i0, i1, i2, id;
     FLOAT_TYPE tmp0, tmp1;
@@ -424,7 +413,7 @@ void assign_charge_real_nostor(system_t *s, parameters_t *p, data_t *d)
     }
 }
 
-void assign_charge_real_nostor_res(system_t *s, parameters_t *p, data_t *d)
+void assign_charge_real_nostor_res_dynamic(system_t *s, parameters_t *p, data_t *d)
 {
     int dim, i0, i1, i2, id;
     FLOAT_TYPE tmp0, tmp1;
@@ -479,59 +468,94 @@ void assign_charge_real_nostor_res(system_t *s, parameters_t *p, data_t *d)
     }
 }
 
-void assign_charge_real_nostor_res_5(system_t *s, parameters_t *p, data_t *d)
-{
-    int dim, i0, i1, i2, id;
-    FLOAT_TYPE tmp0, tmp1;
-    /* position of a particle in local mesh units */
-    FLOAT_TYPE pos;
-    /* 1d-index of nearest mesh point */
-    int nmp;
-    /* index for caf interpolation grid */
-    int arg[3];
-    /* index, index jumps for rs_mesh array */
-    // Mesh coordinates of the closest mesh point
-    int base[3];
-    int i,j,k;
-    FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
+#define assign_charge_real_nostor_template(cao) void assign_charge_real_nostor_##cao(system_t *s, parameters_t *p, data_t *d) \
+{ \
+    int dim, i0, i1, i2, id; \
+    FLOAT_TYPE tmp0, tmp1; \
+    /* position of a particle in local mesh units */ \
+    FLOAT_TYPE pos; \
+    /* 1d-index of nearest mesh point */ \
+    int nmp; \
+    /* index for caf interpolation grid */ \
+    int arg[3]; \
+    /* index, index jumps for rs_mesh array */ \
+    int base[3]; \
+    int i,j,k; \
+    FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol; \
+ \
+    FLOAT_TYPE Hi = (double)d->mesh/(double)s->length; \
+ \
+    FLOAT_TYPE ** restrict interpol = d->inter->interpol; \
+    FLOAT_TYPE * restrict Qmesh = d->Qmesh; \
+    FLOAT_TYPE q; \
+    const int mesh = d->mesh; \
+ \
+ \
+    FLOAT_TYPE pos_shift; \
+ \
+    /* Shift for odd charge assignment order */ \
+    pos_shift = (FLOAT_TYPE)((cao-1)/2); \
+ \
+    for (id=0;id<s->nparticles;id++) { \
+        /* particle position in mesh coordinates */ \
+        for (dim=0;dim<3;dim++) { \
+            pos    = s->p->fields[dim][id]*Hi - pos_shift; \
+            nmp = int_floor(pos + 0.5); \
+	    base[dim]  = wrap_mesh_index( nmp, d->mesh); \
+            arg[dim] = int_floor((pos - nmp + 0.5)*MI2); \
+        }	 \
+	q = s->q[id]; \
+	for (i0=0; i0<cao; i0++) { \
+	  i = wrap_mesh_index(base[0] + i0, mesh); \
+	  tmp0 = q * interpol[arg[0]][i0]; \
+	  for (i1=0; i1<cao; i1++) { \
+	    tmp1 = tmp0 * interpol[arg[1]][i1]; \
+	    j = wrap_mesh_index(base[1] + i1, mesh); \
+	    for (i2=0; i2<cao; i2++) { \
+	      k = wrap_mesh_index(base[2] + i2, mesh); \
+	      Qmesh[mesh*(mesh+2) * i + (mesh+2) * j + k] += tmp1 * interpol[arg[2]][i2]; \
+	    } \
+	  } \
+	}  \
+    } \
+}
 
-    FLOAT_TYPE Hi = (double)d->mesh/(double)s->length;
 
-    FLOAT_TYPE ** restrict interpol = d->inter->interpol;
-    FLOAT_TYPE * restrict Qmesh = d->Qmesh;
-    FLOAT_TYPE q;
-    //   const int cao = p->cao;
-    const int mesh = d->mesh;
+assign_charge_real_nostor_template(1)
+assign_charge_real_nostor_template(2)
+assign_charge_real_nostor_template(3)
+assign_charge_real_nostor_template(4)
+assign_charge_real_nostor_template(5)
+assign_charge_real_nostor_template(6)
+assign_charge_real_nostor_template(7)
 
-    // Make sure parameter-set and data-set are compatible
-
-    FLOAT_TYPE pos_shift;
-
-    /* Shift for odd charge assignment order */
-    pos_shift = (FLOAT_TYPE)((5-1)/2);
-
-    for (id=0;id<s->nparticles;id++) {
-        /* particle position in mesh coordinates */
-        for (dim=0;dim<3;dim++) {
-            pos    = s->p->fields[dim][id]*Hi - pos_shift;
-            nmp = int_floor(pos + 0.5);
-	    base[dim]  = wrap_mesh_index( nmp, d->mesh);
-            arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
-        }	
-	q = s->q[id];
-	for (i0=0; i0<5; i0++) {
-	  i = wrap_mesh_index(base[0] + i0, mesh);
-	  tmp0 = q * interpol[arg[0]][i0];
-	  for (i1=0; i1<5; i1++) {
-	    tmp1 = tmp0 * interpol[arg[1]][i1];
-	    j = wrap_mesh_index(base[1] + i1, mesh);
-	    for (i2=0; i2<5; i2++) {
-	      k = wrap_mesh_index(base[2] + i2, mesh);
-	      Qmesh[mesh*(mesh+2) * i + (mesh+2) * j + k] += tmp1 * interpol[arg[2]][i2];
-	    }
-	  }
-	} 
-    }
+void assign_charge_real_nostor(system_t *s, parameters_t *p, data_t *d) {
+  switch(p->cao) {
+  case 1:
+    assign_charge_real_nostor_1(s, p, d);
+    break;
+  case 2:
+    assign_charge_real_nostor_2(s, p, d);
+    break;
+  case 3:
+    assign_charge_real_nostor_3(s, p, d);
+    break;
+  case 4:
+    assign_charge_real_nostor_4(s, p, d);
+    break;
+  case 5:
+    assign_charge_real_nostor_5(s, p, d);
+    break;
+  case 6:
+    assign_charge_real_nostor_6(s, p, d);
+    break;
+  case 7:
+    assign_charge_real_nostor_7(s, p, d);
+    break;
+  default:
+    fprintf(stderr, "Charge assinment order %d not known.", p->cao);
+    break;
+  }
 }
 
 
@@ -715,8 +739,6 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
   FLOAT_TYPE *fmesh_x = d->Fmesh->fields[0], *fmesh_y = d->Fmesh->fields[1], *fmesh_z = d->Fmesh->fields[2];
   int mesh = d->mesh;
 
-  /* unsigned long int loop_counter = 0; */
-
   const int cao = p->cao;
 
   cf_cnt = d->cf[ii];
@@ -735,7 +757,6 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
 	  field_x -= fmesh_x[l_ind]*B;
 	  field_y -= fmesh_y[l_ind]*B;
 	  field_z -= fmesh_z[l_ind]*B;
-	  /* loop_counter++; */
 	}
       }
     }
@@ -749,7 +770,6 @@ void assign_forces(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, data_t
       f->f_k->fields[2][i] *= 0.5;
     }
   }
-  /* printf("loop_counter %ld, %d\n", loop_counter, s->nparticles*cao*cao*cao); */
 }
 
 // assign the forces obtained from k-space
@@ -858,7 +878,7 @@ void assign_forces_real(FLOAT_TYPE force_prefac, system_t *s, parameters_t *p, d
   FLOAT_TYPE B;
   FLOAT_TYPE field_x, field_y, field_z;
   int l_ind;
-  FLOAT_TYPE *fmesh_x = d->Fmesh->fields[0], *fmesh_y = d->Fmesh->fields[1], *fmesh_z = d->Fmesh->fields[2];
+  FLOAT_TYPE * restrict fmesh_x = d->Fmesh->fields[0], * restrict fmesh_y = d->Fmesh->fields[1], * restrict fmesh_z = d->Fmesh->fields[2];
   int mesh = d->mesh;
 
   const int cao = p->cao;
@@ -1073,6 +1093,184 @@ void assign_charge_and_derivatives_real(system_t *s, parameters_t *p, data_t *d)
 	  }
         }
     }
+}
+
+
+void assign_charge_and_derivatives_real_res_dynamic(system_t *s, parameters_t *p, data_t *d)
+{
+    int dim, i0, i1, i2;
+    int id;
+    FLOAT_TYPE tmp0, tmp1, tmp2;
+    FLOAT_TYPE tmp0_x, tmp1_y, tmp2_z;
+    /* position of a particle in local mesh units */
+    FLOAT_TYPE pos;
+    /* 1d-index of nearest mesh point */
+    int nmp;
+    /* index for caf interpolation grid */
+    int arg[3];
+    /* index, index jumps for rs_mesh array */
+    int cf_cnt;
+
+    int base[3];
+    int i,j,k;
+    const int Mesh = p->mesh;
+    FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
+
+    FLOAT_TYPE Hi = (double)Mesh/s->length;
+    FLOAT_TYPE Leni = 1.0/s->length;
+    FLOAT_TYPE q, qLeni;
+
+    FLOAT_TYPE * restrict Qmesh = d->Qmesh;
+    FLOAT_TYPE * restrict dQ = d->dQ[0];
+    FLOAT_TYPE ** restrict interpol = d->inter->interpol;
+    FLOAT_TYPE ** restrict interpol_d = d->inter->interpol_d;
+
+    double pos_shift;
+
+    pos_shift = (double)((p->cao-1)/2);
+    /* particle position in mesh coordinates */
+    for (id=0;id<s->nparticles;id++) {
+        cf_cnt = 3*id*p->cao3;
+	q = s->q[id] ;
+	qLeni = q * Leni;
+        for (dim=0;dim<3;dim++) {
+	  pos    = s->p->fields[dim][id]*Hi - pos_shift;
+	  nmp = int_floor(pos + 0.5);
+	  base[dim]  = wrap_mesh_index( nmp, Mesh);
+	  arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
+	  d->ca_ind[0][3*id + dim] = base[dim];
+        }
+
+        for (i0=0; i0<p->cao; i0++) {
+	  i = wrap_mesh_index(base[0] + i0, Mesh);
+	  tmp0 = interpol[arg[0]][i0];
+	  tmp0_x = interpol_d[arg[0]][i0];
+	  for (i1=0; i1<p->cao; i1++) {
+	    j = wrap_mesh_index(base[1] + i1, Mesh);
+	    tmp1 = interpol[arg[1]][i1];
+	    tmp1_y = interpol_d[arg[1]][i1];
+	    for (i2=0; i2<p->cao; i2++) {
+	      k = wrap_mesh_index(base[2] + i2, Mesh);
+	      tmp2 = interpol[arg[2]][i2];
+	      tmp2_z = interpol_d[arg[2]][i2];
+
+	      dQ[cf_cnt+0] = tmp0_x * tmp1 * tmp2 * qLeni;
+	      dQ[cf_cnt+1] = tmp0 * tmp1_y * tmp2 * qLeni;
+	      dQ[cf_cnt+2] = tmp0 * tmp1 * tmp2_z * qLeni;
+
+	      Qmesh[Mesh*(Mesh+2) * i + (Mesh+2) * j + k] += q * tmp0 * tmp1 * tmp2;
+	      cf_cnt+=3;
+	    }
+	  }
+        }
+    }
+}
+
+#define assign_charge_and_derivatives_real_res_template(cao) void assign_charge_and_derivatives_real_res_##cao(system_t *s, parameters_t *p, data_t *d) \
+{ \
+    int dim, i0, i1, i2; \
+    int id; \
+    FLOAT_TYPE tmp0, tmp1, tmp2; \
+    FLOAT_TYPE tmp0_x, tmp1_y, tmp2_z; \
+    /* position of a particle in local mesh units */ \
+    FLOAT_TYPE pos; \
+    /* 1d-index of nearest mesh point */ \
+    int nmp; \
+    /* index for caf interpolation grid */ \
+    int arg[3]; \
+    /* index, index jumps for rs_mesh array */ \
+    int cf_cnt; \
+ \
+    int base[3]; \
+    int i,j,k; \
+    const int Mesh = p->mesh; \
+    FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol; \
+ \
+    FLOAT_TYPE Hi = (double)Mesh/s->length; \
+    FLOAT_TYPE Leni = 1.0/s->length; \
+    FLOAT_TYPE q, qLeni; \
+ \
+    FLOAT_TYPE * restrict Qmesh = d->Qmesh; \
+    FLOAT_TYPE * restrict dQ = d->dQ[0]; \
+    FLOAT_TYPE ** restrict interpol = d->inter->interpol; \
+    FLOAT_TYPE ** restrict interpol_d = d->inter->interpol_d; \
+ \
+    double pos_shift; \
+ \
+    pos_shift = (double)((cao-1)/2); \
+    /* particle position in mesh coordinates */ \
+    for (id=0;id<s->nparticles;id++) { \
+        cf_cnt = 3*id*cao*cao*cao; \
+	q = s->q[id] ; \
+	qLeni = q * Leni; \
+        for (dim=0;dim<3;dim++) { \
+	  pos    = s->p->fields[dim][id]*Hi - pos_shift; \
+	  nmp = int_floor(pos + 0.5); \
+	  base[dim]  = wrap_mesh_index( nmp, Mesh); \
+	  arg[dim] = int_floor((pos - nmp + 0.5)*MI2); \
+	  d->ca_ind[0][3*id + dim] = base[dim]; \
+        } \
+ \
+        for (i0=0; i0<cao; i0++) { \
+	  i = wrap_mesh_index(base[0] + i0, Mesh); \
+	  tmp0 = interpol[arg[0]][i0]; \
+	  tmp0_x = interpol_d[arg[0]][i0]; \
+	  for (i1=0; i1<cao; i1++) { \
+	    j = wrap_mesh_index(base[1] + i1, Mesh); \
+	    tmp1 = interpol[arg[1]][i1]; \
+	    tmp1_y = interpol_d[arg[1]][i1]; \
+	    for (i2=0; i2<cao; i2++) { \
+	      k = wrap_mesh_index(base[2] + i2, Mesh); \
+	      tmp2 = interpol[arg[2]][i2]; \
+	      tmp2_z = interpol_d[arg[2]][i2]; \
+ \
+	      dQ[cf_cnt+0] = tmp0_x * tmp1 * tmp2 * qLeni; \
+	      dQ[cf_cnt+1] = tmp0 * tmp1_y * tmp2 * qLeni; \
+	      dQ[cf_cnt+2] = tmp0 * tmp1 * tmp2_z * qLeni; \
+ \
+	      Qmesh[Mesh*(Mesh+2) * i + (Mesh+2) * j + k] += q * tmp0 * tmp1 * tmp2; \
+	      cf_cnt+=3; \
+	    } \
+	  } \
+        } \
+    } \
+} \
+
+assign_charge_and_derivatives_real_res_template(1)
+assign_charge_and_derivatives_real_res_template(2)
+assign_charge_and_derivatives_real_res_template(3)
+assign_charge_and_derivatives_real_res_template(4)
+assign_charge_and_derivatives_real_res_template(5)
+assign_charge_and_derivatives_real_res_template(6)
+assign_charge_and_derivatives_real_res_template(7)
+
+void assign_charge_and_derivatives_real_res(system_t *s, parameters_t *p, data_t *d) {
+  switch(p->cao) {
+  case 1:
+    assign_charge_and_derivatives_real_res_1(s, p, d);
+    break;
+  case 2:
+    assign_charge_and_derivatives_real_res_2(s, p, d);
+    break;
+  case 3:
+    assign_charge_and_derivatives_real_res_3(s, p, d);
+    break;
+  case 4:
+    assign_charge_and_derivatives_real_res_4(s, p, d);
+    break;
+  case 5:
+    assign_charge_and_derivatives_real_res_5(s, p, d);
+    break;
+  case 6:
+    assign_charge_and_derivatives_real_res_6(s, p, d);
+    break;
+  case 7:
+    assign_charge_and_derivatives_real_res_7(s, p, d);
+    break;
+  default:
+    fprintf(stderr, "Charge assinment order %d not known.", p->cao);
+    break;
+  }
 }
 
 
