@@ -1,6 +1,6 @@
-CC=clang
+CC=gcc
 CFLAGS=-Wall
-CFLAGS+=-march=native -O3 -DNDEBUG
+CFLAGS+=-march=native -O3 -DNDEBUG -DUSE_RESTRICT
 CFLAGS+=-std=c99
 #LFLAGS=-L/home/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
 LFLAGS=-L/scratch/fweik/Base/lib -lgsl -lgslcblas -lfftw3 
