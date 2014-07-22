@@ -55,7 +55,8 @@ int main(int argc, char **argv) {
   for(int i = start; i <= stop; i+= step) {
     box = pow((double)(i)/density, 0.3333);
     s = generate_system( SYSTEM_RANDOM, i, box, 1.0);
-
+    forces_t *forces = Init_forces(s->nparticles);
+    
     printf("Tuning for %d particles box %e, dens %e.\n", s->nparticles, box, (double)(i)/(box*box*box));
 
     fprintf(f, "%d ", i);
@@ -69,7 +70,7 @@ int main(int argc, char **argv) {
       p.cao3 = j*j*j;
       p.ip = j-1;
       p.mesh = mesh;
-      d = Init_data(&method_p3m_ad_i, s, &p);
+      d = Init_data(&method_p3m_ik, s, &p);
 
       /* t = wtime(); */
       /* assign_charge(s, &p, d, 0); */
@@ -98,17 +99,17 @@ int main(int argc, char **argv) {
 
       /* fprintf(f, "%e ", t); */
 
-      t = wtime();
-      assign_charge_and_derivatives_real_res( s, &p, d);
-      t = wtime() - t;
-
-      fprintf(f, "%e ", t);
-
       /* t = wtime(); */
-      /* assign_charge_real_nostor(s, &p, d); */
+      /* assign_charge_and_derivatives_real_res( s, &p, d); */
       /* t = wtime() - t; */
 
       /* fprintf(f, "%e ", t); */
+
+      t = wtime();
+      assign_charge_real_nostor(s, &p, d);
+      t = wtime() - t;
+
+      fprintf(f, "%e ", t);
 
       /* t = wtime(); */
       /* assign_charge_real_nostor_res(s, &p, d); */
@@ -122,17 +123,17 @@ int main(int argc, char **argv) {
 
       /* fprintf(f, "%e ", t); */
 
-      /* for(int i = 0; i < 2*mesh*mesh*mesh; i++) { */
-      /* 	d->Fmesh->x[i] = 1.1*d->Qmesh[i]; */
-      /* 	d->Fmesh->y[i] = 1.2*d->Qmesh[i]; */
-      /* 	d->Fmesh->z[i] = 1.3*d->Qmesh[i]; */
-      /* } */
+      for(int i = 0; i < 2*mesh*mesh*mesh; i++) {
+      	d->Fmesh->x[i] = 1.1*d->Qmesh[i];
+      	d->Fmesh->y[i] = 1.2*d->Qmesh[i];
+      	d->Fmesh->z[i] = 1.3*d->Qmesh[i];
+      }
       
 
-      /* t = wtime(); */
-      /* assign_forces_real(1.0, s, &p, d, s->reference); */
-      /* t  = wtime() - t; */
-      /* fprintf(f, "%e ", t); */
+      t = wtime();
+      assign_forces_real(1.0, s, &p, d, forces);
+      t  = wtime() - t;
+      fprintf(f, "%e ", t);
 
       /* t = wtime(); */
       /* assign_charge_real_nostor(s, &p, d); */
@@ -140,10 +141,10 @@ int main(int argc, char **argv) {
 
       /* fprintf(f, "%e ", t); */
 
-      /* t = wtime(); */
-      /* assign_forces_real_nostor(1.0, s, &p, d, s->reference); */
-      /* t  = wtime() - t; */
-      /* fprintf(f, "%e ", t); */
+      t = wtime();
+      assign_forces_real_nostor(1.0, s, &p, d, forces);
+      t  = wtime() - t;
+      fprintf(f, "%e ", t);
 
       /* t = wtime(); */
       /* assign_forces_ad(1.0, s, &p, d, s->reference, 0); */
@@ -173,7 +174,7 @@ int main(int argc, char **argv) {
     /* for(int l = 0; l < 3; l++) */
     /*   for(int k = 0; k < i; k++) */
     /* 	sum += s->reference->f_k->fields[l][k]; */
-
+    Free_forces(forces);
     Free_system(s);      
   }
 
