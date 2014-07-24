@@ -1311,47 +1311,84 @@ void assign_charge_and_derivatives_real(system_t *s, parameters_t *p, data_t *d)
 
 
 // assign the forces obtained from k-space
-void assign_forces_ad(double force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii)
-{
-  int i,i0,i1,i2;
-  int cf_cnt=0;
-  int *base;
-  int j,k,l;
-  FLOAT_TYPE B;
-  FLOAT_TYPE force_x, force_y, force_z;
-  const int cao = p->cao;
-  const int mesh = d->mesh;
+#define assign_forces_ad_template(cao) void assign_forces_ad_##cao(double force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii) \
+{ \
+  int i,i0,i1,i2; \
+  int cf_cnt=0; \
+  int *base; \
+  int j,k,l; \
+  FLOAT_TYPE B; \
+  FLOAT_TYPE force_x, force_y, force_z; \
+  const int mesh = d->mesh; \
+ \
+  cf_cnt=0; \
+  for (i=0; i<s->nparticles; i++) { \
+    force_x = force_y = force_z = 0.0; \
+    base = d->ca_ind[ii] + 3*i; \
+    cf_cnt = 3*i*cao*cao*cao; \
+    for (i0=0; i0<cao; i0++) { \
+      j = wrap_mesh_index(base[0] + i0, mesh); \
+      for (i1=0; i1<cao; i1++) { \
+	k = wrap_mesh_index(base[1] + i1, mesh); \
+	for (i2=0; i2<cao; i2++) { \
+	  l = wrap_mesh_index(base[2] + i2, mesh); \
+ \
+	  B = force_prefac*d->Qmesh[c_ind(j,k,l)+ii]; \
+	  force_x -= B*d->dQ[ii][cf_cnt+0]; \
+	  force_y -= B*d->dQ[ii][cf_cnt+1]; \
+	  force_z -= B*d->dQ[ii][cf_cnt+2]; \
+	  cf_cnt+=3; \
+	} \
+      } \
+    } \
+    f->f_k->fields[0][i] += force_x; \
+    f->f_k->fields[1][i] += force_y; \
+    f->f_k->fields[2][i] += force_z; \
+    if (ii==1) { \
+      f->f_k->fields[0][i] *= 0.5; \
+      f->f_k->fields[1][i] *= 0.5; \
+      f->f_k->fields[2][i] *= 0.5; \
+    } \
+  } \
+} \
 
-  cf_cnt=0;
-  for (i=0; i<s->nparticles; i++) {
-    force_x = force_y = force_z = 0.0;
-    base = d->ca_ind[ii] + 3*i;
-    cf_cnt = 3*i*p->cao3;
-    for (i0=0; i0<cao; i0++) {
-      j = wrap_mesh_index(base[0] + i0, mesh);
-      for (i1=0; i1<cao; i1++) {
-	k = wrap_mesh_index(base[1] + i1, mesh);
-	for (i2=0; i2<cao; i2++) {
-	  l = wrap_mesh_index(base[2] + i2, mesh);
+assign_forces_ad_template(1)
+assign_forces_ad_template(2)
+assign_forces_ad_template(3)
+assign_forces_ad_template(4)
+assign_forces_ad_template(5)
+assign_forces_ad_template(6)
+assign_forces_ad_template(7)
 
-	  B = force_prefac*d->Qmesh[c_ind(j,k,l)+ii];
-	  force_x -= B*d->dQ[ii][cf_cnt+0];
-	  force_y -= B*d->dQ[ii][cf_cnt+1];
-	  force_z -= B*d->dQ[ii][cf_cnt+2];
-	  cf_cnt+=3;
-	}
-      }
-    }
-    f->f_k->fields[0][i] += force_x;
-    f->f_k->fields[1][i] += force_y;
-    f->f_k->fields[2][i] += force_z;
-    if (ii==1) {
-      f->f_k->fields[0][i] *= 0.5;
-      f->f_k->fields[1][i] *= 0.5;
-      f->f_k->fields[2][i] *= 0.5;
-    }
+void assign_forces_ad(FLOAT_TYPE prefactor, system_t *s, parameters_t *p, data_t *d, forces_t *f, int ii) {
+  switch(p->cao) {
+  case 1:
+    assign_forces_ad_1(prefactor, s, p, d, f, ii);
+    break;
+  case 2:
+    assign_forces_ad_2(prefactor, s, p, d, f, ii);
+    break;
+  case 3:
+    assign_forces_ad_3(prefactor, s, p, d, f, ii);
+    break;
+  case 4:
+    assign_forces_ad_4(prefactor, s, p, d, f, ii);
+    break;
+  case 5:
+    assign_forces_ad_5(prefactor, s, p, d, f, ii);
+    break;
+  case 6:
+    assign_forces_ad_6(prefactor, s, p, d, f, ii);
+    break;
+  case 7:
+    assign_forces_ad_7(prefactor, s, p, d, f, ii);
+    break;
+  default:
+    fprintf(stderr, "Charge assinment order %d not known.", p->cao);
+    break;
   }
 }
+
 
 void assign_forces_ad_real_dynamic(double force_prefac, system_t *s, parameters_t *p, data_t *d, forces_t *f)
 {
