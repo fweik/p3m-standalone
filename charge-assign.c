@@ -1064,73 +1064,111 @@ void assign_forces_real_nostor(FLOAT_TYPE prefactor, system_t *s, parameters_t *
   }
 }
 
-void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int ii)
-{
-    int dim, i0, i1, i2;
-    int id;
-    FLOAT_TYPE tmp0, tmp1, tmp2;
-    FLOAT_TYPE tmp0_x, tmp1_y, tmp2_z;
-    /* position of a particle in local mesh units */
-    FLOAT_TYPE pos;
-    /* 1d-index of nearest mesh point */
-    int nmp;
-    /* index for caf interpolation grid */
-    int arg[3];
-    /* index, index jumps for rs_mesh array */
-    int cf_cnt;
+#define assign_charge_and_derivatives_template(cao) void assign_charge_and_derivatives_##cao(system_t *s, parameters_t *p, data_t *d, int ii) \
+{ \
+    int dim, i0, i1, i2; \
+    int id; \
+    FLOAT_TYPE tmp0, tmp1, tmp2; \
+    FLOAT_TYPE tmp0_x, tmp1_y, tmp2_z; \
+    /* position of a particle in local mesh units */ \
+    FLOAT_TYPE pos; \
+    /* 1d-index of nearest mesh point */ \
+    int nmp; \
+    /* index for caf interpolation grid */ \
+    int arg[3]; \
+    /* index, index jumps for rs_mesh array */ \
+    int cf_cnt; \
+ \
+    int base[3]; \
+    int i,j,k; \
+    int Mesh = p->mesh; \
+    FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol; \
+ \
+    FLOAT_TYPE Hi = (double)Mesh/s->length; \
+    FLOAT_TYPE Leni = 1.0/s->length; \
+    FLOAT_TYPE q, qLeni; \
+ \
+    double pos_shift; \
+ \
+    FLOAT_TYPE * restrict Qmesh = d->Qmesh; \
+    FLOAT_TYPE * restrict dQ = d->dQ[ii]; \
+ \
+    pos_shift = (double)((cao-1)/2); \
+    /* particle position in mesh coordinates */ \
+    for (id=0;id<s->nparticles;id++) { \
+        cf_cnt = 3*id*cao*cao*cao; \
+	q = s->q[id] ; \
+	qLeni = q * Leni; \
+        for (dim=0;dim<3;dim++) { \
+	  pos    = s->p->fields[dim][id]*Hi - pos_shift + 0.5*ii; \
+	  nmp = int_floor(pos + 0.5); \
+	  base[dim]  = wrap_mesh_index( nmp, d->mesh); \
+	  arg[dim] = int_floor((pos - nmp + 0.5)*MI2); \
+	  d->ca_ind[ii][3*id + dim] = base[dim]; \
+        } \
+ \
+        for (i0=0; i0<cao; i0++) { \
+	  i = wrap_mesh_index(base[0] + i0, d->mesh); \
+	  tmp0 = d->inter->interpol[arg[0]][i0]; \
+	  tmp0_x = d->inter->interpol_d[arg[0]][i0]; \
+	  for (i1=0; i1<cao; i1++) { \
+	    j = wrap_mesh_index(base[1] + i1, d->mesh); \
+	    tmp1 = d->inter->interpol[arg[1]][i1]; \
+	    tmp1_y = d->inter->interpol_d[arg[1]][i1]; \
+	    for (i2=0; i2<cao; i2++) { \
+	      k = wrap_mesh_index(base[2] + i2, d->mesh); \
+	      tmp2 = d->inter->interpol[arg[2]][i2]; \
+	      tmp2_z = d->inter->interpol_d[arg[2]][i2]; \
+ \
+	      dQ[cf_cnt+0] = tmp0_x * tmp1 * tmp2 * qLeni; \
+	      dQ[cf_cnt+1] = tmp0 * tmp1_y * tmp2 * qLeni; \
+	      dQ[cf_cnt+2] = tmp0 * tmp1 * tmp2_z * qLeni; \
+ \
+	      Qmesh[c_ind(i,j,k)+ii] += q * tmp0 * tmp1 * tmp2; \
+	      cf_cnt+=3; \
+	    } \
+	  } \
+        } \
+    } \
+} \
 
-    int base[3];
-    int i,j,k;
-    int Mesh = p->mesh;
-    FLOAT_TYPE MI2 = 2.0*(FLOAT_TYPE)MaxInterpol;
+assign_charge_and_derivatives_template(1)
+assign_charge_and_derivatives_template(2)
+assign_charge_and_derivatives_template(3)
+assign_charge_and_derivatives_template(4)
+assign_charge_and_derivatives_template(5)
+assign_charge_and_derivatives_template(6)
+assign_charge_and_derivatives_template(7)
 
-    FLOAT_TYPE Hi = (double)Mesh/s->length;
-    FLOAT_TYPE Leni = 1.0/s->length;
-    FLOAT_TYPE q, qLeni;
-
-    double pos_shift;
-
-    FLOAT_TYPE * restrict Qmesh = d->Qmesh;
-    FLOAT_TYPE * restrict dQ = d->dQ[ii];
-
-    pos_shift = (double)((p->cao-1)/2);
-    /* particle position in mesh coordinates */
-    for (id=0;id<s->nparticles;id++) {
-        cf_cnt = 3*id*p->cao3;
-	q = s->q[id] ;
-	qLeni = q * Leni;
-        for (dim=0;dim<3;dim++) {
-	  pos    = s->p->fields[dim][id]*Hi - pos_shift + 0.5*ii;
-	  nmp = int_floor(pos + 0.5);
-	  base[dim]  = wrap_mesh_index( nmp, d->mesh);
-	  arg[dim] = int_floor((pos - nmp + 0.5)*MI2);
-	  d->ca_ind[ii][3*id + dim] = base[dim];
-        }
-
-        for (i0=0; i0<p->cao; i0++) {
-	  i = wrap_mesh_index(base[0] + i0, d->mesh);
-	  tmp0 = d->inter->interpol[arg[0]][i0];
-	  tmp0_x = d->inter->interpol_d[arg[0]][i0];
-	  for (i1=0; i1<p->cao; i1++) {
-	    j = wrap_mesh_index(base[1] + i1, d->mesh);
-	    tmp1 = d->inter->interpol[arg[1]][i1];
-	    tmp1_y = d->inter->interpol_d[arg[1]][i1];
-	    for (i2=0; i2<p->cao; i2++) {
-	      k = wrap_mesh_index(base[2] + i2, d->mesh);
-	      tmp2 = d->inter->interpol[arg[2]][i2];
-	      tmp2_z = d->inter->interpol_d[arg[2]][i2];
-
-	      dQ[cf_cnt+0] = tmp0_x * tmp1 * tmp2 * qLeni;
-	      dQ[cf_cnt+1] = tmp0 * tmp1_y * tmp2 * qLeni;
-	      dQ[cf_cnt+2] = tmp0 * tmp1 * tmp2_z * qLeni;
-
-	      Qmesh[c_ind(i,j,k)+ii] += q * tmp0 * tmp1 * tmp2;
-	      cf_cnt+=3;
-	    }
-	  }
-        }
-    }
+void assign_charge_and_derivatives(system_t *s, parameters_t *p, data_t *d, int ii) {
+  switch(p->cao) {
+  case 1:
+    assign_charge_and_derivatives_1(s, p, d, ii);
+    break;
+  case 2:
+    assign_charge_and_derivatives_2(s, p, d, ii);
+    break;
+  case 3:
+    assign_charge_and_derivatives_3(s, p, d, ii);
+    break;
+  case 4:
+    assign_charge_and_derivatives_4(s, p, d, ii);
+    break;
+  case 5:
+    assign_charge_and_derivatives_5(s, p, d, ii);
+    break;
+  case 6:
+    assign_charge_and_derivatives_6(s, p, d, ii);
+    break;
+  case 7:
+    assign_charge_and_derivatives_7(s, p, d, ii);
+    break;
+  default:
+    fprintf(stderr, "Charge assinment order %d not known.", p->cao);
+    break;
+  }
 }
+
 
 void assign_charge_and_derivatives_real_dynamic(system_t *s, parameters_t *p, data_t *d)
 {

@@ -124,17 +124,33 @@ int main(int argc, char **argv) {
 
       /* fprintf(f, "%e ", t); */
 
-      /* for(int i = 0; i < 2*mesh*mesh*mesh; i++) { */
-      /* 	d->Fmesh->x[i] = 1.1*d->Qmesh[i]; */
-      /* 	d->Fmesh->y[i] = 1.2*d->Qmesh[i]; */
-      /* 	d->Fmesh->z[i] = 1.3*d->Qmesh[i]; */
-      /* } */
+      t = wtime();
+      assign_charge(s, &p, d, 0);
+      assign_charge(s, &p, d, 1);
+      t = wtime() - t;
+
+      fprintf(f, "%e ", t);
+
+      t = wtime();
+      assign_charge_real(s, &p, d);
+      t = wtime() - t;
+
+      fprintf(f, "%e ", t);
+
+      
       
 
-      /* t = wtime(); */
-      /* assign_forces_real(1.0, s, &p, d, forces); */
-      /* t  = wtime() - t; */
-      /* fprintf(f, "%e ", t); */
+      for(int i = 0; i < 2*mesh*mesh*mesh; i++) {
+      	d->Fmesh->x[i] = 1.1*d->Qmesh[i];
+      	d->Fmesh->y[i] = 1.2*d->Qmesh[i];
+      	d->Fmesh->z[i] = 1.3*d->Qmesh[i];
+      }
+      
+
+      t = wtime();
+      assign_forces_real(1.0, s, &p, d, forces);
+      t  = wtime() - t;
+      fprintf(f, "%e ", t);
 
       /* t = wtime(); */
       /* assign_charge_real_nostor(s, &p, d); */
@@ -157,10 +173,10 @@ int main(int argc, char **argv) {
       /* assign_charge_and_derivatives(s, &p, d, 0); */
       /* assign_charge_and_derivatives(s, &p, d, 1); */
 
-      /* t = wtime(); */
-      /* assign_forces_interlacing_ad(1.0, s, &p, d, s->reference); */
-      /* t  = wtime() - t; */
-      /* fprintf(f, "%e ", t); */
+      t = wtime();
+      assign_forces_interlacing(1.0, s, &p, d, s->reference);
+      t  = wtime() - t;
+      fprintf(f, "%e ", t);
   
       Free_data(d);
       fflush(f);

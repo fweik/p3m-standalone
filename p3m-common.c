@@ -447,6 +447,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   FFTW_PLAN kernel_backward_plan[3];
   for(int i = 0; i < 4; i++) {
     Kernel[i] = (FLOAT_TYPE *)Init_array( 2*mesh*mesh*mesh, sizeof(FLOAT_TYPE));
+    memset(Kernel[i], 0, 2*mesh*mesh*mesh*sizeof(FLOAT_TYPE));
     // printf("Kernel[%d] at %p\n", i, Kernel[i]);
     if(i < 3)
       kernel_backward_plan[i] = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX *) Kernel[i], (FFTW_COMPLEX *) Kernel[i],FFTW_BACKWARD, FFTW_MEASURE);
@@ -466,14 +467,19 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   memset( Qmesh, 0, mesh*mesh*mesh*2 * sizeof(FLOAT_TYPE));
   memset( Kmesh, 0, mesh*mesh*mesh*2 * sizeof(FLOAT_TYPE));
 
+ 
   /* Calculate \rho^2 */
   assign_charge_q2(s, &param, Qmesh, mesh, inter);
 
-  int tn[3];
+  int tn[3], tnm[3];
 
   /* Homogenous part */
 
-  FLOAT_TYPE u,um,b,a, u2, gm;
+  FLOAT_TYPE u=0.0,um=0.0,b=0.0,a=0.0, u2=0.0, gm=0.0;
+  FLOAT_TYPE G;
+  int m[3];
+
+  #define M_MAX 1
 
   /* Calculate K_homo(k) */
 
@@ -486,25 +492,46 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	ind = 2*(mesh*mesh*nx + mesh*ny + nz);
 
 	if( (tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0) ) 
-	  k2 = 0.0;
-	else {
-	  u2 = U2(tn[0],tn[1],tn[2], mesh, param.cao);
-	  b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 1, param.cao);
-	  a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 1, param.cao);
-	  gm = Gm(tn[0],tn[1],tn[2],s->length, param.alpha, mesh, 1);
+	  continue;
 
-	  k2 = (u2*b/a) - gm;
+	b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
+	a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
+	
+	G = b/a;
+
+	/* printf("n = (%d %d %d), tn = (%d %d %d)\n", nx, ny, nz, tn[0], tn[1], tn[2]); */
+
+	for(m[0]=-M_MAX; m[0] <= +M_MAX; m[0]++) {
+	  tnm[0] = tn[0] + mesh*m[0];
+	  for(m[1]=-M_MAX; m[1] <= +M_MAX; m[1]++) {
+	    tnm[1] = tn[1] + mesh*m[1];
+	    for(m[2]=-M_MAX; m[2] <= +M_MAX; m[2]++) {
+	      tnm[2] = tn[2] + mesh*m[2];
+
+	      u2 = U2(tnm[0],tnm[1],tnm[2], mesh, param.cao);
+	      gm = Gm(tnm[0],tnm[1],tnm[2],s->length, param.alpha, mesh, 0);
+
+	      k2 = (u2*G) - gm;
+
+	      //	      printf("tnm = (%d %d %d), k2 = %e, gm = %e, G = %e\n", tnm[0], tnm[1], tnm[2], k2, gm, G);
+
+	      Kernel[0][ind + 1] += -2*PI*tnm[0]/s->length*k2;
+	      Kernel[1][ind + 1] += -2*PI*tnm[1]/s->length*k2;
+	      Kernel[2][ind + 1] += -2*PI*tnm[2]/s->length*k2;
+	    }
+	  }
 	}
-
-	Kernel[0][ind + 0] = 0;
-	Kernel[0][ind + 1] = -2*PI*tn[0]/s->length*k2;
-	Kernel[1][ind + 0] = 0;
-	Kernel[1][ind + 1] = -2*PI*tn[1]/s->length*k2;
-	Kernel[2][ind + 0] = 0;
-	Kernel[2][ind + 1] = -2*PI*tn[2]/s->length*k2;
+	//	printf("Im(Kernel[(%d, %d, %d)]) =  (%e %e %e)\n", nx, ny, nz, Kernel[0][ind+1], Kernel[1][ind+1], Kernel[2][ind+1]);
       }
     }
   }
+
+  /* for(int x = 0; x < mesh; x++) */
+  /*   for(int y = 0; y < mesh; y++) */
+  /*     for(int z = 0; z < mesh; z++) { */
+  /* 	int ind = 2*((mesh*mesh*x) + mesh*(y) + (z)); */
+  /* 	printf("Im(Kernel[(%d, %d, %d)]) =  (%e %e %e)\n", x, y, z, Kernel[0][ind+1], Kernel[1][ind+1], Kernel[2][ind+1]); */
+  /*     } */
 
   /* Transform back */
 
@@ -533,11 +560,9 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 
   /* Calculate K_inhomo(k) */
 
-  for(int mx = -mc; mx <=mc; mx++)
+ for(int mx = -mc; mx <=mc; mx++)
     for(int my = -mc; my <=mc; my++)
       for(int mz = -mc; mz <=mc; mz++) {
-	if((mx == 0) && (my==0) && (mz==0))
-	  continue;
 	for (nx=0; nx<mesh; nx++) {
 	  tn[0] = (nx >= mesh/2) ? (nx - mesh) : nx;
 	  for (ny=0; ny<mesh; ny++) {
@@ -562,6 +587,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	      Kernel[1][ind + 1] = -(tn[1]/s->length)*k2;
 	      Kernel[2][ind + 0] = 0;
 	      Kernel[2][ind + 1] = -(tn[2]/s->length)*k2;	  
+
+	      //	      printf("Im(Kernel[(%d, %d, %d)]) =  (%e %e %e)\n", nx, ny, nz, Kernel[0][ind+1], Kernel[1][ind+1], Kernel[2][ind+1]);
 	    }
 	  }
 	}

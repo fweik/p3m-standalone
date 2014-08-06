@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
     }
 
 
-    if(1) {
+    if(0) {
     FLOAT_TYPE V = pow( box, 3);
     double alpha = SQRT(-LOG((prec*SQRT(s->nparticles*rcut*V))/(2*SQRT(2)*s->q2)))/rcut;
     parameters_t ewald_parameters;
