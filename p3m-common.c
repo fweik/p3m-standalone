@@ -560,9 +560,11 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 
   /* Calculate K_inhomo(k) */
 
- for(int mx = -mc; mx <=mc; mx++)
+  for(int mx = -mc; mx <=mc; mx++)
     for(int my = -mc; my <=mc; my++)
       for(int mz = -mc; mz <=mc; mz++) {
+	if((mx == 0) && (my == 0) && (mz == 0))
+	  continue;
 	for (nx=0; nx<mesh; nx++) {
 	  tn[0] = (nx >= mesh/2) ? (nx - mesh) : nx;
 	  for (ny=0; ny<mesh; ny++) {
@@ -572,23 +574,37 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	      ind = 2*(mesh*mesh*nx + mesh*ny + nz);
 
 	      if((tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0)) 
-		k2 = 0.0;
-	      else {
-		u = U(tn[0],tn[1],tn[2], mesh, param.cao);
-		um = U(-tn[0]-mx*mesh,-tn[1]-my*mesh,-tn[2]-mz*mesh, mesh, param.cao);
-		b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
-		a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
-		k2 = 2*PI*u*um*b/a;
+		continue;
+
+	      b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
+	      a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
+
+	      G = b/a;
+	      
+	      int m[3];
+	      int tnm[3];
+	      
+	      for(m[0]=-M_MAX; m[0] <= +M_MAX; m[0]++) {
+		tnm[0] = tn[0] + mesh*m[0];
+		for(m[1]=-M_MAX; m[1] <= +M_MAX; m[1]++) {
+		  tnm[1] = tn[1] + mesh*m[1];
+		  for(m[2]=-M_MAX; m[2] <= +M_MAX; m[2]++) {
+		    tnm[2] = tn[2] + mesh*m[2];
+
+	      
+		    u = U(tnm[0],tnm[1],tnm[2], mesh, param.cao);
+		    um = U(-tnm[0]-mx*mesh,-tnm[1]-my*mesh,-tnm[2]-mz*mesh, mesh, param.cao);
+		    k2 = 2*PI*u*um*G;
+
+		    Kernel[0][ind + 1] += -(tnm[0]/s->length)*k2;
+		    Kernel[1][ind + 1] += -(tnm[1]/s->length)*k2;
+		    Kernel[2][ind + 1] += -(tnm[2]/s->length)*k2;	  
+
+		  }
+		}
 	      }
 
-	      Kernel[0][ind + 0] = 0;
-	      Kernel[0][ind + 1] = -(tn[0]/s->length)*k2;
-	      Kernel[1][ind + 0] = 0;
-	      Kernel[1][ind + 1] = -(tn[1]/s->length)*k2;
-	      Kernel[2][ind + 0] = 0;
-	      Kernel[2][ind + 1] = -(tn[2]/s->length)*k2;	  
-
-	      //	      printf("Im(Kernel[(%d, %d, %d)]) =  (%e %e %e)\n", nx, ny, nz, Kernel[0][ind+1], Kernel[1][ind+1], Kernel[2][ind+1]);
+	      printf("Im(Kernel[(%d, %d, %d)]) =  (%e %e %e)\n", nx, ny, nz, Kernel[0][ind+1], Kernel[1][ind+1], Kernel[2][ind+1]);
 	    }
 	  }
 	}
@@ -624,14 +640,14 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   
   FFTW_EXECUTE(forward_plan);
 
-  /* Calculate convolution [\rho^2 * K] */
+  /* Calculate convolution [\rho^2 * K^2](k) */
 
   for (nx=0; nx<mesh; nx++) {
     for (ny=0; ny<mesh; ny++) {
       for (nz=0; nz<mesh; nz++) {
   	ind = 2*(mesh*mesh*nx + mesh*ny + nz);
-	Kmesh[ind + 0] *= Kernel[3][ind]/mesh3;
-	Kmesh[ind + 1] *= Kernel[3][ind]/mesh3;
+	Kmesh[ind + 0] *= Kernel[3][ind];
+	Kmesh[ind + 1] *= Kernel[3][ind];
       }
     }
   }
@@ -681,7 +697,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   FFTW_FREE(Kernel[3]);
   Free_interpolation(inter);
 
-  return  SQRT(sum_part)/SQR(s->nparticles);
+  return  SQRT(sum_part);
  
 }
 

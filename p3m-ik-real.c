@@ -88,9 +88,9 @@ void P3M_ik_r ( system_t *s, parameters_t *p, data_t *d, forces_t *f ) {
     FLOAT_TYPE dop;
 
     // One over boxlength
-    FLOAT_TYPE Leni = 1.0/s->length;
+    const FLOAT_TYPE Leni = 1.0/s->length;
 
-    int Mesh = p->mesh;
+    const int Mesh = p->mesh;
     int c_index;
 
     /* Setting charge mesh to zero */
