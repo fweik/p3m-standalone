@@ -432,7 +432,7 @@ FLOAT_TYPE *Error_map(system_t *s, forces_t *f, forces_t *f_ref, int mesh, int c
   return error_mesh;
 }
 
-FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh, int cao, int mc, char *out_file) {
+FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh, int cao, int mc, char *out_file, int uniform) {
   //  printf("Generic_error_estimate_inhomo(mesh %d cao %d, mc %d):\n", mesh, cao, mc);
   int ind = 0;
   int nx, ny, nz;
@@ -467,9 +467,13 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   memset( Qmesh, 0, mesh*mesh*mesh*2 * sizeof(FLOAT_TYPE));
   memset( Kmesh, 0, mesh*mesh*mesh*2 * sizeof(FLOAT_TYPE));
 
- 
+  if(!uniform) {
   /* Calculate \rho^2 */
   assign_charge_q2(s, &param, Qmesh, mesh, inter);
+  } else {
+    for(int i = 0; i < mesh3; i++)
+      Qmesh[2*i] = s->q2/(mesh3
+  }
 
   int tn[3], tnm[3];
 
