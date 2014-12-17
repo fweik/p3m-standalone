@@ -432,7 +432,7 @@ FLOAT_TYPE *Error_map(system_t *s, forces_t *f, forces_t *f_ref, int mesh, int c
   return error_mesh;
 }
 
-FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh, int cao, int mc, char *out_file, int uniform) {
+FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int uniform, int mesh, int cao, int mc, char *out_file, data_t *d) {
   //  printf("Generic_error_estimate_inhomo(mesh %d cao %d, mc %d):\n", mesh, cao, mc);
   int ind = 0;
   int nx, ny, nz;
@@ -440,6 +440,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   FLOAT_TYPE *Qmesh = (FLOAT_TYPE *)Init_array( mesh*mesh*mesh*2, sizeof(FLOAT_TYPE));
   FLOAT_TYPE *Kmesh = (FLOAT_TYPE *)Init_array( mesh*mesh*mesh*2, sizeof(FLOAT_TYPE));
   FLOAT_TYPE *Kernel[4];
+  const FLOAT_TYPE V  = pow(s->length, 3);
   // puts("Plan FFT.");
   // printf("Mesh size %d, Mesh %p\n", mesh, Qmesh);
   FFTW_PLAN forward_plan = FFTW_PLAN_DFT_3D(mesh, mesh, mesh, (FFTW_COMPLEX*) Qmesh, (FFTW_COMPLEX*) Kmesh, FFTW_FORWARD, FFTW_MEASURE);
@@ -472,7 +473,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   assign_charge_q2(s, &param, Qmesh, mesh, inter);
   } else {
     for(int i = 0; i < mesh3; i++)
-      Qmesh[2*i] = s->q2/(mesh3
+      Qmesh[2*i] = s->q2/mesh3/V;
   }
 
   int tn[3], tnm[3];
@@ -482,8 +483,9 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   FLOAT_TYPE u=0.0,um=0.0,b=0.0,a=0.0, u2=0.0, gm=0.0;
   FLOAT_TYPE G;
   int m[3];
+  int r_ind = 0;
 
-  #define M_MAX 1
+  #define M_MAX 0
 
   /* Calculate K_homo(k) */
 
@@ -494,16 +496,15 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
       for (nz=0; nz<mesh; nz++) {
 	tn[2] = (nz >= mesh/2) ? (nz - mesh) : nz;
 	ind = 2*(mesh*mesh*nx + mesh*ny + nz);
-
+	r_ind = (mesh*mesh*nx + mesh*ny + nz);
 	if( (tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0) ) 
 	  continue;
 
-	b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
-	a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
+	b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao); 
+	a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao); 
 	
 	G = b/a;
-
-	/* printf("n = (%d %d %d), tn = (%d %d %d)\n", nx, ny, nz, tn[0], tn[1], tn[2]); */
+	//G = d->G_hat[r_ind];
 
 	for(m[0]=-M_MAX; m[0] <= +M_MAX; m[0]++) {
 	  tnm[0] = tn[0] + mesh*m[0];
@@ -517,25 +518,15 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 
 	      k2 = (u2*G) - gm;
 
-	      //	      printf("tnm = (%d %d %d), k2 = %e, gm = %e, G = %e\n", tnm[0], tnm[1], tnm[2], k2, gm, G);
-
 	      Kernel[0][ind + 1] += -2*PI*tnm[0]/s->length*k2;
 	      Kernel[1][ind + 1] += -2*PI*tnm[1]/s->length*k2;
 	      Kernel[2][ind + 1] += -2*PI*tnm[2]/s->length*k2;
 	    }
 	  }
 	}
-	//	printf("Im(Kernel[(%d, %d, %d)]) =  (%e %e %e)\n", nx, ny, nz, Kernel[0][ind+1], Kernel[1][ind+1], Kernel[2][ind+1]);
       }
     }
   }
-
-  /* for(int x = 0; x < mesh; x++) */
-  /*   for(int y = 0; y < mesh; y++) */
-  /*     for(int z = 0; z < mesh; z++) { */
-  /* 	int ind = 2*((mesh*mesh*x) + mesh*(y) + (z)); */
-  /* 	printf("Im(Kernel[(%d, %d, %d)]) =  (%e %e %e)\n", x, y, z, Kernel[0][ind+1], Kernel[1][ind+1], Kernel[2][ind+1]); */
-  /*     } */
 
   /* Transform back */
 
@@ -560,10 +551,10 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
     }
   }
 
-  /* Inhomogemous paprt */
+  /* Inhomogemous part */
 
   /* Calculate K_inhomo(k) */
-
+  
   for(int mx = -mc; mx <=mc; mx++)
     for(int my = -mc; my <=mc; my++)
       for(int mz = -mc; mz <=mc; mz++) {
@@ -576,7 +567,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	    for (nz=0; nz<mesh; nz++) {
 	      tn[2] = (nz >= mesh/2) ? (nz - mesh) : nz;
 	      ind = 2*(mesh*mesh*nx + mesh*ny + nz);
-
+	      r_ind = (mesh*mesh*nx + mesh*ny + nz);
 	      if((tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0)) 
 		continue;
 
@@ -584,6 +575,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
 	      a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
 
 	      G = b/a;
+	      // G = d->G_hat[r_ind];
+	      //G = 0;
 	      
 	      int m[3];
 	      int tnm[3];
@@ -701,7 +694,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int mesh,
   FFTW_FREE(Kernel[3]);
   Free_interpolation(inter);
 
-  return  SQRT(sum_part);
+  return  SQRT(sum);
  
 }
 

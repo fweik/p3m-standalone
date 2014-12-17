@@ -354,12 +354,10 @@ int main ( int argc, char **argv ) {
       fout = fopen ( "out.dat","w" );
     }
  
-    if(param_isset("no_calculation", params) != 1) {
-      printf ( "Init" );
-      fflush(stdout);
-      data = method.Init ( system, &parameters );
-      printf ( ".\n" );
-    }
+    printf ( "Init" );
+    fflush(stdout);
+    data = method.Init ( system, &parameters );
+    printf ( ".\n" );
 
     if(param_isset("no_reference_force", params) !=1) {
       printf ( "Init Ewald" );
@@ -375,8 +373,9 @@ int main ( int argc, char **argv ) {
     for ( parameters.alpha=alphamin; parameters.alpha<=alphamax; parameters.alpha+=alphastep ) {
       parameters_ewald.alpha = parameters.alpha;
 
+      method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
+	
       if(!param_isset("no_calculation", params)) {
-	method.Influence_function ( system, &parameters, data );  /* Hockney/Eastwood */
 
 	walltime = wtime();
 
@@ -435,8 +434,8 @@ int main ( int argc, char **argv ) {
 
 	FLOAT_TYPE err_inhomo = 0.0;
 	if(param_isset("inhomo_error", params)) {
-	  const int uniform = 0;
-	  err_inhomo = Generic_error_estimate_inhomo(system, &parameters, uniform, inhomo_error_mesh, inhomo_error_cao, inhomo_mc, inhomo_output);
+	  const int uniform = 1;
+	  err_inhomo = Generic_error_estimate_inhomo(system, &parameters, uniform, inhomo_error_mesh, inhomo_error_cao, inhomo_mc, inhomo_output, data);
 	}
 	
 	FLOAT_TYPE rs_error = Realspace_error( system, &parameters );
