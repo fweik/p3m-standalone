@@ -544,6 +544,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
 	kr = 0;
 	for(int i = 0; i < 3; i++) {
 	  kr += SQR(Kernel[i][ind + 0]);
+	  Kernel[i][ind+0] = 0.0;
+	  Kernel[i][ind+1] = 0.0;
 	}
 	Kernel[3][ind + 0] = kr;
 	Kernel[3][ind + 1] = 0;
