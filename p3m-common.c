@@ -509,7 +509,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
 	a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao); 
 	
 	G = b/a;
-	//G = d->G_hat[r_ind];
 
 	for(m[0]=-M_MAX; m[0] <= +M_MAX; m[0]++) {
 	  tnm[0] = tn[0] + mesh*m[0];
@@ -549,6 +548,10 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
 	kr = 0;
 	for(int i = 0; i < 3; i++) {
 	  kr += SQR(Kernel[i][ind + 0]);
+          if(Kernel[i][ind + 1] >= 1e-14) {
+            printf("Im(Kernel[%d %d %d] = %e\n", nx, ny, nz, Kernel[i][ind + 1]);
+          }
+
 	  Kernel[i][ind+0] = 0.0;
 	  Kernel[i][ind+1] = 0.0;
 	}
@@ -582,8 +585,6 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
 	      a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
 
 	      G = b/a;
-	      // G = d->G_hat[r_ind];
-	      //G = 0;
 	      
 	      int m[3];
 	      int tnm[3];
@@ -625,8 +626,13 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
 	    for (nz=0; nz<mesh; nz++) {
 	      ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
 	      kr = 0;
-	      for(int i = 0; i < 3; i++) {
+	      for(int i = 0; i < 3; i++) {                
 		kr += SQR(Kernel[i][ind + 0]);
+                if(Kernel[i][ind + 1] >= 1e-14) {
+                  printf("Im(Kernel[%d %d %d %d %d %d] = %e\n", nx, ny, nz, mx, my, mz, Kernel[i][ind + 1]);
+                }
+                Kernel[i][ind + 0] = 0.0;
+                Kernel[i][ind + 1] = 0.0;
 	      }
 	      Kernel[3][ind + 0] += kr;
 	    }
@@ -648,8 +654,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
     for (ny=0; ny<mesh; ny++) {
       for (nz=0; nz<mesh; nz++) {
   	ind = 2*(mesh*mesh*nx + mesh*ny + nz);
-	Kmesh[ind + 0] *= Kernel[3][ind];
-	Kmesh[ind + 1] *= Kernel[3][ind];
+	Kmesh[ind + 0] *= Kernel[3][ind + 0];
+	Kmesh[ind + 1] *= Kernel[3][ind + 1];
       }
     }
   }
@@ -675,8 +681,8 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
       for (nz=0; nz<mesh; nz++) {
 	ind = 2*((mesh*mesh*nx) + mesh*(ny) + (nz));
 	if(inhomo_out != NULL)
-	  fprintf( inhomo_out, "%d %d %d %e %e %e %e %e %e\n", nx, ny, nz, 
-    FLOAT_CAST Qmesh[ind], FLOAT_CAST Kmesh[ind + 0], FLOAT_CAST Kmesh[ind + 1], FLOAT_CAST Kernel[0][ind + 0], FLOAT_CAST Kernel[0][ind + 1], FLOAT_CAST Qmesh[ind]);
+	  fprintf( inhomo_out, "%d %d %d %e %e %e %e %e\n", nx, ny, nz, 
+    FLOAT_CAST Qmesh[ind], FLOAT_CAST Kmesh[ind + 0], FLOAT_CAST Kmesh[ind + 1], FLOAT_CAST Kernel[3][ind + 0], FLOAT_CAST Kernel[3][ind + 1]);
 	sum += Kmesh[ind]*Qmesh[ind];
       }
     }
