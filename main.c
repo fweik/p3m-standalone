@@ -434,7 +434,7 @@ int main ( int argc, char **argv ) {
 
 	FLOAT_TYPE err_inhomo = 0.0;
 	if(param_isset("inhomo_error", params)) {
-	  const int uniform = 1;
+          const int uniform = 0;
 	  err_inhomo = Generic_error_estimate_inhomo(system, &parameters, uniform, inhomo_error_mesh, inhomo_error_cao, inhomo_mc, inhomo_output, data);
 	}
 	
