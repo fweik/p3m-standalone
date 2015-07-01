@@ -549,7 +549,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
 	for(int i = 0; i < 3; i++) {
 	  kr += SQR(Kernel[i][ind + 0]);
           if(Kernel[i][ind + 1] >= 1e-14) {
-            printf("Im(Kernel[%d %d %d] = %e\n", nx, ny, nz, Kernel[i][ind + 1]);
+            //printf("Im(Kernel[%d %d %d] = %e\n", nx, ny, nz, Kernel[i][ind + 1]);
           }
 
 	  Kernel[i][ind+0] = 0.0;
@@ -629,7 +629,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
 	      for(int i = 0; i < 3; i++) {                
 		kr += SQR(Kernel[i][ind + 0]);
                 if(Kernel[i][ind + 1] >= 1e-14) {
-                  printf("Im(Kernel[%d %d %d %d %d %d] = %e\n", nx, ny, nz, mx, my, mz, Kernel[i][ind + 1]);
+                  //printf("Im(Kernel[%d %d %d %d %d %d] = %e\n", nx, ny, nz, mx, my, mz, Kernel[i][ind + 1]);
                 }
                 Kernel[i][ind + 0] = 0.0;
                 Kernel[i][ind + 1] = 0.0;
@@ -705,7 +705,7 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
   FFTW_FREE(Kernel[3]);
   Free_interpolation(inter);
 
-  return  SQRT(sum);
+  return  SQRT(sum_part/s->nparticles);
  
 }
 

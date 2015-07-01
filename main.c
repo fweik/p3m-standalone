@@ -385,7 +385,6 @@ int main ( int argc, char **argv ) {
       }
       error_k =0.0;
       if(calc_k_error == 1) {
-	puts("kerror");
 	for(i=0;i<3;i++) {
 	  memset ( forces_ewald->f_k->fields[i], 0, system->nparticles*sizeof ( FLOAT_TYPE ) );
 	}
@@ -442,8 +441,8 @@ int main ( int argc, char **argv ) {
 
 	/* printf("Q_uncorr %e, Q_corr %e, Q_nonfluc %e\n", Q_uncorr, Q_corr, Q_nonfluc); */
 
-	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
-		 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST walltime, FLOAT_CAST err_inhomo );
+	printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\t %8e %8e\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate,
+		 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST walltime, FLOAT_CAST err_inhomo, FLOAT_CAST error_k );
 
 	/* printf ( "%8lf\t%8e\t%8e\t %8e %8e\t %8e sec\n", FLOAT_CAST parameters.alpha, FLOAT_CAST (error.f / SQRT(system->nparticles)) , FLOAT_CAST estimate, */
 	/* 	 FLOAT_CAST rs_error , FLOAT_CAST error_k_est, FLOAT_CAST wtime ); */
