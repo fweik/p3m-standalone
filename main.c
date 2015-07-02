@@ -166,6 +166,7 @@ int main ( int argc, char **argv ) {
     add_param( "inhomo_cao", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_error_cao, &params);
     add_param( "inhomo_mc", ARG_TYPE_INT, ARG_OPTIONAL, &inhomo_mc, &params);
     add_param( "inhomo_output", ARG_TYPE_STRING, ARG_OPTIONAL, &inhomo_output, &params);
+    add_param( "inhomo_uniform", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     add_param( "error_map", ARG_TYPE_NONE, ARG_OPTIONAL, NULL, &params);
     add_param( "error_map_mesh", ARG_TYPE_INT, ARG_OPTIONAL, &error_map_mesh, &params);
     add_param( "error_map_cao", ARG_TYPE_INT, ARG_OPTIONAL, &error_map_cao, &params);
@@ -433,7 +434,7 @@ int main ( int argc, char **argv ) {
 
 	FLOAT_TYPE err_inhomo = 0.0;
 	if(param_isset("inhomo_error", params)) {
-          const int uniform = 0;
+          int uniform = param_isset("inhomo_uniform", params);
 	  err_inhomo = Generic_error_estimate_inhomo(system, &parameters, uniform, inhomo_error_mesh, inhomo_error_cao, inhomo_mc, inhomo_output, data);
 	}
 	

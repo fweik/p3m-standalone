@@ -484,7 +484,7 @@ FLOAT_TYPE p3m_k_space_error_ad( system_t *s, parameters_t *p )
   for (nx=-mesh/2; nx<mesh/2; nx++) {
     for (ny=-mesh/2; ny<mesh/2; ny++) {
       for (nz=-mesh/2; nz<mesh/2; nz++) {
-	if((nx!=0) || (ny!=0) || (nz!=0)) {
+	if((nx!=0) && (ny!=0) && (nz!=0)) {
 	  p3m_tune_aliasing_sums_ad(nx,ny,nz, s, p, &alias1,&alias2,&alias3,&alias4);	//alias4 = cs
 	  if( (alias3 == 0.0) || (alias4 == 0.0) )
 	    continue;
