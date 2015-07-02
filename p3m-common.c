@@ -564,6 +564,9 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
 
   /* Calculate K_inhomo(k) */
 
+  double b2, a2, G2;
+  double k1, un2, um2;
+
   for(int mx = -mc; mx <=mc; mx++)
     for(int my = -mc; my <=mc; my++)
       for(int mz = -mc; mz <=mc; mz++) {
@@ -580,35 +583,43 @@ FLOAT_TYPE Generic_error_estimate_inhomo(system_t *s, parameters_t *p, int unifo
 	      if((tn[0] == 0) &&  (tn[1] == 0) && (tn[2] == 0)) 
 		continue;
 
-	      b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
-	      a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
+              int tn2[3];
+              for (int n2x=0; n2x<mesh; n2x++) {
+                tn2[0] = (n2x >= mesh/2) ? (n2x - mesh) : n2x;
+                for (int n2y=0; n2y<mesh; n2y++) {
+                  tn2[1] = (n2y >= mesh/2) ? (n2y - mesh) : n2y;
+                  for (int n2z=0; n2z<mesh; n2z++) {
+                    tn2[2] = (n2z >= mesh/2) ? (n2z - mesh) : n2z;
+                    ind = 2*(mesh*mesh*n2x + mesh*n2y + n2z);
+                    if((tn2[0] == 0) &&  (tn2[1] == 0) && (tn2[2] == 0)) 
+                      continue;
 
-	      G = b/a;
 
-	      int m[3];
-	      int tnm[3];
-	      
-	      for(m[0]=-M_MAX; m[0] <= +M_MAX; m[0]++) {
-		tnm[0] = tn[0] + mesh*m[0];
-		for(m[1]=-M_MAX; m[1] <= +M_MAX; m[1]++) {
-		  tnm[1] = tn[1] + mesh*m[1];
-		  for(m[2]=-M_MAX; m[2] <= +M_MAX; m[2]++) {
-		    tnm[2] = tn[2] + mesh*m[2];
-	      
-		    u = U(tnm[0],tnm[1],tnm[2], mesh, param.cao);
-		    um = U(-tnm[0]-mx*mesh,-tnm[1]-my*mesh,-tnm[2]-mz*mesh, mesh, param.cao);
-		    k2 = 2*PI*u*um*G;
+                    b = B(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
+                    a = A(tn[0],tn[1],tn[2], s->length, param.alpha, mesh, 0, param.cao);
+                    b2 = B(tn2[0],tn2[1],tn2[2], s->length, param.alpha, mesh, 0, param.cao);
+                    a2 = A(tn2[0],tn2[1],tn2[2], s->length, param.alpha, mesh, 0, param.cao);
 
-		    Kernel[0][ind + 1] += -(tnm[0]/s->length)*k2;
-		    Kernel[1][ind + 1] += -(tnm[1]/s->length)*k2;
-		    Kernel[2][ind + 1] += -(tnm[2]/s->length)*k2;	  
+                    G = b/a;
+                    G2 = b2/a2;
+                    
+                    u = U(tn[0],tn[1],tn[2], mesh, param.cao);
+                    um = U(tn[0]+mx*mesh,tn[1]+my*mesh,tn[2]+mz*mesh, mesh, param.cao);
+                    un2 = U(tn2[0],tn2[1],tn2[2], mesh, param.cao);
+                    um2 = U(-tn2[0]-mx*mesh,-tn2[1]-my*mesh,-tn2[2]-mz*mesh, mesh, param.cao);
 
-		  }
-		}
+                    k1 = 2*PI*u*um*G;
+                    k2 = 2*PI*un2*um2*G2;
+
+                    Kernel[0][ind + 1] += -(tn[0]/s->length)*(tn2[0]/s->length)*k1*k2;
+                    Kernel[1][ind + 1] += -(tn[1]/s->length)*(tn2[1]/s->length)*k1*k2;
+                    Kernel[2][ind + 1] += -(tn[2]/s->length)*(tn2[2]/s->length)*k1*k2;	  
+                  }
+                }
               }
-	    }
-	  }
-	}
+            }
+          }
+        }
 
 	/* Transform back */
 
