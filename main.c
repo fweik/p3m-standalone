@@ -282,9 +282,10 @@ int main ( int argc, char **argv ) {
 	printf("Minimal distance: %.*f\n", DIGITS, FLOAT_CAST Min_distance( system ));
 	puts("Calculating reference forces.");
 	printf("Reference precision %e\n.", FLOAT_CAST Calculate_reference_forces( system, &parameters ));
+        printf("Reference energy %e\n", system->energy);
 	puts("Done.");
 	printf("Writing reference forces to '%s'\n", ref_out);
-	Write_exact_forces(system, ref_out);
+	Write_exact_forces(system, ref_out);        
 	puts("Done.");
       }
 
